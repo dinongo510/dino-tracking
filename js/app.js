@@ -1762,6 +1762,42 @@ class DinoApp {
       });
     }
 
+    const btnTestKey = document.getElementById("btnTestGeminiApiKey");
+    const statusBox = document.getElementById("geminiApiKeyTestStatus");
+    if (btnTestKey && inputKey) {
+      btnTestKey.addEventListener("click", async () => {
+        const key = inputKey.value.trim() || this.storage.getGeminiApiKey();
+        if (!key) {
+          this.showToast("⚠️ Vui lòng nhập API Key trước khi test!");
+          return;
+        }
+
+        if (statusBox) {
+          statusBox.style.display = "block";
+          statusBox.style.color = "var(--color-gold)";
+          statusBox.innerHTML = "⏳ Đang kiểm tra kết nối tới Gemini API (gemini-1.5-flash-latest)...";
+        }
+
+        try {
+          const athlete = this.storage.getAthleteContextSummary();
+          const testReply = await this.aiCoach.callGeminiAPI(key, "Kiểm tra kết nối AI Coach", athlete);
+          
+          if (statusBox) {
+            statusBox.style.color = "var(--color-green)";
+            statusBox.innerHTML = "✓ <strong>Kết nối thành công!</strong> Mô hình đã sẵn sàng phản hồi.";
+          }
+          this.showToast("✓ Kết nối thành công tới Google Gemini API!");
+        } catch (err) {
+          console.error("Gemini API Test Failed:", err);
+          if (statusBox) {
+            statusBox.style.color = "var(--red-primary)";
+            statusBox.innerHTML = `✕ <strong>Lỗi kết nối:</strong> ${err.message}`;
+          }
+          this.showToast(`⚠️ Lỗi Gemini API: ${err.message}`);
+        }
+      });
+    }
+
     // Export JSON Backup
     const btnExport = document.getElementById("btnExportData");
     if (btnExport) {
