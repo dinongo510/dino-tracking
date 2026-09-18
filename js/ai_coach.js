@@ -1,10 +1,9 @@
 /**
  * Dino Tracking - True AI Coach & Sports Science Copilot
  * Features:
- * 1. Direct integration with Google Gemini REST API using exact model "gemini-1.5-flash-latest"
- *    with automatic fallback sequence to "gemini-1.5-flash", "gemini-pro", and "gemini-1.5-pro-latest".
+ * 1. Direct integration with Google Gemini REST API using exact model "gemini-1.5-flash".
  * 2. Deep Context Injection (Active Program, Workout Logs, Volume, Km, Prehab Deviations, Muscle Strain).
- * 3. Robust Error Handling: Detailed console logs and distinct user-facing UI toasts for API key vs model errors.
+ * 3. Robust Error Handling: Detailed console logs and distinct user-facing UI toasts for API key vs network errors.
  * 4. Graceful Offline Sports Science Rule Fallback when API key is not yet set.
  */
 
@@ -44,15 +43,8 @@ class DinoAICoachEngine {
     return `${localResponse}\n\n---\n*💡 **Mẹo:** Bạn có thể nhập **Google Gemini API Key** trong Cài đặt (⚙️) để kích hoạt mô hình AI thế hệ mới nhất phân tích chuyên sâu.*`;
   }
 
-  // Real Google Gemini API Call with "gemini-1.5-flash-latest" and Fallback Sequence
+  // Real Google Gemini API Call strictly targeting "gemini-1.5-flash"
   async callGeminiAPI(apiKey, userQuery, athlete) {
-    const candidateModels = [
-      "gemini-1.5-flash-latest",
-      "gemini-1.5-flash",
-      "gemini-pro",
-      "gemini-1.5-pro-latest"
-    ];
-
     const systemPrompt = `Bạn là Dino AI Coach — Huấn luyện viên Thể thao & Khoa học Vận động cao cấp cho Vận động viên Hybrid (Hybrid Athlete: tập gym tăng cơ, cử tạ sức mạnh, chạy bền Zone 2/Threshold/Half-Marathon và Hyrox/CrossFit).
 
 DƯỚI ĐÂY LÀ DỮ LIỆU TẬP LUYỆN THỰC TẾ CỦA VẬN ĐỘNG VIÊN:
@@ -67,6 +59,8 @@ NGUYÊN TẮC TRẢ LỜI CỦA BẠN:
 1. Trả lời bằng tiếng Việt chuyên nghiệp, sắc bén, mang tính khoa học thể thao (dẫn chứng RIR, RPE, Progressive Overload, BFS periodization, NASM Corrective Exercise, năng lượng Glycogen, HRV, Recovery).
 2. Luôn liên hệ trực tiếp với dữ liệu buổi tập, mức tạ và km chạy thực tế của VĐV để đưa ra lời khuyên cá nhân hóa, không trả lời chung chung sáo rỗng.
 3. Trình bày rõ ràng với Markdown: dùng in đậm, gạch đầu dòng, bảng biểu hoặc checklist khi phù hợp.`;
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const requestBody = {
       contents: [
@@ -85,60 +79,45 @@ NGUYÊN TẮC TRẢ LỜI CỦA BẠN:
       }
     };
 
-    let lastError = null;
+    console.log(`[Gemini API] Đang gửi yêu cầu tới: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`);
 
-    for (const model of candidateModels) {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      const errMsg = errData.error?.message || `HTTP ${response.status} (${response.statusText})`;
+      const errStatus = response.status;
       
-      try {
-        console.log(`[Gemini API] Đang kết nối mô hình: ${model}...`);
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody)
-        });
+      console.error(`[Gemini API] Lỗi từ máy chủ Google: Status ${errStatus} - ${errMsg}`, errData);
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          const errMsg = errData.error?.message || `HTTP ${response.status} (${response.statusText})`;
-          const errStatus = response.status;
-          
-          console.error(`[Gemini API] Thất bại với model [${model}]: Status ${errStatus} - ${errMsg}`, errData);
-
-          // If it's an API Key permission or authentication error (400, 401, 403), stop immediately
-          if (errStatus === 400 && (errMsg.includes("API key not valid") || errMsg.includes("API_KEY_INVALID"))) {
-            throw new Error(`API Key không hợp lệ hoặc đã hết hạn (${errMsg})`);
-          }
-          if (errStatus === 403) {
-            throw new Error(`API Key bị từ chối quyền truy cập (403 Forbidden - ${errMsg})`);
-          }
-          if (errStatus === 429) {
-            throw new Error(`Đã vượt quá giới hạn lượt gọi API Key (429 Rate Limit - ${errMsg})`);
-          }
-
-          lastError = new Error(`Mô hình [${model}] không khả dụng (${errMsg}).`);
-          continue; // Try next fallback model
-        }
-
-        const data = await response.json();
-        const candidate = data.candidates?.[0];
-        if (candidate && candidate.content?.parts?.[0]?.text) {
-          console.log(`[Gemini API] Kết nối thành công bằng mô hình: ${model}`);
-          return candidate.content.parts[0].text;
-        }
-
-        lastError = new Error(`Mô hình [${model}] không trả về phản hồi văn bản hợp lệ.`);
-      } catch (fetchErr) {
-        // If it's a specific auth/rate error, throw immediately
-        if (fetchErr.message.includes("API Key") || fetchErr.message.includes("giới hạn")) {
-          throw fetchErr;
-        }
-        console.error(`[Gemini API] Lỗi ngoại lệ với model [${model}]:`, fetchErr);
-        lastError = fetchErr;
+      if (errStatus === 400 && (errMsg.includes("API key not valid") || errMsg.includes("API_KEY_INVALID"))) {
+        throw new Error(`API Key không hợp lệ hoặc đã hết hạn (${errMsg})`);
       }
+      if (errStatus === 403) {
+        throw new Error(`API Key bị từ chối quyền truy cập (403 Forbidden - ${errMsg})`);
+      }
+      if (errStatus === 404) {
+        throw new Error(`Mô hình gemini-1.5-flash không tìm thấy (404 - ${errMsg})`);
+      }
+      if (errStatus === 429) {
+        throw new Error(`Đã vượt quá giới hạn lượt gọi API Key (429 Rate Limit - ${errMsg})`);
+      }
+
+      throw new Error(`Lỗi kết nối Gemini API (${errMsg})`);
     }
 
-    throw lastError || new Error("Không thể kết nối đến bất kỳ mô hình Gemini API nào.");
+    const data = await response.json();
+    const candidate = data.candidates?.[0];
+    if (candidate && candidate.content?.parts?.[0]?.text) {
+      console.log(`[Gemini API] Phản hồi thành công từ mô hình gemini-1.5-flash`);
+      return candidate.content.parts[0].text;
+    }
+
+    throw new Error("Mô hình gemini-1.5-flash không trả về phản hồi văn bản hợp lệ.");
   }
 
   // Offline Sports Science Rule Engine

@@ -1775,7 +1775,7 @@ class DinoApp {
         if (statusBox) {
           statusBox.style.display = "block";
           statusBox.style.color = "var(--color-gold)";
-          statusBox.innerHTML = "⏳ Đang kiểm tra kết nối tới Gemini API (gemini-1.5-flash-latest)...";
+          statusBox.innerHTML = "⏳ Đang kiểm tra kết nối tới Gemini API (gemini-1.5-flash)...";
         }
 
         try {
