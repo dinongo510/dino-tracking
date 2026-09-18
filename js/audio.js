@@ -69,7 +69,7 @@ class DinoAudioEngine {
     }
   }
 
-  // 1. CELEBRATORY PROGRESSIVE OVERLOAD FANFARE (Beated last week!)
+  // 1. CELEBRATORY PROGRESSIVE OVERLOAD FANFARE (Beat last week!)
   playOverloadFanfare() {
     if (this.isVibrateEnabled && navigator.vibrate) {
       navigator.vibrate([100, 50, 150, 50, 250]);
@@ -120,7 +120,7 @@ class DinoAudioEngine {
     this.playTone(440, 0.07, "sine", 0.15);
   }
 
-  // 5. REST TIMER FINISHED CHIME
+  // 5. REST TIMER FINISHED CHIME (Normal Rest)
   playTimerDone() {
     if (this.isVibrateEnabled && navigator.vibrate) {
       navigator.vibrate([100, 60, 100, 60, 300]);
@@ -133,7 +133,58 @@ class DinoAudioEngine {
     });
   }
 
-  // 6. POST-WORKOUT VICTORY CELEBRATION (Finished full workout)
+  // 6. REST-PAUSE TIMER FINISHED CHIME (High-tempo urgent cue)
+  playRestPauseDone() {
+    if (this.isVibrateEnabled && navigator.vibrate) {
+      navigator.vibrate([80, 40, 80, 40, 150]);
+    }
+    if (!this.isSoundEnabled) return;
+
+    // Double high beep (A5 -> D6)
+    this.playTone(880.00, 0.12, "square", 0.22, 0);
+    this.playTone(1174.66, 0.20, "triangle", 0.25, 0.12);
+  }
+
+  // 7. ROULETTE WHEEL TICK (Click as wheel passes pegs)
+  playRouletteTick() {
+    if (!this.isSoundEnabled) return;
+    this.ensureAudio();
+    if (!this.audioCtx) return;
+
+    try {
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      const now = this.audioCtx.currentTime;
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(600 + Math.random() * 200, now);
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.04);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.04);
+    } catch (e) {}
+  }
+
+  // 8. ROULETTE WINNING LANDING FANFARE
+  playRouletteWin() {
+    if (this.isVibrateEnabled && navigator.vibrate) {
+      navigator.vibrate([100, 50, 200]);
+    }
+    if (!this.isSoundEnabled) return;
+
+    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+    notes.forEach((freq, idx) => {
+      this.playTone(freq, 0.25, "triangle", 0.24, idx * 0.08);
+    });
+  }
+
+  // 9. POST-WORKOUT VICTORY CELEBRATION (Finished full workout)
   playVictoryFanfare() {
     if (this.isVibrateEnabled && navigator.vibrate) {
       navigator.vibrate([150, 80, 150, 80, 400]);
@@ -165,19 +216,19 @@ class DinoAudioEngine {
     canvas.height = window.innerHeight;
 
     const particles = [];
-    const colors = ["#ff2a2a", "#ffd700", "#ffffff", "#10b981", "#ff6b6b"];
+    const colors = ["#ff2a2a", "#ffd700", "#ffffff", "#10b981", "#ff6b6b", "#3b82f6"];
 
-    for (let i = 0; i < 45; i++) {
+    for (let i = 0; i < 55; i++) {
       particles.push({
         x: canvas.width / 2,
-        y: canvas.height * 0.45,
-        vx: (Math.random() - 0.5) * 14,
-        vy: (Math.random() - 0.7) * 16,
-        size: Math.random() * 6 + 4,
+        y: canvas.height * 0.42,
+        vx: (Math.random() - 0.5) * 16,
+        vy: (Math.random() - 0.7) * 18,
+        size: Math.random() * 7 + 4,
         color: colors[Math.floor(Math.random() * colors.length)],
         alpha: 1,
         rotation: Math.random() * 360,
-        vRot: (Math.random() - 0.5) * 10
+        vRot: (Math.random() - 0.5) * 12
       });
     }
 
@@ -189,7 +240,7 @@ class DinoAudioEngine {
         p.x += p.vx;
         p.y += p.vy;
         p.vy += 0.35; // Gravity
-        p.alpha -= 0.02;
+        p.alpha -= 0.018;
         p.rotation += p.vRot;
 
         if (p.alpha > 0) {

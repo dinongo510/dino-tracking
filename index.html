@@ -7,9 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Dino Tracking">
-  <meta name="description" content="Dino Tracking - Professional Hevy-style hybrid fitness tracker, AI Coach & multi-program builder.">
+  <meta name="description" content="Dino Tracking - Hevy-style hybrid athlete tracking, CrossFit WOD roulette, and AI sports science coach.">
   
-  <title>Dino Tracking • Hybrid Fitness & AI Coach</title>
+  <title>Dino Tracking • Hybrid Fitness & WOD Roulette</title>
   
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/style.css">
@@ -39,12 +39,30 @@
         </div>
       </div>
       <div class="header-actions">
+        <!-- AI Coach Header Shortcut -->
+        <button id="btnHeaderAICoach" class="btn-header-pill" title="Mở Dino AI Coach">
+          <span class="ai-sparkle">⚡</span>
+          <span>AI Coach</span>
+        </button>
+
+        <!-- Programs Manager Shortcut -->
+        <button id="btnHeaderPrograms" class="btn-header-pill" title="Quản lý Giáo án">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span>Giáo Án</span>
+        </button>
+
+        <!-- Cloud Sync Badge -->
         <button id="cloudSyncBadge" class="cloud-sync-pill" title="Trạng thái Supabase Cloud Sync">
           <span class="sync-dot"></span>
-          <span id="cloudSyncText">Cloud Sync</span>
+          <span id="cloudSyncText">Cloud</span>
         </button>
+
+        <!-- Settings Button -->
         <button id="btnHeaderSettings" class="btn-icon-header" title="Cài đặt & Sao lưu">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
@@ -52,7 +70,7 @@
       </div>
     </header>
 
-    <!-- TAB 1: WORKOUT / LOGGER -->
+    <!-- TAB 1: WORKOUT (HEVY-STYLE LOGGER) -->
     <section id="tab-workout" class="tab-content active">
       
       <div class="workout-top-controls">
@@ -87,13 +105,49 @@
       <!-- Active Workout Session Hero & Live Stopwatch -->
       <div class="active-workout-hero">
         <div class="hero-workout-meta">
-          <span id="heroDayTag" class="hero-day-tag">T3 • FULL BODY STRENGTH</span>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <span id="heroDayTag" class="hero-day-tag">T3 • FULL BODY STRENGTH</span>
+            <button id="btnToggleMuscleHeatmap" class="btn-heatmap-toggle" title="Xem sơ đồ nhóm cơ tác động">
+              <span>🔥 Cơ Tác Động</span>
+            </button>
+          </div>
           <h2 id="heroWorkoutTitle" class="hero-workout-title">Full Body Strength</h2>
           <div id="heroWorkoutFocus" class="hero-workout-focus">Strength + Tension toàn thân, ít sets</div>
         </div>
 
-        <!-- Stopwatch & Action Cluster -->
-        <div class="hero-actions-cluster">
+        <!-- Inline Muscle Heatmap Preview Drawer -->
+        <div id="heroHeatmapContainer" class="hero-heatmap-drawer" style="display: none;">
+          <div class="heatmap-drawer-header">
+            <span>SƠ ĐỒ NHÓM CƠ BUỔI TẬP HÔM NAY</span>
+            <button id="btnCloseHeroHeatmap" class="btn-mini-close">✕</button>
+          </div>
+          <div class="heatmap-flex-wrap">
+            <div id="anteriorMuscleSvgWrap" class="svg-muscle-box">
+              <!-- Anterior SVG Body -->
+            </div>
+            <div id="posteriorMuscleSvgWrap" class="svg-muscle-box">
+              <!-- Posterior SVG Body -->
+            </div>
+          </div>
+          <div id="heroTargetMusclesTags" class="heatmap-tags-row">
+            <!-- Muscle chips rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Start Workout Hero Trigger (When workout has not started) -->
+        <div id="workoutStartOverlay" class="workout-start-prompt-card">
+          <div class="prompt-text">
+            <div style="font-weight: 800; font-size: 15px; color: var(--text-white);">Sẵn sàng buổi tập hôm nay?</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Bấm bắt đầu để kích hoạt đồng hồ bấm giờ và ghi nhận thành tích.</div>
+          </div>
+          <button id="btnStartWorkoutSession" class="btn-start-workout-action">
+            <span class="play-triangle">▶</span>
+            <span>Bắt Đầu Buổi Tập</span>
+          </button>
+        </div>
+
+        <!-- Stopwatch & Action Cluster (Visible once workout is started) -->
+        <div id="activeStopwatchCluster" class="hero-actions-cluster" style="display: none;">
           <div class="workout-stopwatch-wrap">
             <span class="stopwatch-dot"></span>
             <span id="workoutStopwatchText" class="workout-stopwatch-display">00:00:00</span>
@@ -112,9 +166,9 @@
         </div>
       </div>
 
-      <!-- Active Exercises Container -->
+      <!-- Active Exercises & Circuits Container -->
       <div id="workoutExercisesContainer" class="workout-exercises-list">
-        <!-- Hevy-style Exercise Cards populated dynamically by app.js -->
+        <!-- Hevy-style Exercise Cards / Circuit Blocks populated dynamically by app.js -->
       </div>
 
       <!-- Dedicated Session Notes Textarea -->
@@ -128,11 +182,109 @@
 
     </section>
 
-    <!-- TAB 2: HISTORY / CALENDAR -->
-    <section id="tab-history" class="tab-content">
+    <!-- TAB 2: STATS & PROGRESS (DEDICATED ANALYTICS TAB) -->
+    <section id="tab-stats" class="tab-content">
       
-      <div class="history-view-container">
+      <div class="stats-view-container">
         
+        <!-- Header & Timeframe Filter -->
+        <div class="stats-header-bar">
+          <div>
+            <h2 style="font-family: var(--font-heading); font-size: 18px; font-weight: 800; color: var(--text-white);">
+              Tiến Độ & Thống Kê (Stats)
+            </h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              Dữ liệu tổng hợp tải tạ, cự ly chạy và kỷ lục cá nhân (PRs).
+            </p>
+          </div>
+          <div class="timeframe-pills-wrap">
+            <button class="timeframe-btn active" data-filter="all">Tất cả</button>
+            <button class="timeframe-btn" data-filter="month">Tháng này</button>
+            <button class="timeframe-btn" data-filter="week">7 ngày</button>
+          </div>
+        </div>
+
+        <!-- 4 Big Metric Summary Cards -->
+        <div class="stats-summary-grid">
+          <div class="stat-big-card">
+            <span class="stat-card-icon">🏋️</span>
+            <span class="stat-card-label">TỔNG VOLUME TẢI</span>
+            <span id="statSummaryVolume" class="stat-card-val" style="color: var(--color-green);">0 kg</span>
+          </div>
+
+          <div class="stat-big-card">
+            <span class="stat-card-icon">🏃</span>
+            <span class="stat-card-label">TỔNG CỰ LY CHẠY</span>
+            <span id="statSummaryDistance" class="stat-card-val" style="color: var(--color-blue);">0 km</span>
+          </div>
+
+          <div class="stat-big-card">
+            <span class="stat-card-icon">⏱️</span>
+            <span class="stat-card-label">BUỔI ĐÃ HOÀN THÀNH</span>
+            <span id="statSummaryWorkouts" class="stat-card-val">0</span>
+          </div>
+
+          <div class="stat-big-card">
+            <span class="stat-card-icon">⚡</span>
+            <span class="stat-card-label">KỶ LỤC MỚI (PRs)</span>
+            <span id="statSummaryPRs" class="stat-card-val" style="color: var(--color-gold);">0</span>
+          </div>
+        </div>
+
+        <!-- Interactive Progression Charts Section -->
+        <div class="stats-charts-section">
+          
+          <!-- Chart 1: Progressive Overload & 1RM Chart -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <span class="chart-tag" style="color: var(--red-primary);">SỨC MẠNH & 1RM</span>
+                <div class="chart-title">Tiến Triển Mức Tạ (Overload)</div>
+              </div>
+              <select id="selectChartExercise" class="chart-exercise-select">
+                <option value="pin_squat">Pin Back Squat</option>
+                <option value="incline_db_bench">Incline DB Bench</option>
+                <option value="pull_up">Weighted Pull-up</option>
+                <option value="leg_press">Leg Press</option>
+                <option value="dips">Chest Dips</option>
+                <option value="machine_shoulder_press">Machine Shoulder Press</option>
+                <option value="chest_supported_row">Chest-Supported Row</option>
+                <option value="leg_curl">Leg Curl</option>
+              </select>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="canvasStatsOverload"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Running Mileage Chart -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <span class="chart-tag" style="color: var(--color-blue);">CHẠY BỘ (RUNNING)</span>
+                <div class="chart-title">Cự Ly Tích Lũy (km)</div>
+              </div>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="canvasStatsMileage"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 3: Volume Load Progression Chart -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <span class="chart-tag" style="color: var(--color-green);">VOLUME LOAD</span>
+                <div class="chart-title">Tổng Khối Lượng Nâng (Tấn)</div>
+              </div>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="canvasStatsVolume"></canvas>
+            </div>
+          </div>
+
+        </div>
+
         <!-- Interactive Month Calendar Card -->
         <div class="calendar-card">
           <div class="calendar-header">
@@ -152,143 +304,187 @@
           </div>
         </div>
 
-        <!-- History Summary Metrics -->
-        <div class="history-stats-row">
-          <div class="hist-stat-card">
-            <span class="hist-stat-label">Buổi tập</span>
-            <span id="statTotalWorkouts" class="hist-stat-val">0</span>
-          </div>
-          <div class="hist-stat-card">
-            <span class="hist-stat-label">Tổng khối lượng</span>
-            <span id="statTotalVolume" class="hist-stat-val">0 kg</span>
-          </div>
-          <div class="hist-stat-card">
-            <span class="hist-stat-label">Tổng cự ly</span>
-            <span id="statTotalKm" class="hist-stat-val">0 km</span>
-          </div>
-        </div>
-
-        <!-- Past Workout Sessions Breakdown -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+        <!-- Past Workout Sessions History Breakdown (With instant dynamic deletion) -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
           <h3 style="font-family: var(--font-heading); font-size: 15px; font-weight: 800; color: var(--text-white);">
             Nhật Ký Các Buổi Đã Hoàn Thành
           </h3>
-          <span id="historySelectedDateFilter" style="font-size: 11px; color: var(--red-primary); font-weight: 700;">Tất cả</span>
+          <span id="historySelectedDateFilter" style="font-size: 11px; color: var(--red-primary); font-weight: 700; cursor: pointer;">Tất cả</span>
         </div>
 
         <div id="historyCardsContainer" class="history-cards-list">
-          <!-- History cards populated by app.js -->
+          <!-- History cards populated dynamically by app.js -->
         </div>
 
       </div>
 
     </section>
 
-    <!-- TAB 3: AI COACH (HYBRID TRAINING COPILOT) -->
-    <section id="tab-aicoach" class="tab-content">
+    <!-- TAB 3: EXERCISES & CROSSFIT WOD ROULETTE -->
+    <section id="tab-exercises" class="tab-content">
       
-      <div class="aicoach-view-container">
+      <div class="exercises-tab-container">
         
-        <!-- AI Coach Hero Card -->
-        <div class="aicoach-hero-card">
-          <div class="aicoach-avatar-badge">⚡</div>
-          <div class="aicoach-hero-info">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <h2 style="font-family: var(--font-heading); font-size: 17px; font-weight: 800; color: var(--text-white);">
-                  Dino AI Coach
-                </h2>
-                <span class="ai-status-pill">● Trực Tuyến</span>
-              </div>
-              <button id="btnClearAIChat" class="btn-clear-chat" title="Xóa lịch sử chat">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-                <span>Xóa Chat</span>
+        <!-- Sub-navigation Tabs (Library vs Roulette) -->
+        <div class="exercise-subnav-bar">
+          <button id="subnavBtnLibrary" class="subnav-btn active">
+            <span>📚 Thư Viện Bài Tập</span>
+          </button>
+          <button id="subnavBtnRoulette" class="subnav-btn">
+            <span>🎰 CrossFit WOD Roulette</span>
+          </button>
+        </div>
+
+        <!-- SECTION A: EXERCISE LIBRARY -->
+        <div id="sectionExerciseLibrary" class="exercise-section-content">
+          
+          <!-- Search & Filter Controls -->
+          <div class="library-filter-bar">
+            <div class="search-input-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="inputSearchExercise" class="search-exercise-input" placeholder="Tìm bài tập (Squat, Press, Dips, Run...)" autocomplete="off">
+            </div>
+
+            <div class="filter-dropdowns-row">
+              <select id="selectMuscleFilter" class="filter-select">
+                <option value="all">Tất cả nhóm cơ</option>
+                <option value="Quads">Đùi trước (Quads)</option>
+                <option value="Hamstrings">Đùi sau (Hamstrings)</option>
+                <option value="Chest">Ngực (Chest)</option>
+                <option value="Lats">Lưng / Xô (Lats)</option>
+                <option value="Shoulders">Vai (Shoulders)</option>
+                <option value="Triceps">Tay sau (Triceps)</option>
+                <option value="Biceps">Tay trước (Biceps)</option>
+                <option value="Core">Cơ lõi (Core / Abs)</option>
+                <option value="Cardio">Cardio / Chạy bộ</option>
+              </select>
+
+              <select id="selectEquipmentFilter" class="filter-select">
+                <option value="all">Tất cả dụng cụ</option>
+                <option value="Barbell">Barbell (Thanh đòn)</option>
+                <option value="Dumbbell">Dumbbell (Tạ đơn)</option>
+                <option value="Cable">Cable (Dây cáp)</option>
+                <option value="Machine">Machine (Máy khối)</option>
+                <option value="Bodyweight">Bodyweight (Tự thân)</option>
+                <option value="Kettlebell">Kettlebell (Tạ bình)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Exercise Catalog Grid -->
+          <div id="exerciseLibraryGrid" class="exercise-catalog-grid">
+            <!-- Exercise Cards populated dynamically by app.js -->
+          </div>
+
+        </div>
+
+        <!-- SECTION B: CROSSFIT WOD ROULETTE (RANDOMIZER) -->
+        <div id="sectionWODRoulette" class="exercise-section-content" style="display: none;">
+          
+          <div class="roulette-hero-card">
+            <div class="roulette-badge-title">🎰 CROSSFIT & HYROX WOD ARENA</div>
+            <h2 style="font-family: var(--font-heading); font-size: 20px; font-weight: 900; color: var(--text-white); margin-top: 4px;">
+              WOD Roulette Randomizer
+            </h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px; max-width: 480px; margin-left: auto; margin-right: auto;">
+              Quay bánh xe may mắn với hơn <strong>100+ bài tập CrossFit</strong> (The Girls, Heroes, Hyrox Sim, Chippers, AMRAPs). Tìm thử thách mới mỗi ngày!
+            </p>
+
+            <!-- Interactive Roulette Wheel Canvas Box -->
+            <div class="roulette-wheel-stage">
+              <div class="roulette-pointer-needle"></div>
+              <canvas id="canvasRouletteWheel" class="roulette-canvas" width="320" height="320"></canvas>
+            </div>
+
+            <!-- Spin Trigger Button -->
+            <div style="margin-top: 14px;">
+              <button id="btnSpinRoulette" class="btn-spin-roulette-hero">
+                <span>🎰 QUAY BÁNH XE WOD</span>
               </button>
             </div>
-            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-              Trợ lý huấn luyện viên 2-trong-1 phân tích dữ liệu cá nhân (tạ, chạy, ghi chú) & giải đáp khoa học thể thao toàn diện.
-            </p>
           </div>
-        </div>
 
-        <!-- Quick Prompts Horizontal Scroll -->
-        <div class="ai-quick-prompts-section">
-          <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;">
-            Gợi ý câu hỏi nhanh:
+          <!-- Landed Selected WOD Result Display Card -->
+          <div id="landedWODCard" class="landed-wod-card" style="display: none;">
+            <div class="wod-card-top-row">
+              <div class="wod-meta-info">
+                <span id="wodDifficultyBadge" class="wod-diff-badge badge-hard">HARD</span>
+                <span id="wodCategoryBadge" class="wod-format-badge">The Girls</span>
+                <span id="wodFormatBadge" class="wod-format-badge">For Time</span>
+              </div>
+              <span id="wodRxTimeTag" class="wod-time-cap">Time Cap: 15'</span>
+            </div>
+
+            <h3 id="wodNameTitle" class="wod-name-title">Fran</h3>
+            <p id="wodDescriptionText" class="wod-desc-text">The classic 21-15-9 barbell thruster and pull-up sprint.</p>
+
+            <!-- Suggested Rx Weights Box -->
+            <div class="wod-rx-weights-box">
+              <div class="rx-col">
+                <span class="rx-label">👨 MỨC TẠ NAM (Rx M):</span>
+                <span id="wodRxMaleText" class="rx-val">43 kg (95 lbs)</span>
+              </div>
+              <div class="rx-col">
+                <span class="rx-label">👩 MỨC TẠ NỮ (Rx F):</span>
+                <span id="wodRxFemaleText" class="rx-val">30 kg (65 lbs)</span>
+              </div>
+            </div>
+
+            <!-- Movement List -->
+            <div class="wod-movements-box">
+              <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">
+                📋 Danh Sách Động Tác:
+              </div>
+              <div id="wodMovementsList" class="wod-movements-list">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="wod-actions-cluster">
+              <button id="btnLoadWodToWorkout" class="btn-day-action" style="flex: 1.4; padding: 12px; font-size: 13.5px;">
+                🚀 Nạp Vào Buổi Tập (Start WOD)
+              </button>
+              <button id="btnSpinAgain" class="btn-day-action secondary" style="flex: 1; padding: 12px; font-size: 13px;">
+                🔄 Quay Lại Bài Khác
+              </button>
+            </div>
           </div>
-          <div id="aiQuickPromptsContainer" class="ai-quick-prompts-list">
-            <!-- Populated by app.js -->
-          </div>
-        </div>
 
-        <!-- Chat Messages History Container -->
-        <div id="aiChatHistoryContainer" class="ai-chat-messages-container">
-          <!-- Chat messages rendered here -->
-        </div>
-
-        <!-- Chat Input Form -->
-        <form id="formAIChat" class="ai-chat-input-bar">
-          <input type="text" id="inputAIChat" class="ai-chat-input" placeholder="Hỏi AI Coach về phục hồi, tạ, bài chạy hôm nay..." required autocomplete="off">
-          <button type="submit" id="btnSendAIChat" class="btn-ai-send" title="Gửi câu hỏi">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </form>
-
-      </div>
-
-    </section>
-
-    <!-- TAB 4: PROGRAMS / BUILDER -->
-    <section id="tab-programs" class="tab-content">
-      
-      <div class="programs-view-container">
-        
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <div>
-            <h2 style="font-family: var(--font-heading); font-size: 18px; font-weight: 800; color: var(--text-white);">
-              Quản Lý Giáo Án (Program Builder)
-            </h2>
-            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-              Tạo và tùy biến các chương trình tập luyện cá nhân theo ý bạn.
-            </p>
-          </div>
-        </div>
-
-        <button id="btnOpenCreateProgramModal" class="btn-create-prog-hero">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          + Tạo Giáo Án Mới (Custom Program)
-        </button>
-
-        <div id="programsListContainer" style="display: flex; flex-direction: column; gap: 12px;">
-          <!-- Program cards populated by app.js -->
         </div>
 
       </div>
 
     </section>
 
-    <!-- TAB 5: RECOVERY RULES -->
+    <!-- TAB 4: RULES & RECOVERY -->
     <section id="tab-recovery" class="tab-content">
       
       <div class="recovery-container">
         
         <div>
-          <h2 style="font-family: var(--font-heading); font-size: 17px; font-weight: 800; color: var(--text-white);">
+          <h2 style="font-family: var(--font-heading); font-size: 18px; font-weight: 800; color: var(--text-white);">
             Khi Nào Mệt — Quy Tắc Thay Ngày Tự Động
           </h2>
           <p style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
-            Ứng biến thông minh theo độ mỏi cơ và giấc ngủ để không bao giờ bị quá tải.
+            Ứng biến khoa học thể thao theo độ mỏi cơ và giấc ngủ để không bao giờ bị quá tải hay chấn thương.
           </p>
         </div>
+
+        <!-- Quick Check-in Button -->
+        <button id="btnOpenDailyCheckinDirect" class="btn-daily-checkin-banner">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">🩺</span>
+            <div style="text-align: left;">
+              <div style="font-weight: 800; font-size: 13.5px; color: var(--text-white);">Đánh Giá Mỏi Cơ & Giấc Ngủ Hôm Nay</div>
+              <div style="font-size: 11.5px; color: var(--text-muted);">Tự động gợi ý hạ RIR hoặc đổi bài tập theo thể trạng</div>
+            </div>
+          </div>
+          <span style="font-size: 16px; color: var(--red-primary);">→</span>
+        </button>
 
         <!-- Rule Cards -->
         <div id="recoveryRulesList" class="rule-cards-grid">
@@ -358,8 +554,8 @@
         </svg>
       </div>
       <div>
-        <div id="timerTitleText" style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">⏱️ Nghỉ giữa set</div>
-        <div id="timerTimeText" class="timer-time-display">02:00</div>
+        <div id="timerTitleText" style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">⏱️ NGHỈ GIỮA SET</div>
+        <div id="timerTimeText" class="timer-time-display">02:30</div>
       </div>
       <div class="timer-controls-mini">
         <button id="btnTimerAdd30" class="btn-timer-mini">+30s</button>
@@ -367,8 +563,8 @@
       </div>
     </div>
 
-    <!-- 5-TAB FIXED BOTTOM NAVIGATION BAR -->
-    <nav class="bottom-nav-bar five-tabs">
+    <!-- 4-TAB FIXED BOTTOM NAVIGATION BAR -->
+    <nav class="bottom-nav-bar four-tabs">
       <button class="nav-item-btn active" data-tab="workout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 4h4v16H6zM14 4h4v16h-4zM2 9h4v6H2zM18 9h4v6h-4z"></path>
@@ -376,32 +572,24 @@
         <span>Workout</span>
       </button>
       
-      <button class="nav-item-btn" data-tab="history">
+      <button class="nav-item-btn" data-tab="stats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
         </svg>
-        <span>History</span>
+        <span>Stats</span>
       </button>
 
-      <button class="nav-item-btn ai-tab-btn" data-tab="aicoach">
+      <button class="nav-item-btn" data-tab="exercises">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 8v8M8 12h8"></path>
         </svg>
-        <span>AI Coach</span>
+        <span>Exercises</span>
       </button>
 
-      <button class="nav-item-btn" data-tab="programs">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-        </svg>
-        <span>Programs</span>
-      </button>
-
-      <button class="nav-item-btn" data-tab="recovery">
+      <button class="nav-item-btn" data-tab="rules">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
         </svg>
@@ -411,7 +599,354 @@
 
   </div>
 
-  <!-- MODAL 1: POST-WORKOUT SUMMARY CELEBRATION MODAL -->
+  <!-- MODAL 1: PLATE CALCULATOR & 1RM ESTIMATOR MODAL -->
+  <div id="modalPlateAnd1RM" class="modal-overlay">
+    <div class="modal-bottom-sheet plate-calc-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div>
+          <span style="font-size: 11px; font-weight: 700; color: var(--red-primary); text-transform: uppercase;">Barbell & Strength Tools</span>
+          <div class="sheet-title">🏋️ Plate Calculator & 1RM Estimator</div>
+        </div>
+        <button class="btn-sheet-close">✕</button>
+      </div>
+
+      <!-- Tab Switch inside Modal -->
+      <div class="modal-tabs-row">
+        <button id="modalTabBtnPlates" class="modal-subtab-btn active">Đĩa Tạ (Plate Calc)</button>
+        <button id="modalTabBtn1RM" class="modal-subtab-btn">Ước Tính 1RM</button>
+      </div>
+
+      <!-- SUBVIEW 1: PLATE CALCULATOR -->
+      <div id="subviewPlateCalc" class="plate-calc-view">
+        <div class="calc-input-group">
+          <label>Tổng Khối Lượng Tạ Mục Tiêu (kg):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="inputTargetPlateKg" class="calc-input-number" value="100" step="2.5" min="20">
+            <button id="btnCalculatePlates" class="btn-day-action" style="padding: 0 16px; font-size: 13px;">Tính Đĩa</button>
+          </div>
+        </div>
+
+        <div class="barbell-visual-wrap">
+          <div class="barbell-sleeve-left"></div>
+          <div class="barbell-bar"></div>
+          <div id="barbellPlatesStack" class="barbell-plates-stack">
+            <!-- Rendered plate discs -->
+          </div>
+          <div class="barbell-bar-right"></div>
+        </div>
+
+        <div class="plate-breakdown-card">
+          <div style="font-size: 11.5px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">
+            Số Đĩa Cần Lắp MỖI BÊN (Thanh đòn Olympic 20kg):
+          </div>
+          <div id="platesPerSideDisplay" class="plates-pills-wrap">
+            <!-- Plate badges -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBVIEW 2: 1RM ESTIMATOR -->
+      <div id="subview1RMCalc" class="plate-calc-view" style="display: none;">
+        <div class="calc-input-group" style="display: flex; gap: 10px;">
+          <div style="flex: 1;">
+            <label>Mức Tạ (kg):</label>
+            <input type="number" id="input1RMWeight" class="calc-input-number" value="100" step="2.5">
+          </div>
+          <div style="flex: 1;">
+            <label>Số Reps Đã Đẩy:</label>
+            <input type="number" id="input1RMReps" class="calc-input-number" value="6" min="1" max="30">
+          </div>
+        </div>
+
+        <div class="one-rm-hero-result">
+          <span style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Ước tính 1RM Tối Đa:</span>
+          <div id="calculated1RMResult" class="one-rm-big-number">120.0 kg</div>
+          <div style="font-size: 11.5px; color: var(--text-muted);">Dựa trên công thức Epley & Brzycki Hybrid</div>
+        </div>
+
+        <div class="rm-percentages-table-card">
+          <table class="rm-table">
+            <thead>
+              <tr>
+                <th>Tỷ lệ %</th>
+                <th>Khối Lượng</th>
+                <th>Reps Tối Đa</th>
+              </tr>
+            </thead>
+            <tbody id="rmTableBody">
+              <!-- Rendered 100%, 90%, 80%, 70%, 60% -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL 2: SMART FATIGUE CHECK-IN MODAL -->
+  <div id="modalSmartFatigueCheckin" class="modal-overlay">
+    <div class="modal-bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div>
+          <span style="font-size: 11px; font-weight: 700; color: var(--red-primary); text-transform: uppercase;">Daily Readiness</span>
+          <div class="sheet-title">🩺 Đánh Giá Phục Hồi & Thể Trạng</div>
+        </div>
+        <button class="btn-sheet-close">✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 6px;">
+        
+        <!-- Sleep Rating -->
+        <div class="checkin-group">
+          <label style="font-weight: 700; font-size: 13px; color: var(--text-white); margin-bottom: 8px; display: block;">
+            1. Chất lượng giấc ngủ đêm qua:
+          </label>
+          <div class="checkin-options-grid">
+            <button type="button" class="btn-checkin-pill active" data-sleep="good">😴 Ngủ tốt (≥ 7.5h)</button>
+            <button type="button" class="btn-checkin-pill" data-sleep="fair">😐 Ngủ tạm (6-7h)</button>
+            <button type="button" class="btn-checkin-pill" data-sleep="poor">🥱 Ngủ kém (< 6h / mệt)</button>
+          </div>
+        </div>
+
+        <!-- DOMS / Soreness Rating -->
+        <div class="checkin-group">
+          <label style="font-weight: 700; font-size: 13px; color: var(--text-white); margin-bottom: 8px; display: block;">
+            2. Độ mỏi cơ (DOMS) hôm nay:
+          </label>
+          <div class="checkin-options-grid">
+            <button type="button" class="btn-checkin-pill active" data-doms="none">⚡ Cơ bắp sung sức, không mỏi</button>
+            <button type="button" class="btn-checkin-pill" data-doms="legs">🦵 Đùi / Gân kheo mỏi nhiều</button>
+            <button type="button" class="btn-checkin-pill" data-doms="upper">💪 Vai / Lưng / Cột sống mỏi</button>
+          </div>
+        </div>
+
+        <!-- Dynamic Recommendation Box -->
+        <div id="checkinRecommendationBox" class="checkin-recommendation-card">
+          <div style="font-weight: 800; font-size: 12px; color: var(--color-green); text-transform: uppercase;">
+            ✓ Sẵn sàng tập luyện theo kế hoạch
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
+            Thể trạng phục hồi tối ưu. Giữ nguyên mức tạ và mục tiêu RIR.
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <button id="btnApplySmartAdjustment" class="btn-day-action" style="flex: 1.5; padding: 12px; font-size: 13.5px;">
+            ✓ Bắt Đầu Buổi Tập
+          </button>
+          <button class="btn-day-action secondary btn-sheet-close" style="flex: 1; padding: 12px; font-size: 13px;">
+            Bỏ Qua
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: EMPTY CLEAN PROGRAM BUILDER MODAL -->
+  <div id="modalProgramBuilder" class="modal-overlay">
+    <div class="modal-bottom-sheet program-builder-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div>
+          <span style="font-size: 11px; font-weight: 700; color: var(--red-primary); text-transform: uppercase;">Custom Routine</span>
+          <div class="sheet-title">🛠️ Tạo Giáo Án Mới (Program Builder)</div>
+        </div>
+        <button class="btn-sheet-close">✕</button>
+      </div>
+
+      <form id="formProgramBuilder">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>Tên Giáo Án *</label>
+          <input type="text" id="inputProgName" class="form-input" placeholder="VD: Push-Pull-Legs Hybrid" required>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>Mô tả / Triết lý giáo án</label>
+          <input type="text" id="inputProgDesc" class="form-input" placeholder="VD: 3 ngày tạ nặng + 2 ngày chạy Zone 2">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label>Chu kỳ xoay vòng</label>
+          <select id="selectProgRotation" class="form-select">
+            <option value="1">1 Tuần (7 ngày cố định)</option>
+            <option value="2">2 Tuần (Tuần A & Tuần B xoay vòng)</option>
+          </select>
+        </div>
+
+        <!-- Dynamic Days Builder Section -->
+        <div class="builder-days-section">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: 800; font-size: 13px; color: var(--text-white);">Danh Sách Các Ngày Tập:</span>
+            <button type="button" id="btnAddDayToBuilder" class="btn-builder-add-mini">+ Thêm Ngày</button>
+          </div>
+
+          <div id="builderDaysListContainer" class="builder-days-list">
+            <!-- Dynamic day cards start completely empty -->
+            <div id="builderEmptyNotice" style="font-size: 12px; color: var(--text-dim); text-align: center; padding: 14px; background: var(--bg-card); border-radius: var(--radius-sm);">
+              Chưa có ngày tập nào. Bấm <strong>"+ Thêm Ngày"</strong> để bắt đầu tạo lịch tập cá nhân.
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-day-action" style="width: 100%; margin-top: 14px; padding: 12px;">
+          ✓ Lưu & Kích Hoạt Giáo Án Mới
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: AI COACH COPILOT MODAL -->
+  <div id="modalAICoach" class="modal-overlay">
+    <div class="modal-bottom-sheet aicoach-sheet">
+      <div class="sheet-handle"></div>
+      
+      <!-- AI Coach Header -->
+      <div class="aicoach-modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="aicoach-avatar-badge">⚡</div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <h2 style="font-family: var(--font-heading); font-size: 16px; font-weight: 800; color: var(--text-white);">
+                Dino AI Coach
+              </h2>
+              <span class="ai-status-pill">● Trực Tuyến</span>
+            </div>
+            <p style="font-size: 11px; color: var(--text-muted);">Trợ lý 2-trong-1 phân tích dữ liệu tạ, chạy và khoa học thể thao.</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button id="btnClearAIChatModal" class="btn-clear-chat-mini" title="Xóa đoạn chat">Xóa Chat</button>
+          <button class="btn-sheet-close">✕</button>
+        </div>
+      </div>
+
+      <!-- Quick Prompts Horizontal Scroll -->
+      <div class="ai-quick-prompts-section">
+        <div id="aiQuickPromptsContainerModal" class="ai-quick-prompts-list">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Chat Messages Container -->
+      <div id="aiChatHistoryModal" class="ai-chat-messages-container">
+        <!-- Messages rendered here -->
+      </div>
+
+      <!-- Chat Input Form -->
+      <form id="formAIChatModal" class="ai-chat-input-bar">
+        <input type="text" id="inputAIChatModal" class="ai-chat-input" placeholder="Hỏi AI Coach về phục hồi, tăng tạ, chiến thuật chạy..." required autocomplete="off">
+        <button type="submit" class="btn-ai-send" title="Gửi câu hỏi">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 5: PROGRAMS MANAGER MODAL -->
+  <div id="modalProgramsManager" class="modal-overlay">
+    <div class="modal-bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-title">📋 Quản Lý Giáo Án</div>
+        <button class="btn-sheet-close">✕</button>
+      </div>
+
+      <button id="btnOpenCreateProgFromManager" class="btn-create-prog-hero" style="margin-bottom: 12px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        + Tạo Giáo Án Mới
+      </button>
+
+      <div id="programsListContainerModal" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- Program cards rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: EXERCISE DETAIL & HISTORY MODAL -->
+  <div id="modalExerciseDetail" class="modal-overlay">
+    <div class="modal-bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div>
+          <span id="modalExDetailCategory" style="font-size: 11px; font-weight: 700; color: var(--red-primary); text-transform: uppercase;">Compound</span>
+          <div id="modalExDetailName" class="sheet-title">Pin Back Squat</div>
+        </div>
+        <button class="btn-sheet-close">✕</button>
+      </div>
+
+      <!-- Target & Muscles -->
+      <div class="detail-box">
+        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">🎯 Mục tiêu giáo án</div>
+        <div id="modalExDetailTarget" style="font-size: 13px; font-weight: 700; color: var(--color-blue); margin-top: 2px;">2 sets × 5-8 reps @ RIR 1-2</div>
+        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-top: 8px;">💪 Nhóm cơ tác động</div>
+        <div id="modalExDetailMuscles" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Quadriceps, Glutes, Erector Spinae</div>
+      </div>
+
+      <!-- Progression Chart -->
+      <div class="detail-box">
+        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">📈 Xu hướng mức tạ (Progressive Overload)</div>
+        <div style="height: 170px; width: 100%; position: relative;">
+          <canvas id="canvasExerciseDetail" style="width: 100%; height: 100%;"></canvas>
+        </div>
+      </div>
+
+      <!-- Form Cues -->
+      <div class="detail-box">
+        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">💡 Hướng dẫn kỹ thuật & Form</div>
+        <div id="modalExDetailCues" style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-top: 4px;">Form chuẩn và kiểm soát eccentric.</div>
+      </div>
+
+      <!-- Past Logs List -->
+      <div class="detail-box">
+        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">⏱️ Lịch sử các set gần nhất</div>
+        <div id="exerciseDetailHistoryList" style="display: flex; flex-direction: column; gap: 6px;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button id="btnOpenPlateCalcFromDetail" class="btn-day-action secondary" style="flex: 1;">
+          🏋️ Plate Calc & 1RM
+        </button>
+        <button id="btnModalSwapShortcut" class="btn-day-action secondary" style="flex: 1;">
+          🔄 Đổi Bài (Swap)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 7: SWAP EXERCISE MODAL -->
+  <div id="modalSwapExercise" class="modal-overlay">
+    <div class="modal-bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div>
+          <div class="sheet-title">🔄 Đổi Bài Tập (Swap Exercise)</div>
+          <div id="swapCurrentExTitle" style="font-size: 12px; color: var(--text-muted);">Đang đổi bài: Pin Back Squat</div>
+        </div>
+        <button class="btn-sheet-close">✕</button>
+      </div>
+
+      <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 12px;">
+        Chọn bài tập thay thế phù hợp khi cơ thể mỏi, đau khớp hoặc máy tập tại phòng gym bị bận:
+      </div>
+
+      <div id="swapOptionsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 8: POST-WORKOUT CELEBRATION SUMMARY MODAL -->
   <div id="modalWorkoutSummary" class="modal-overlay">
     <div class="modal-bottom-sheet summary-sheet">
       <div class="sheet-handle"></div>
@@ -426,7 +961,7 @@
         </p>
       </div>
 
-      <!-- Summary Big Metrics Grid (Dynamically rendered or toggled) -->
+      <!-- Summary Big Metrics Grid -->
       <div id="summaryMetricsGrid" class="summary-metrics-grid">
         <div id="summaryMetricCardVolume" class="summary-metric-card">
           <span class="sm-label">TỔNG KHỐI LƯỢNG</span>
@@ -458,7 +993,7 @@
       <div class="summary-section-box">
         <div class="summary-section-title">Chi Tiết Các Bài Đã Hoàn Thành:</div>
         <div id="summaryExercisesList" class="summary-exercises-list">
-          <!-- Populated by app.js -->
+          <!-- Populated dynamically -->
         </div>
       </div>
 
@@ -481,122 +1016,46 @@
     </div>
   </div>
 
-  <!-- MODAL 2: EXERCISE DETAIL & HISTORY MODAL -->
-  <div id="modalExerciseDetail" class="modal-overlay">
-    <div class="modal-bottom-sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <div>
-          <span id="modalExDetailCategory" style="font-size: 11px; font-weight: 700; color: var(--red-primary); text-transform: uppercase;">Compound</span>
-          <div id="modalExDetailName" class="sheet-title">Pin Back Squat</div>
-        </div>
-        <button class="btn-sheet-close">✕</button>
-      </div>
-
-      <!-- Target & Muscles -->
-      <div class="detail-box">
-        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">🎯 Mục tiêu giáo án</div>
-        <div id="modalExDetailTarget" style="font-size: 13px; font-weight: 700; color: var(--color-blue); margin-top: 2px;">2 sets × 5-8 reps @ RIR 1-2</div>
-        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-top: 8px;">💪 Nhóm cơ tác động</div>
-        <div id="modalExDetailMuscles" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Quadriceps, Glutes, Erector Spinae</div>
-      </div>
-
-      <!-- Progression Chart -->
-      <div class="detail-box">
-        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">📈 Xu hướng mức tạ (Progressive Overload)</div>
-        <div style="height: 180px; width: 100%; position: relative;">
-          <canvas id="canvasExerciseDetail" style="width: 100%; height: 100%;"></canvas>
-        </div>
-      </div>
-
-      <!-- Form Cues -->
-      <div class="detail-box">
-        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">💡 Hướng dẫn kỹ thuật & Form</div>
-        <div id="modalExDetailCues" style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-top: 4px;">Form chuẩn và kiểm soát eccentric.</div>
-      </div>
-
-      <!-- Past Logs List -->
-      <div class="detail-box">
-        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">⏱️ Lịch sử các set gần nhất</div>
-        <div id="exerciseDetailHistoryList" style="display: flex; flex-direction: column; gap: 6px;">
-          <!-- Populated by app.js -->
-        </div>
-      </div>
-
-      <button id="btnModalSwapShortcut" class="btn-day-action secondary" style="width: 100%; margin-top: 8px;">
-        🔄 Đổi Sang Bài Tập Khác (Swap)
-      </button>
-    </div>
-  </div>
-
-  <!-- MODAL 3: SWAP EXERCISE MODAL -->
-  <div id="modalSwapExercise" class="modal-overlay">
-    <div class="modal-bottom-sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <div>
-          <div class="sheet-title">🔄 Đổi Bài Tập (Swap Exercise)</div>
-          <div id="swapCurrentExTitle" style="font-size: 12px; color: var(--text-muted);">Đang đổi bài: Pin Back Squat</div>
-        </div>
-        <button class="btn-sheet-close">✕</button>
-      </div>
-
-      <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 12px;">
-        Chọn bài tập thay thế phù hợp khi cơ thể mỏi, đau khớp hoặc máy tập tại phòng gym bị bận:
-      </div>
-
-      <div id="swapOptionsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-        <!-- Populated by app.js -->
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL 4: Program Builder (Create / Edit Program) -->
-  <div id="modalProgramBuilder" class="modal-overlay">
-    <div class="modal-bottom-sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <div class="sheet-title">🛠️ Tạo Giáo Án Mới</div>
-        <button class="btn-sheet-close">✕</button>
-      </div>
-
-      <form id="formProgramBuilder">
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label>Tên Giáo Án</label>
-          <input type="text" id="inputProgName" class="form-input" placeholder="VD: Push-Pull-Legs 1-Week" required>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label>Mô tả / Triết lý</label>
-          <input type="text" id="inputProgDesc" class="form-input" placeholder="VD: 3 ngày tạ nặng + 2 ngày chạy Zone 2">
-        </div>
-
-        <div class="form-group" style="margin-bottom: 16px;">
-          <label>Chu kỳ xoay vòng</label>
-          <select id="selectProgRotation" class="form-select">
-            <option value="1">1 Tuần (7 ngày cố định)</option>
-            <option value="2">2 Tuần (Tuần A & Tuần B)</option>
-          </select>
-        </div>
-
-        <button type="submit" class="btn-day-action" style="width: 100%;">
-          Lưu & Kích Hoạt Giáo Án
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL 5: Settings & Backup -->
+  <!-- MODAL 9: SETTINGS & BACKUP MODAL -->
   <div id="modalSettings" class="modal-overlay">
     <div class="modal-bottom-sheet">
       <div class="sheet-handle"></div>
       <div class="sheet-header">
-        <div class="sheet-title">⚙️ Cài Đặt & Sao Lưu</div>
+        <div class="sheet-title">⚙️ Cài Đặt & Tuỳ Chọn</div>
         <button class="btn-sheet-close">✕</button>
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 14px;">
         
+        <!-- Smart Fatigue Feature Toggle -->
+        <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div style="font-weight: 700; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
+              <span>🩺 Smart Fatigue Adjuster</span>
+              <span class="prog-badge" style="color: var(--color-green); border-color: rgba(16,185,129,0.3);">Khuyên Dùng</span>
+            </div>
+            <input type="checkbox" id="settingSmartFatigue" checked style="accent-color: var(--red-primary); transform: scale(1.2);">
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+            Khi BẬT, ứng dụng sẽ hiện bản đánh giá nhanh giấc ngủ và độ mỏi cơ trước khi bắt đầu buổi tập, tự động điều chỉnh RIR hoặc gợi ý đổi bài tập để tránh quá tải.
+          </div>
+        </div>
+
+        <!-- Audio & Haptics -->
+        <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px;">
+          <div style="font-weight: 700; font-size: 13px; margin-bottom: 10px;">Âm Thanh & Rung Phản Hồi</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <label style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+              <span>Âm thanh PR fanfare, WOD roulette & chuông đếm giờ</span>
+              <input type="checkbox" id="settingSound" checked style="accent-color: var(--red-primary);">
+            </label>
+            <label style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+              <span>Rung phản hồi (Haptic feedback)</span>
+              <input type="checkbox" id="settingVibrate" checked style="accent-color: var(--red-primary);">
+            </label>
+          </div>
+        </div>
+
         <!-- Supabase Real-Time Cloud Sync -->
         <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
@@ -609,7 +1068,6 @@
             Tự động đồng bộ thời gian thực giữa <strong>Máy tính (PC)</strong> và <strong>Điện thoại</strong>. Dữ liệu tập luyện, km chạy và ghi chú được lưu an toàn trên đám mây.
           </div>
 
-          <!-- Athlete Sync ID -->
           <div style="margin-bottom: 12px;">
             <label style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">Mã định danh Athlete Sync ID:</label>
             <div style="display: flex; gap: 6px;">
@@ -634,26 +1092,11 @@
           </div>
         </div>
 
-        <!-- Audio & Haptics -->
-        <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px;">
-          <div style="font-weight: 700; font-size: 13px; margin-bottom: 10px;">Âm Thanh & Rung Phản Hồi</div>
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <label style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-muted); cursor: pointer;">
-              <span>Âm thanh PR fanfare & chuông đếm giờ</span>
-              <input type="checkbox" id="settingSound" checked style="accent-color: var(--red-primary);">
-            </label>
-            <label style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-muted); cursor: pointer;">
-              <span>Rung phản hồi (Haptic feedback)</span>
-              <input type="checkbox" id="settingVibrate" checked style="accent-color: var(--red-primary);">
-            </label>
-          </div>
-        </div>
-
         <!-- Backup & Restore -->
         <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px;">
           <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px;">Sao Lưu & Khôi Phục (Local Storage)</div>
           <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
-            Dữ liệu được lưu an toàn 100% trên thiết bị. Xuất file JSON để sao lưu định kỳ.
+            Xuất file JSON để sao lưu dự phòng toàn bộ dữ liệu.
           </div>
           <div style="display: flex; gap: 8px;">
             <button id="btnExportData" class="btn-day-action" style="font-size: 12px; flex: 1;">
@@ -681,9 +1124,10 @@
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- Scripts in dependency order -->
   <script src="js/data.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/timer.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/supabase_sync.js"></script>
   <script src="js/charts.js"></script>
@@ -696,7 +1140,7 @@
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js', { scope: '/' })
           .then((reg) => {
-            reg.update();
+            console.log('SW registered successfully');
           })
           .catch((err) => {
             console.log('SW registration error:', err);

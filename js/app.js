@@ -1,7 +1,10 @@
 /**
- * Dino Tracking - Hevy-Style Application Controller (v5.0)
- * Professional 5-Tab Hybrid Fitness Architecture with AI Coach, Multi-Program Builder,
- * Active Stopwatch, Set Deletion, Exercise Swapping, Post-Workout Summary, and Gamified Visuals
+ * Dino Tracking - Principal Application Controller (v6.0)
+ * 4-Tab Hevy-Style Hybrid Fitness Architecture:
+ * Tab 1: Workout (Hevy Sets Table, Rest/RP Timer, Pace Calc, Plate Calc, Muscle Heatmap, For Time Circuit)
+ * Tab 2: Stats & Progress (Dynamic Recalculation, Canvas Charts, Calendar, History Deletion)
+ * Tab 3: Exercises & CrossFit WOD Roulette (100+ WODs, Physics Canvas Spinner, Library)
+ * Tab 4: Rules & Recovery (Smart Fatigue, Frequency Matrix, Priority Hierarchy)
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -12,6 +15,7 @@ class DinoApp {
   constructor() {
     this.storage = window.dinoStorage;
     this.audio = window.dinoAudio;
+    this.timer = window.dinoTimer;
     this.data = window.PROGRAM_DATA || {};
     this.aiCoach = window.dinoAICoach;
     this.supabaseSync = (typeof DinoSupabaseSync !== "undefined")
@@ -27,49 +31,51 @@ class DinoApp {
     this.currentWeek = this.storage.getActiveWeek();
     this.currentDayIndex = this.storage.getActiveDayIndex();
 
-    // Active Exercise Modal State
-    this.selectedExerciseForDetail = null;
-    this.selectedExerciseForSwap = null;
+    // Stats Timeframe Filter ('all', 'month', 'week')
+    this.statsFilter = "all";
+    this.selectedChartLift = "pin_squat";
 
     // Calendar state
     const today = new Date();
     this.calYear = today.getFullYear();
-    this.calMonth = today.getMonth(); // 0-11
-    this.calFilterDate = null; // 'YYYY-MM-DD' or null
+    this.calMonth = today.getMonth();
+    this.calFilterDate = null;
 
-    // Rest Timer State
-    this.timerInterval = null;
-    this.timerSecondsLeft = 0;
-    this.isTimerRP = false;
+    // Roulette state
+    this.rouletteWODs = window.CROSSFIT_WOD_DATABASE || [];
+    this.isSpinning = false;
+    this.rouletteRotation = 0;
+    this.selectedWOD = null;
 
-    // Active Workout Stopwatch State
-    this.stopwatchSeconds = 0;
-    this.isStopwatchRunning = true;
-    this.stopwatchInterval = null;
+    // Active Exercise Modal State
+    this.selectedExerciseForDetail = null;
+    this.selectedExerciseForSwap = null;
 
     this.initElements();
     this.bindEvents();
-    this.initStopwatch();
+    this.initRouletteWheel();
     this.renderAll();
 
-    // Start background Supabase cloud sync
+    // Init Supabase background sync
     if (this.supabaseSync) {
       this.supabaseSync.init();
     }
   }
 
   initElements() {
-    // 5-Tab Bottom Navigation
+    // 4-Tab Bottom Navigation
     this.navBtns = document.querySelectorAll(".nav-item-btn");
     this.tabContents = document.querySelectorAll(".tab-content");
 
-    // Header elements
+    // Header buttons
     this.headerProgramSubtitle = document.getElementById("headerProgramSubtitle");
-    this.btnHeaderSettings = document.getElementById("btnHeaderSettings");
+    this.btnHeaderAICoach = document.getElementById("btnHeaderAICoach");
+    this.btnHeaderPrograms = document.getElementById("btnHeaderPrograms");
     this.cloudSyncBadge = document.getElementById("cloudSyncBadge");
     this.cloudSyncText = document.getElementById("cloudSyncText");
+    this.btnHeaderSettings = document.getElementById("btnHeaderSettings");
 
-    // Tab 1: Workout elements
+    // Tab 1: Workout Elements
     this.activeProgramNameText = document.getElementById("activeProgramNameText");
     this.btnSwitchProgramDirect = document.getElementById("btnSwitchProgramDirect");
     this.weekToggleContainer = document.getElementById("weekToggleContainer");
@@ -77,8 +83,14 @@ class DinoApp {
     this.btnWeekB = document.getElementById("btnWeekB");
     this.dayChipsContainer = document.getElementById("dayChipsContainer");
     this.heroDayTag = document.getElementById("heroDayTag");
+    this.btnToggleMuscleHeatmap = document.getElementById("btnToggleMuscleHeatmap");
+    this.heroHeatmapContainer = document.getElementById("heroHeatmapContainer");
+    this.btnCloseHeroHeatmap = document.getElementById("btnCloseHeroHeatmap");
     this.heroWorkoutTitle = document.getElementById("heroWorkoutTitle");
     this.heroWorkoutFocus = document.getElementById("heroWorkoutFocus");
+    this.workoutStartOverlay = document.getElementById("workoutStartOverlay");
+    this.btnStartWorkoutSession = document.getElementById("btnStartWorkoutSession");
+    this.activeStopwatchCluster = document.getElementById("activeStopwatchCluster");
     this.workoutStopwatchText = document.getElementById("workoutStopwatchText");
     this.btnPauseWorkout = document.getElementById("btnPauseWorkout");
     this.btnFinishWorkout = document.getElementById("btnFinishWorkout");
@@ -86,56 +98,55 @@ class DinoApp {
     this.inputWorkoutNotes = document.getElementById("inputWorkoutNotes");
     this.notesSavedTag = document.getElementById("notesSavedTag");
 
-    // Tab 2: History & Calendar elements
+    // Tab 2: Stats Elements
+    this.timeframeBtns = document.querySelectorAll(".timeframe-btn");
+    this.statSummaryVolume = document.getElementById("statSummaryVolume");
+    this.statSummaryDistance = document.getElementById("statSummaryDistance");
+    this.statSummaryWorkouts = document.getElementById("statSummaryWorkouts");
+    this.statSummaryPRs = document.getElementById("statSummaryPRs");
+    this.selectChartExercise = document.getElementById("selectChartExercise");
     this.calMonthTitle = document.getElementById("calMonthTitle");
     this.btnCalPrevMonth = document.getElementById("btnCalPrevMonth");
     this.btnCalNextMonth = document.getElementById("btnCalNextMonth");
     this.calendarDaysGrid = document.getElementById("calendarDaysGrid");
-    this.statTotalWorkouts = document.getElementById("statTotalWorkouts");
-    this.statTotalVolume = document.getElementById("statTotalVolume");
-    this.statTotalKm = document.getElementById("statTotalKm");
     this.historySelectedDateFilter = document.getElementById("historySelectedDateFilter");
     this.historyCardsContainer = document.getElementById("historyCardsContainer");
 
-    // Tab 3: AI Coach elements
-    this.aiQuickPromptsContainer = document.getElementById("aiQuickPromptsContainer");
-    this.aiChatHistoryContainer = document.getElementById("aiChatHistoryContainer");
-    this.formAIChat = document.getElementById("formAIChat");
-    this.inputAIChat = document.getElementById("inputAIChat");
-    this.btnSendAIChat = document.getElementById("btnSendAIChat");
+    // Tab 3: Exercises & Roulette Elements
+    this.subnavBtnLibrary = document.getElementById("subnavBtnLibrary");
+    this.subnavBtnRoulette = document.getElementById("subnavBtnRoulette");
+    this.sectionExerciseLibrary = document.getElementById("sectionExerciseLibrary");
+    this.sectionWODRoulette = document.getElementById("sectionWODRoulette");
+    this.inputSearchExercise = document.getElementById("inputSearchExercise");
+    this.selectMuscleFilter = document.getElementById("selectMuscleFilter");
+    this.selectEquipmentFilter = document.getElementById("selectEquipmentFilter");
+    this.exerciseLibraryGrid = document.getElementById("exerciseLibraryGrid");
+    this.canvasRouletteWheel = document.getElementById("canvasRouletteWheel");
+    this.btnSpinRoulette = document.getElementById("btnSpinRoulette");
+    this.landedWODCard = document.getElementById("landedWODCard");
+    this.btnLoadWodToWorkout = document.getElementById("btnLoadWodToWorkout");
+    this.btnSpinAgain = document.getElementById("btnSpinAgain");
 
-    // Tab 4: Program Builder elements
-    this.btnOpenCreateProgramModal = document.getElementById("btnOpenCreateProgramModal");
-    this.programsListContainer = document.getElementById("programsListContainer");
-    this.modalProgramBuilder = document.getElementById("modalProgramBuilder");
-    this.formProgramBuilder = document.getElementById("formProgramBuilder");
-    this.inputProgName = document.getElementById("inputProgName");
-    this.inputProgDesc = document.getElementById("inputProgDesc");
-    this.selectProgRotation = document.getElementById("selectProgRotation");
-
-    // Tab 5: Recovery Rules elements
+    // Tab 4: Rules & Recovery Elements
+    this.btnOpenDailyCheckinDirect = document.getElementById("btnOpenDailyCheckinDirect");
     this.recoveryRulesList = document.getElementById("recoveryRulesList");
     this.priorityListEl = document.getElementById("priorityListEl");
     this.matrixTableBody = document.getElementById("matrixTableBody");
     this.checkpointsContainer = document.getElementById("checkpointsContainer");
 
-    // Rest Timer HUD elements
+    // Rest Timer HUD Elements
     this.timerHudPill = document.getElementById("timerHudPill");
-    this.timerTimeText = document.getElementById("timerTimeText");
     this.timerTitleText = document.getElementById("timerTitleText");
+    this.timerTimeText = document.getElementById("timerTimeText");
     this.btnTimerAdd30 = document.getElementById("btnTimerAdd30");
     this.btnTimerDismiss = document.getElementById("btnTimerDismiss");
 
-    // Modals
-    this.modalWorkoutSummary = document.getElementById("modalWorkoutSummary");
-    this.modalExerciseDetail = document.getElementById("modalExerciseDetail");
-    this.modalSwapExercise = document.getElementById("modalSwapExercise");
-    this.modalSettings = document.getElementById("modalSettings");
+    // Toast
     this.toastBox = document.getElementById("toastBox");
   }
 
   bindEvents() {
-    // 1. Bottom 5-Tab Navigation
+    // 1. Bottom 4-Tab Navigation
     this.navBtns.forEach(btn => {
       btn.addEventListener("click", () => {
         const tab = btn.dataset.tab;
@@ -143,33 +154,103 @@ class DinoApp {
       });
     });
 
-    // 2. Direct Program Switch button in workout tab
-    if (this.btnSwitchProgramDirect) {
-      this.btnSwitchProgramDirect.addEventListener("click", () => {
-        this.switchTab("programs");
+    // 2. Header Shortcuts
+    if (this.btnHeaderAICoach) {
+      this.btnHeaderAICoach.addEventListener("click", () => {
+        this.openModal("modalAICoach");
+        this.renderAIChatMessages();
+        this.renderAIQuickPrompts();
       });
     }
 
-    // 3. Week A / Week B Switchers
+    if (this.btnHeaderPrograms) {
+      this.btnHeaderPrograms.addEventListener("click", () => {
+        this.openModal("modalProgramsManager");
+        this.renderProgramsListModal();
+      });
+    }
+
+    if (this.btnSwitchProgramDirect) {
+      this.btnSwitchProgramDirect.addEventListener("click", () => {
+        this.openModal("modalProgramsManager");
+        this.renderProgramsListModal();
+      });
+    }
+
+    if (this.btnHeaderSettings) {
+      this.btnHeaderSettings.addEventListener("click", () => this.openSettingsModal());
+    }
+
+    // 3. Week A / B Switchers
     if (this.btnWeekA && this.btnWeekB) {
       this.btnWeekA.addEventListener("click", () => this.setWeek("A"));
       this.btnWeekB.addEventListener("click", () => this.setWeek("B"));
     }
 
-    // 4. Stopwatch Pause / Resume Toggle
+    // 4. Workout Start & Stopwatch Lifecycle
+    if (this.btnStartWorkoutSession) {
+      this.btnStartWorkoutSession.addEventListener("click", () => this.handleStartWorkoutClick());
+    }
+
     if (this.btnPauseWorkout) {
       this.btnPauseWorkout.addEventListener("click", () => this.togglePauseStopwatch());
     }
 
-    // 5. Finish Workout Button -> Opens Post-Workout Celebration Summary
     if (this.btnFinishWorkout) {
       this.btnFinishWorkout.addEventListener("click", () => this.openPostWorkoutSummary());
     }
 
-    // Confirm Save Workout in Summary Modal
     const btnConfirmSaveWorkout = document.getElementById("btnConfirmSaveWorkout");
     if (btnConfirmSaveWorkout) {
       btnConfirmSaveWorkout.addEventListener("click", () => this.handleConfirmSaveWorkout());
+    }
+
+    // Timer Ticks callback
+    this.timer.onSessionTick((data) => {
+      if (this.workoutStopwatchText) {
+        this.workoutStopwatchText.textContent = data.formatted;
+      }
+      const dot = document.querySelector(".stopwatch-dot");
+      if (dot) dot.classList.toggle("paused", data.isPaused);
+    });
+
+    this.timer.onRestTick((data) => {
+      if (this.timerTimeText) this.timerTimeText.textContent = data.formatted;
+      if (this.timerTitleText) {
+        this.timerTitleText.textContent = data.isRestPause ? "⚡ REST-PAUSE (15s)" : "⏱️ NGHỈ GIỮA SET";
+      }
+      if (this.timerHudPill) {
+        this.timerHudPill.classList.toggle("visible", data.isRunning);
+      }
+    });
+
+    this.timer.onRestComplete((data) => {
+      this.showToast(data.isRestPause ? "⚡ Hết 15s Rest-Pause! Vào set tiếp ngay!" : "⏰ Hết giờ nghỉ! Sẵn sàng cho set tiếp theo!");
+    });
+
+    if (this.btnTimerAdd30) {
+      this.btnTimerAdd30.addEventListener("click", () => this.timer.addRestSeconds(30));
+    }
+
+    if (this.btnTimerDismiss) {
+      this.btnTimerDismiss.addEventListener("click", () => this.timer.stopRest());
+    }
+
+    // 5. Muscle Heatmap Drawer Toggle
+    if (this.btnToggleMuscleHeatmap) {
+      this.btnToggleMuscleHeatmap.addEventListener("click", () => {
+        if (this.heroHeatmapContainer) {
+          const isShown = this.heroHeatmapContainer.style.display !== "none";
+          this.heroHeatmapContainer.style.display = isShown ? "none" : "block";
+          if (!isShown) this.renderWorkoutMuscleHeatmap();
+        }
+      });
+    }
+
+    if (this.btnCloseHeroHeatmap) {
+      this.btnCloseHeroHeatmap.addEventListener("click", () => {
+        if (this.heroHeatmapContainer) this.heroHeatmapContainer.style.display = "none";
+      });
     }
 
     // 6. Session Notes Input Auto-save
@@ -187,43 +268,187 @@ class DinoApp {
       });
     }
 
-    // 7. Calendar Navigation
+    // 7. Tab 2: Stats Events
+    this.timeframeBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        this.timeframeBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        this.statsFilter = btn.dataset.filter || "all";
+        this.renderStatsTab();
+      });
+    });
+
+    if (this.selectChartExercise) {
+      this.selectChartExercise.addEventListener("change", (e) => {
+        this.selectedChartLift = e.target.value;
+        this.renderStatsTab();
+      });
+    }
+
     if (this.btnCalPrevMonth) {
       this.btnCalPrevMonth.addEventListener("click", () => this.changeCalMonth(-1));
     }
     if (this.btnCalNextMonth) {
       this.btnCalNextMonth.addEventListener("click", () => this.changeCalMonth(1));
     }
+
     if (this.historySelectedDateFilter) {
       this.historySelectedDateFilter.addEventListener("click", () => {
         if (this.calFilterDate) {
           this.calFilterDate = null;
-          this.renderHistoryTab();
-          this.showToast("Đã bỏ bộ lọc ngày. Hiển thị tất cả!");
+          this.renderStatsTab();
+          this.showToast("Đã bỏ lọc ngày.");
         }
       });
     }
 
-    // 8. AI Coach Input Form & Prompts
-    if (this.formAIChat) {
-      this.formAIChat.addEventListener("submit", (e) => {
-        e.preventDefault();
-        this.handleSendAIChat();
+    // 8. Tab 3: Exercises & Roulette Events
+    if (this.subnavBtnLibrary && this.subnavBtnRoulette) {
+      this.subnavBtnLibrary.addEventListener("click", () => {
+        this.subnavBtnLibrary.classList.add("active");
+        this.subnavBtnRoulette.classList.remove("active");
+        if (this.sectionExerciseLibrary) this.sectionExerciseLibrary.style.display = "block";
+        if (this.sectionWODRoulette) this.sectionWODRoulette.style.display = "none";
+      });
+
+      this.subnavBtnRoulette.addEventListener("click", () => {
+        this.subnavBtnRoulette.classList.add("active");
+        this.subnavBtnLibrary.classList.remove("active");
+        if (this.sectionExerciseLibrary) this.sectionExerciseLibrary.style.display = "none";
+        if (this.sectionWODRoulette) this.sectionWODRoulette.style.display = "block";
+        this.drawRouletteWheel();
       });
     }
 
-    const btnClearAIChat = document.getElementById("btnClearAIChat");
-    if (btnClearAIChat) {
-      btnClearAIChat.addEventListener("click", () => {
-        if (confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử đoạn chat với AI Coach?")) {
+    if (this.inputSearchExercise) {
+      this.inputSearchExercise.addEventListener("input", () => this.renderExerciseLibrary());
+    }
+    if (this.selectMuscleFilter) {
+      this.selectMuscleFilter.addEventListener("change", () => this.renderExerciseLibrary());
+    }
+    if (this.selectEquipmentFilter) {
+      this.selectEquipmentFilter.addEventListener("change", () => this.renderExerciseLibrary());
+    }
+
+    if (this.btnSpinRoulette) {
+      this.btnSpinRoulette.addEventListener("click", () => this.spinRouletteWheel());
+    }
+
+    if (this.btnSpinAgain) {
+      this.btnSpinAgain.addEventListener("click", () => this.spinRouletteWheel());
+    }
+
+    if (this.btnLoadWodToWorkout) {
+      this.btnLoadWodToWorkout.addEventListener("click", () => this.handleLoadWodToWorkout());
+    }
+
+    // 9. Tab 4: Rules & Check-in Events
+    if (this.btnOpenDailyCheckinDirect) {
+      this.btnOpenDailyCheckinDirect.addEventListener("click", () => {
+        this.openSmartFatigueModal();
+      });
+    }
+
+    // 10. Plate Calculator & 1RM Modal Events
+    const modalTabBtnPlates = document.getElementById("modalTabBtnPlates");
+    const modalTabBtn1RM = document.getElementById("modalTabBtn1RM");
+    const subviewPlateCalc = document.getElementById("subviewPlateCalc");
+    const subview1RMCalc = document.getElementById("subview1RMCalc");
+
+    if (modalTabBtnPlates && modalTabBtn1RM) {
+      modalTabBtnPlates.addEventListener("click", () => {
+        modalTabBtnPlates.classList.add("active");
+        modalTabBtn1RM.classList.remove("active");
+        if (subviewPlateCalc) subviewPlateCalc.style.display = "block";
+        if (subview1RMCalc) subview1RMCalc.style.display = "none";
+      });
+
+      modalTabBtn1RM.addEventListener("click", () => {
+        modalTabBtn1RM.classList.add("active");
+        modalTabBtnPlates.classList.remove("active");
+        if (subviewPlateCalc) subviewPlateCalc.style.display = "none";
+        if (subview1RMCalc) subview1RMCalc.style.display = "block";
+        this.update1RMCalculations();
+      });
+    }
+
+    const btnCalculatePlates = document.getElementById("btnCalculatePlates");
+    const inputTargetPlateKg = document.getElementById("inputTargetPlateKg");
+    if (btnCalculatePlates && inputTargetPlateKg) {
+      btnCalculatePlates.addEventListener("click", () => this.calculateBarbellPlates(parseFloat(inputTargetPlateKg.value) || 20));
+      inputTargetPlateKg.addEventListener("input", () => this.calculateBarbellPlates(parseFloat(inputTargetPlateKg.value) || 20));
+    }
+
+    const input1RMWeight = document.getElementById("input1RMWeight");
+    const input1RMReps = document.getElementById("input1RMReps");
+    if (input1RMWeight && input1RMReps) {
+      input1RMWeight.addEventListener("input", () => this.update1RMCalculations());
+      input1RMReps.addEventListener("input", () => this.update1RMCalculations());
+    }
+
+    // 11. Smart Fatigue Check-in Modal Events
+    document.querySelectorAll(".btn-checkin-pill").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const group = btn.closest(".checkin-options-grid");
+        if (group) group.querySelectorAll(".btn-checkin-pill").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        this.updateCheckinRecommendations();
+      });
+    });
+
+    const btnApplySmartAdjustment = document.getElementById("btnApplySmartAdjustment");
+    if (btnApplySmartAdjustment) {
+      btnApplySmartAdjustment.addEventListener("click", () => this.handleConfirmCheckinAndStart());
+    }
+
+    // 12. Program Builder Dynamic Days Events
+    const btnOpenCreateProgFromManager = document.getElementById("btnOpenCreateProgFromManager");
+    if (btnOpenCreateProgFromManager) {
+      btnOpenCreateProgFromManager.addEventListener("click", () => {
+        this.closeAllModals();
+        this.openCleanProgramBuilder();
+      });
+    }
+
+    const btnAddDayToBuilder = document.getElementById("btnAddDayToBuilder");
+    if (btnAddDayToBuilder) {
+      btnAddDayToBuilder.addEventListener("click", () => this.addDayToProgramBuilder());
+    }
+
+    const formProgramBuilder = document.getElementById("formProgramBuilder");
+    if (formProgramBuilder) {
+      formProgramBuilder.addEventListener("submit", (e) => {
+        e.preventDefault();
+        this.handleSaveCustomProgram();
+      });
+    }
+
+    // 13. AI Coach Chat Form in Modal
+    const formAIChatModal = document.getElementById("formAIChatModal");
+    const inputAIChatModal = document.getElementById("inputAIChatModal");
+    if (formAIChatModal && inputAIChatModal) {
+      formAIChatModal.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const text = inputAIChatModal.value.trim();
+        if (text) {
+          inputAIChatModal.value = "";
+          this.sendAICoachQuery(text);
+        }
+      });
+    }
+
+    const btnClearAIChatModal = document.getElementById("btnClearAIChatModal");
+    if (btnClearAIChatModal) {
+      btnClearAIChatModal.addEventListener("click", () => {
+        if (confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử chat với AI Coach?")) {
           this.storage.clearAIChatHistory();
           this.renderAIChatMessages();
-          this.showToast("Đã xóa lịch sử đoạn chat.");
+          this.showToast("Đã xóa lịch sử chat.");
         }
       });
     }
 
-    // 9. Modal Swap Shortcut from Detail modal
+    // 14. Exercise Detail & Swap Shortcut
     const btnModalSwapShortcut = document.getElementById("btnModalSwapShortcut");
     if (btnModalSwapShortcut) {
       btnModalSwapShortcut.addEventListener("click", () => {
@@ -234,25 +459,15 @@ class DinoApp {
       });
     }
 
-    // 10. Program Builder Modal
-    if (this.btnOpenCreateProgramModal) {
-      this.btnOpenCreateProgramModal.addEventListener("click", () => {
-        this.openModal("modalProgramBuilder");
-      });
-    }
-    if (this.formProgramBuilder) {
-      this.formProgramBuilder.addEventListener("submit", (e) => {
-        e.preventDefault();
-        this.handleCreateProgram();
+    const btnOpenPlateCalcFromDetail = document.getElementById("btnOpenPlateCalcFromDetail");
+    if (btnOpenPlateCalcFromDetail) {
+      btnOpenPlateCalcFromDetail.addEventListener("click", () => {
+        this.closeAllModals();
+        this.openPlateAnd1RMModal();
       });
     }
 
-    // 11. Settings Modal
-    if (this.btnHeaderSettings) {
-      this.btnHeaderSettings.addEventListener("click", () => this.openSettingsModal());
-    }
-
-    // 12. Close Modals
+    // 15. Global Close Modal on Backdrop Click
     document.querySelectorAll(".btn-sheet-close, .modal-overlay").forEach(el => {
       el.addEventListener("click", (e) => {
         if (e.target === el || el.classList.contains("btn-sheet-close")) {
@@ -261,15 +476,7 @@ class DinoApp {
       });
     });
 
-    // 13. Rest Timer HUD buttons
-    if (this.btnTimerAdd30) {
-      this.btnTimerAdd30.addEventListener("click", () => this.addTimerSeconds(30));
-    }
-    if (this.btnTimerDismiss) {
-      this.btnTimerDismiss.addEventListener("click", () => this.stopTimer());
-    }
-
-    // 14. Supabase Cloud Sync Event Listeners
+    // 16. Supabase Cloud Sync Listeners
     window.addEventListener("dino:cloud-status", (e) => {
       this.updateCloudSyncDisplay(e.detail);
     });
@@ -279,125 +486,17 @@ class DinoApp {
       this.currentWeek = this.storage.getActiveWeek();
       this.currentDayIndex = this.storage.getActiveDayIndex();
       this.renderAll();
-      this.showToast("☁️ Dữ liệu đã đồng bộ thời gian thực từ Cloud!");
+      this.showToast("☁️ Đã đồng bộ dữ liệu Cloud thành công!");
     });
 
     if (this.cloudSyncBadge) {
       this.cloudSyncBadge.addEventListener("click", () => {
         if (this.supabaseSync) {
           this.supabaseSync.syncNow();
-          this.showToast("Đang kích hoạt đồng bộ Supabase Cloud...");
+          this.showToast("Đang kích hoạt đồng bộ Cloud...");
         }
       });
     }
-
-    // Supabase Sync buttons in Settings Modal
-    const btnManualSyncCloud = document.getElementById("btnManualSyncCloud");
-    if (btnManualSyncCloud) {
-      btnManualSyncCloud.addEventListener("click", async () => {
-        if (this.supabaseSync) {
-          btnManualSyncCloud.disabled = true;
-          btnManualSyncCloud.textContent = "🔄 Đang đồng bộ...";
-          await this.supabaseSync.syncNow();
-          btnManualSyncCloud.disabled = false;
-          btnManualSyncCloud.textContent = "🔄 Đồng Bộ Ngay";
-        }
-      });
-    }
-
-    const btnCopySupabaseSql = document.getElementById("btnCopySupabaseSql");
-    const sqlHelpBox = document.getElementById("sqlHelpBox");
-    if (btnCopySupabaseSql) {
-      btnCopySupabaseSql.addEventListener("click", () => {
-        const sqlText = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.SQL_SETUP)
-          ? window.SUPABASE_CONFIG.SQL_SETUP
-          : "";
-        if (navigator.clipboard && sqlText) {
-          navigator.clipboard.writeText(sqlText);
-          if (sqlHelpBox) sqlHelpBox.style.display = "block";
-          this.showToast("✓ Đã sao chép mã SQL vào clipboard!");
-        } else {
-          prompt("Sao chép mã SQL dưới đây và chạy trong Supabase SQL Editor:", sqlText);
-        }
-      });
-    }
-  }
-
-  updateCloudSyncDisplay(detail) {
-    if (!this.cloudSyncBadge) return;
-    const { status, message, lastSyncedAt, userId } = detail;
-    this.cloudSyncBadge.className = `cloud-sync-pill ${status}`;
-
-    if (this.cloudSyncText) {
-      if (status === "synced") this.cloudSyncText.textContent = "Cloud";
-      else if (status === "syncing") this.cloudSyncText.textContent = "Syncing...";
-      else if (status === "offline") this.cloudSyncText.textContent = "Offline";
-      else if (status === "error") this.cloudSyncText.textContent = "Cloud Error";
-      else if (status === "table_missing") this.cloudSyncText.textContent = "Setup SQL";
-    }
-
-    const settingsCloudPill = document.getElementById("settingsCloudPill");
-    if (settingsCloudPill) {
-      settingsCloudPill.className = `cloud-status-pill ${status}`;
-      if (status === "synced") settingsCloudPill.textContent = "● Đã kết nối Cloud";
-      else if (status === "syncing") settingsCloudPill.textContent = "● Đang đồng bộ...";
-      else if (status === "table_missing") settingsCloudPill.textContent = "● Cần chạy SQL";
-      else if (status === "offline") settingsCloudPill.textContent = "● Ngoại tuyến (Offline)";
-      else settingsCloudPill.textContent = "● Lỗi kết nối";
-    }
-
-    const cloudLastSyncedText = document.getElementById("cloudLastSyncedText");
-    if (cloudLastSyncedText) {
-      if (lastSyncedAt) {
-        const d = new Date(lastSyncedAt);
-        const timeStr = `${d.getHours()}:${d.getMinutes() < 10 ? '0' : ''}${d.getMinutes()}:${d.getSeconds() < 10 ? '0' : ''}${d.getSeconds()}`;
-        cloudLastSyncedText.textContent = `Lần đồng bộ gần nhất: ${timeStr} (${d.toLocaleDateString('vi-VN')})`;
-      } else {
-        cloudLastSyncedText.textContent = "Lần đồng bộ gần nhất: Chưa đồng bộ";
-      }
-    }
-  }
-
-  // =========================================================================
-  // STOPWATCH CONTROLLER
-  // =========================================================================
-  initStopwatch() {
-    this.stopwatchSeconds = 0;
-    this.isStopwatchRunning = true;
-
-    if (this.stopwatchInterval) clearInterval(this.stopwatchInterval);
-    this.stopwatchInterval = setInterval(() => {
-      if (this.isStopwatchRunning) {
-        this.stopwatchSeconds++;
-        this.updateStopwatchDisplay();
-      }
-    }, 1000);
-  }
-
-  togglePauseStopwatch() {
-    this.isStopwatchRunning = !this.isStopwatchRunning;
-    const dot = document.querySelector(".stopwatch-dot");
-    if (dot) dot.classList.toggle("paused", !this.isStopwatchRunning);
-
-    if (this.btnPauseWorkout) {
-      this.btnPauseWorkout.innerHTML = this.isStopwatchRunning
-        ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`
-        : `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
-    }
-    this.showToast(this.isStopwatchRunning ? "▶️ Tiếp tục bấm giờ buổi tập" : "⏸️ Đã tạm dừng bấm giờ");
-  }
-
-  updateStopwatchDisplay() {
-    if (!this.workoutStopwatchText) return;
-    const hrs = Math.floor(this.stopwatchSeconds / 3600);
-    const mins = Math.floor((this.stopwatchSeconds % 3600) / 60);
-    const secs = this.stopwatchSeconds % 60;
-    this.workoutStopwatchText.textContent = `${hrs < 10 ? '0' : ''}${hrs}:${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  }
-
-  resetStopwatch() {
-    this.stopwatchSeconds = 0;
-    this.updateStopwatchDisplay();
   }
 
   // =========================================================================
@@ -421,13 +520,12 @@ class DinoApp {
 
     if (tabName === "workout") {
       this.renderWorkoutTab();
-    } else if (tabName === "history") {
-      this.renderHistoryTab();
-    } else if (tabName === "aicoach") {
-      this.renderAICoachTab();
-    } else if (tabName === "programs") {
-      this.renderProgramsTab();
-    } else if (tabName === "recovery") {
+    } else if (tabName === "stats") {
+      this.renderStatsTab();
+    } else if (tabName === "exercises") {
+      this.renderExerciseLibrary();
+      this.drawRouletteWheel();
+    } else if (tabName === "rules") {
       this.renderRecoveryTab();
     }
   }
@@ -451,14 +549,13 @@ class DinoApp {
   renderAll() {
     this.activeProgram = this.storage.getActiveProgram();
     this.renderWorkoutTab();
-    this.renderHistoryTab();
-    this.renderAICoachTab();
-    this.renderProgramsTab();
+    this.renderStatsTab();
+    this.renderExerciseLibrary();
     this.renderRecoveryTab();
   }
 
   // =========================================================================
-  // TAB 1: HEVY-STYLE WORKOUT LOGGER
+  // TAB 1: WORKOUT TAB & HEVY LOGGING
   // =========================================================================
   renderWorkoutTab() {
     this.activeProgram = this.storage.getActiveProgram();
@@ -489,8 +586,6 @@ class DinoApp {
     const activeDay = weekData.days[this.currentDayIndex] || weekData.days[0];
     if (!activeDay) return;
 
-    const isDayDone = this.storage.isDayCompleted(this.activeProgram.id, this.currentWeek, activeDay.dayIndex);
-
     if (this.heroDayTag) {
       this.heroDayTag.textContent = `${activeDay.dayKey} • ${(activeDay.badge || 'WORKOUT').toUpperCase()}`;
     }
@@ -499,6 +594,15 @@ class DinoApp {
     }
     if (this.heroWorkoutFocus) {
       this.heroWorkoutFocus.textContent = activeDay.focus || activeDay.details || "Tập trung cường độ & chất lượng reps";
+    }
+
+    // Stopwatch UI State (Idle Prompt vs Active Stopwatch)
+    if (this.timer.sessionIsRunning) {
+      if (this.workoutStartOverlay) this.workoutStartOverlay.style.display = "none";
+      if (this.activeStopwatchCluster) this.activeStopwatchCluster.style.display = "flex";
+    } else {
+      if (this.workoutStartOverlay) this.workoutStartOverlay.style.display = "flex";
+      if (this.activeStopwatchCluster) this.activeStopwatchCluster.style.display = "none";
     }
 
     // Load Session Notes
@@ -510,7 +614,13 @@ class DinoApp {
     if (this.workoutExercisesContainer) {
       this.workoutExercisesContainer.innerHTML = "";
 
-      // 1. Strength Exercises
+      // Check if day is Circuit / For Time
+      if (activeDay.type === "circuit" || activeDay.circuitData) {
+        const circuitCard = this.createForTimeCircuitCard(activeDay);
+        this.workoutExercisesContainer.appendChild(circuitCard);
+      }
+
+      // Strength Exercises
       if (activeDay.exercises && activeDay.exercises.length > 0) {
         const swappedMap = this.storage.getSwappedExercises(this.activeProgram.id, this.currentWeek, activeDay.dayIndex);
 
@@ -521,13 +631,13 @@ class DinoApp {
         });
       }
 
-      // 2. Running / Hybrid Day
+      // Running Cards
       if (activeDay.type === "run" || activeDay.type === "hybrid") {
         const runCard = this.createHevyRunningCard(activeDay);
         this.workoutExercisesContainer.appendChild(runCard);
       }
 
-      // 3. Soccer / Rest Day
+      // Soccer / Rest Day Cards
       if (activeDay.type === "game" || activeDay.type === "rest") {
         const gameCard = this.createHevyGameOrRestCard(activeDay);
         this.workoutExercisesContainer.appendChild(gameCard);
@@ -535,7 +645,6 @@ class DinoApp {
     }
   }
 
-  // Render Horizontal Day Chips Carousel
   renderDayChips(weekData) {
     if (!this.dayChipsContainer) return;
     this.dayChipsContainer.innerHTML = "";
@@ -547,33 +656,58 @@ class DinoApp {
       const chip = document.createElement("button");
       chip.className = `day-chip ${isActive ? "active" : ""} ${isCompleted ? "completed" : ""}`;
       chip.innerHTML = `
-        <span class="chip-indicator"></span>
-        <span>${day.dayKey}</span>
-        <span style="font-size: 11px; opacity: 0.8;">${day.badge || ''}</span>
+        <span style="font-weight: 800; font-size: 13px;">${day.dayKey}</span>
+        <span style="font-size: 10.5px; opacity: 0.8;">${day.badge || ''}</span>
       `;
       chip.addEventListener("click", () => this.selectDay(idx));
       this.dayChipsContainer.appendChild(chip);
     });
   }
 
-  // Create Hevy-Style Exercise Card (Dual Banners + Sets Table + Trash Delete + Swap)
+  handleStartWorkoutClick() {
+    const settings = this.storage.getSettings();
+    const todayStr = new Date().toISOString().split("T")[0];
+    const checkin = this.storage.getSmartFatigueCheckin(todayStr);
+
+    if (settings.enableSmartFatigue !== false && !checkin) {
+      this.openSmartFatigueModal();
+    } else {
+      this.startWorkoutTimer();
+    }
+  }
+
+  startWorkoutTimer() {
+    this.timer.startSession();
+    if (this.workoutStartOverlay) this.workoutStartOverlay.style.display = "none";
+    if (this.activeStopwatchCluster) this.activeStopwatchCluster.style.display = "flex";
+    this.showToast("⏱️ Buổi tập đã bắt đầu! Chúc bạn tập luyện bùng nổ!");
+  }
+
+  togglePauseStopwatch() {
+    const isNowRunning = this.timer.togglePauseSession();
+    if (this.btnPauseWorkout) {
+      this.btnPauseWorkout.innerHTML = isNowRunning
+        ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`
+        : `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+    }
+    this.showToast(isNowRunning ? "▶️ Tiếp tục bấm giờ buổi tập" : "⏸️ Đã tạm dừng bấm giờ");
+  }
+
+  // Create Hevy Exercise Card
   createHevyExerciseCard(exercise, originalEx, day) {
     const card = document.createElement("div");
     card.className = "hevy-exercise-card";
     card.dataset.exerciseId = exercise.id;
 
-    // 1. Target Banner
     const targetText = exercise.targetRequirement || (exercise.defaultSets
       ? `${exercise.defaultSets.length} sets × ${exercise.defaultSets[0].reps || '6-10'} reps @ ${exercise.defaultSets[0].rir || 'RIR 0-1'}`
       : "2 sets × 6-10 reps @ RIR 0-1");
 
-    // 2. Previous Session Banner
     const bestPrev = this.storage.getExerciseBestPrevious(exercise.id);
     const prevBannerText = bestPrev
       ? `${bestPrev.weightKg}kg × ${bestPrev.reps} reps @ ${bestPrev.rir} (${bestPrev.date})`
       : `Chưa có dữ liệu lần trước`;
 
-    // 3. Sets Rows
     const sessionSets = this.storage.getSessionSets(this.activeProgram.id, this.currentWeek, day.dayIndex, exercise);
 
     let setsRowsHtml = "";
@@ -616,7 +750,7 @@ class DinoApp {
           </td>
           <td>
             <button type="button" class="btn-del-set-row" title="Xóa set này">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
@@ -630,16 +764,17 @@ class DinoApp {
 
     card.innerHTML = `
       <div class="hevy-exercise-header">
-        <div class="hevy-exercise-title-wrap">
+        <div>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span class="hevy-exercise-name clickable" title="Xem chi tiết & lịch sử">${exercise.name} ℹ️</span>
+            <span class="hevy-exercise-name" title="Xem chi tiết & lịch sử">${exercise.name} ℹ️</span>
             ${isSwapped ? `<span class="prog-badge" style="font-size: 9px; padding: 1px 5px;">Đã đổi</span>` : ""}
           </div>
-          <span class="hevy-exercise-category">${exercise.category || "Compound"}</span>
+          <span class="hevy-exercise-category">${exercise.category || "Compound"} • ${exercise.equipment || 'Tạ'}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           ${exercise.isRestPause ? `<span class="rp-badge">Rest-Pause</span>` : ""}
-          <button type="button" class="btn-swap-exercise" title="Đổi bài tập khác">🔄 Swap</button>
+          <button type="button" class="btn-plate-calc-shortcut" title="Mở Plate Calc & 1RM">🏋️ Plate</button>
+          <button type="button" class="btn-swap-exercise" title="Đổi bài tập khác">🔄 Đổi</button>
         </div>
       </div>
 
@@ -649,7 +784,7 @@ class DinoApp {
       </div>
 
       <div class="hevy-previous-banner">
-        <span>⏱️ LẦN TRƯỚC</span>
+        <span>⏱️ LẦN TRƯỚC:</span>
         <span class="hevy-previous-val">${prevBannerText}</span>
       </div>
 
@@ -672,7 +807,7 @@ class DinoApp {
       </table>
 
       <button type="button" class="btn-add-set">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
@@ -682,26 +817,50 @@ class DinoApp {
       ${exercise.optionNote ? `<div class="exercise-alt-footer">💡 ${exercise.optionNote}</div>` : ""}
     `;
 
-    // Bind Card Events
     this.bindHevyCardEvents(card, exercise, originalEx, day);
-
     return card;
   }
 
   bindHevyCardEvents(card, exercise, originalEx, day) {
     // 1. Click Exercise Name -> Open Detail Modal
-    const nameEl = card.querySelector(".hevy-exercise-name.clickable");
+    const nameEl = card.querySelector(".hevy-exercise-name");
     if (nameEl) {
       nameEl.addEventListener("click", () => this.openExerciseDetailModal(exercise));
     }
 
-    // 2. Click Swap Button -> Open Swap Modal
+    // 2. Click Plate Calc Shortcut
+    const btnPlate = card.querySelector(".btn-plate-calc-shortcut");
+    if (btnPlate) {
+      btnPlate.addEventListener("click", () => {
+        const firstKgInput = card.querySelector(".input-kg");
+        const val = firstKgInput ? (parseFloat(firstKgInput.value) || 100) : 100;
+        this.openPlateAnd1RMModal(val);
+      });
+    }
+
+    // 3. Click Swap Button
     const btnSwap = card.querySelector(".btn-swap-exercise");
     if (btnSwap) {
       btnSwap.addEventListener("click", () => this.openSwapExerciseModal(originalEx));
     }
 
-    // 3. Set Checkmark Button
+    // 4. Click Prev Data Cell to Quick Autofill
+    card.querySelectorAll(".prev-data-cell").forEach(cell => {
+      cell.addEventListener("click", () => {
+        const w = cell.dataset.weight;
+        const r = cell.dataset.reps;
+        if (w && r) {
+          const row = cell.closest(".hevy-set-row");
+          if (row) {
+            row.querySelector(".input-kg").value = w;
+            row.querySelector(".input-reps").value = r;
+            this.showToast(`Đã điền nhanh: ${w}kg × ${r} reps`);
+          }
+        }
+      });
+    });
+
+    // 5. Set Checkmark Button
     card.querySelectorAll(".btn-set-check").forEach(btn => {
       btn.addEventListener("click", () => {
         const row = btn.closest(".hevy-set-row");
@@ -744,687 +903,400 @@ class DinoApp {
           if (result.progressStatus === "overload") {
             this.audio.playOverloadFanfare();
             this.audio.triggerConfetti();
-            this.showToast(`🔥 KỶ LỤC MỚI (PR)! Overload thành công: ${kg}kg × ${reps} reps!`);
+            this.showToast(`🔥 KỶ LỤC MỚI (PR)! Overload: ${kg}kg × ${reps} reps!`);
           } else if (result.progressStatus === "regression") {
             this.audio.playRegressionTone();
             this.showToast(`💪 Đã log: ${kg}kg × ${reps} reps. Giữ vững form chuẩn!`);
           } else {
             this.audio.playSetComplete();
-            this.showToast(`✓ Set ${setIndex + 1}: ${kg}kg × ${reps} reps (@${rirVal})`);
+            this.showToast(`✓ Đã log Set ${setIndex + 1}: ${kg}kg × ${reps} reps`);
           }
 
-          // Trigger Auto-Rest Countdown Timer (15s for RP, 120s for strength, 60s for accessory)
+          // Auto-start rest timer
           if (isRp) {
-            this.startTimer(15, true);
-          } else if (exercise.category && exercise.category.includes("Lower")) {
-            this.startTimer(180, false);
+            this.timer.startRest(15, true);
           } else {
-            this.startTimer(120, false);
+            this.timer.startRest(150, false);
           }
         }
       });
     });
 
-    // 4. Trash / Delete Set Row Button
+    // 6. Delete Set Button
     card.querySelectorAll(".btn-del-set-row").forEach(btn => {
       btn.addEventListener("click", () => {
         const row = btn.closest(".hevy-set-row");
         const setIndex = parseInt(row.dataset.setIndex);
-        this.storage.deleteSessionSet(this.activeProgram.id, this.currentWeek, day.dayIndex, exercise.id, setIndex);
-        this.renderWorkoutTab();
-        this.showToast("Đã xóa 1 set.");
-      });
-    });
-
-    // 5. Quick Copy Previous Metrics
-    card.querySelectorAll(".prev-data-cell").forEach(cell => {
-      cell.addEventListener("click", () => {
-        const row = cell.closest(".hevy-set-row");
-        const w = cell.dataset.weight;
-        const r = cell.dataset.reps;
-        if (w && r && row) {
-          row.querySelector(".input-kg").value = w;
-          row.querySelector(".input-reps").value = r;
-          this.showToast(`Đã sao chép ${w}kg × ${r} reps!`);
+        if (confirm("Xóa set này khỏi buổi tập?")) {
+          this.storage.deleteSessionSet(this.activeProgram.id, this.currentWeek, day.dayIndex, exercise.id, setIndex);
+          this.renderWorkoutTab();
+          this.showToast("Đã xóa set.");
         }
       });
     });
 
-    // 6. "+ Add Set" button
+    // 7. Add Set Button
     const btnAddSet = card.querySelector(".btn-add-set");
     if (btnAddSet) {
       btnAddSet.addEventListener("click", () => {
         this.storage.addSessionSet(this.activeProgram.id, this.currentWeek, day.dayIndex, exercise);
         this.renderWorkoutTab();
-        this.showToast(`Đã thêm set mới cho bài ${exercise.name}`);
+        this.showToast("+ Đã thêm 1 set mới");
       });
     }
   }
 
-  // Helper to compute formatted pace string (e.g. 5:41/km)
-  calculatePace(distanceKm, durationMins) {
-    if (!distanceKm || distanceKm <= 0 || !durationMins || durationMins <= 0) return "—";
-    const totalSec = Math.round((durationMins * 60) / distanceKm);
-    const pMin = Math.floor(totalSec / 60);
-    const pSec = totalSec % 60;
-    return `${pMin}:${pSec < 10 ? '0' : ''}${pSec}/km`;
-  }
-
-  // Create Running / Hybrid Session Card
+  // Create Running Card with Embedded Pace Calculator
   createHevyRunningCard(day) {
     const card = document.createElement("div");
-    card.className = "hevy-run-card";
+    card.className = "running-exercise-card";
 
-    const selectedOptId = this.storage.getSelectedOption(this.activeProgram.id, this.currentWeek, day.dayIndex);
-    const draftRun = this.storage.getSessionRunData(this.activeProgram.id, this.currentWeek, day.dayIndex);
-
-    const targetKm = day.targetKm || (day.runDetail ? day.runDetail.targetKm : 8.0);
-    const initialKm = draftRun && draftRun.distanceKm ? draftRun.distanceKm : targetKm;
-    const initialMins = draftRun && draftRun.durationMinutes ? draftRun.durationMinutes : (targetKm ? Math.round(targetKm * 5.75) : 45);
-    const initialRpe = draftRun && draftRun.rpe ? draftRun.rpe : (day.rpe || "RPE 7 (Steady)");
-
-    let optionsHtml = "";
-    if (day.options && day.options.length > 0) {
-      optionsHtml = `
-        <div class="options-container">
-          <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">
-            Lựa chọn cự ly / cường độ hôm nay:
-          </div>`;
-      day.options.forEach((opt, oIdx) => {
-        const isSelected = selectedOptId ? selectedOptId === opt.id : (oIdx === 0);
-        optionsHtml += `
-          <div class="option-box ${isSelected ? "selected" : ""}" data-opt-id="${opt.id}">
-            <div class="option-box-header">
-              <span class="option-title">${opt.title}</span>
-              ${opt.rpe ? `<span class="option-rpe">${opt.rpe}</span>` : ""}
-            </div>
-            <div class="option-details">${opt.details}</div>
-          </div>
-        `;
-      });
-      optionsHtml += `</div>`;
-    }
+    const draft = this.storage.getSessionRunData(this.activeProgram.id, this.currentWeek, day.dayIndex) || {};
+    const targetKm = day.targetKm || (day.runDetail ? day.runDetail.targetKm : 5.0);
 
     card.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
         <div>
-          <h3 style="font-family: var(--font-heading); font-size: 16px; font-weight: 800; color: var(--text-white);">
-            ${day.title}
-          </h3>
-          <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
-            <span style="font-size: 12px; color: var(--color-blue); font-weight: 700;">Mục tiêu: ${targetKm} km</span>
-            <span id="cardLivePaceBadge" class="live-pace-badge">⚡ Pace: ${this.calculatePace(initialKm, initialMins)}</span>
-          </div>
+          <span style="font-size: 11px; font-weight: 800; color: var(--color-blue); text-transform: uppercase;">🏃 RUNNING SESSION</span>
+          <div style="font-family: var(--font-heading); font-size: 16px; font-weight: 800; color: var(--text-white);">${day.title}</div>
         </div>
-        <span class="day-badge badge-run">${day.badge || 'RUN'}</span>
+        <span class="prog-badge" style="color: var(--color-blue); border-color: rgba(59,130,246,0.3);">Mục tiêu: ${targetKm} km</span>
       </div>
 
-      ${optionsHtml}
-
-      <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; margin-top: 4px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-          <span style="font-size: 11.5px; font-weight: 800; color: var(--text-white); text-transform: uppercase;">
-            Thông số buổi chạy (Distance & Pace):
-          </span>
-          <span style="font-size: 10.5px; color: var(--text-dim);">Tự động lưu vào buổi tập</span>
+      <!-- Pace Calculator Widget -->
+      <div class="pace-calculator-box">
+        <div style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">
+          ⏱️ Công Cụ Tính Pace & Tốc Độ (Pace Calculator)
         </div>
 
-        <div class="run-inputs-grid" style="grid-template-columns: 1fr 1fr 1.2fr; gap: 8px;">
+        <div class="pace-calc-inputs-row">
           <div>
-            <label style="display: block; font-size: 10.5px; color: var(--text-muted); margin-bottom: 4px;">CỰ LY (KM)</label>
-            <input type="number" step="0.1" inputmode="decimal" class="hevy-input input-run-km" style="max-width: 100%;" placeholder="km" value="${initialKm || ''}">
+            <label style="font-size: 10.5px; color: var(--text-muted); display: block; margin-bottom: 2px;">Cự ly (km):</label>
+            <input type="number" step="0.1" id="inputPaceKm" class="form-input" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800;" value="${draft.distanceKm || targetKm}">
           </div>
           <div>
-            <label style="display: block; font-size: 10.5px; color: var(--text-muted); margin-bottom: 4px;">THỜI GIAN (PHÚT)</label>
-            <input type="number" step="0.5" inputmode="decimal" class="hevy-input input-run-mins" style="max-width: 100%;" placeholder="phút" value="${initialMins || ''}">
+            <label style="font-size: 10.5px; color: var(--text-muted); display: block; margin-bottom: 2px;">Thời gian (phút):</label>
+            <input type="number" step="1" id="inputPaceMins" class="form-input" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800;" value="${draft.durationMinutes || Math.round(targetKm * 6)}">
           </div>
-          <div>
-            <label style="display: block; font-size: 10.5px; color: var(--text-muted); margin-bottom: 4px;">CƯỜNG ĐỘ (RPE)</label>
-            <select class="hevy-select-rir select-run-rpe" style="width: 100%; height: 38px;">
-              <option value="RPE 5 (Very Easy)" ${initialRpe.includes("RPE 5") ? "selected" : ""}>RPE 5 (Very Easy)</option>
-              <option value="RPE 6 (Easy Zone 2)" ${initialRpe.includes("RPE 6") ? "selected" : ""}>RPE 6 (Easy Zone 2)</option>
-              <option value="RPE 7 (Steady)" ${initialRpe.includes("RPE 7") ? "selected" : ""}>RPE 7 (Steady)</option>
-              <option value="RPE 8 (Threshold)" ${initialRpe.includes("RPE 8") && !initialRpe.includes("8.5") ? "selected" : ""}>RPE 8 (Threshold)</option>
-              <option value="RPE 8.5 (Hard Repeats)" ${initialRpe.includes("RPE 8.5") ? "selected" : ""}>RPE 8.5 (Hard Repeats)</option>
-              <option value="RPE 9 (All Out Race)" ${initialRpe.includes("RPE 9") ? "selected" : ""}>RPE 9 (All Out Race)</option>
-            </select>
+        </div>
+
+        <div class="pace-calc-outputs-grid">
+          <div class="pace-metric-item">
+            <span class="p-label">PACE TRUNG BÌNH</span>
+            <div id="outputPaceDisplay" class="p-val">--:--/km</div>
+          </div>
+          <div class="pace-metric-item">
+            <span class="p-label">TỐC ĐỘ (SPEED)</span>
+            <div id="outputSpeedDisplay" class="p-val">-- km/h</div>
+          </div>
+          <div class="pace-metric-item">
+            <span class="p-label">DỰ TÍNH 21.1KM (HM)</span>
+            <div id="outputHMProjection" class="p-val">--:--:--</div>
           </div>
         </div>
       </div>
+
+      ${day.options ? `
+        <div style="font-size: 11.5px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin: 10px 0 6px 0;">
+          Tùy chọn bài chạy (Options):
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          ${day.options.map(opt => `
+            <div style="background: #0d0d0d; border: 1px solid var(--border-subtle); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 12px;">
+              <strong style="color: var(--text-white);">${opt.title}:</strong>
+              <span style="color: var(--text-muted);"> ${opt.details}</span>
+              ${opt.rpe ? `<span style="color: var(--color-amber); font-size: 11px; margin-left: 4px;">(${opt.rpe})</span>` : ""}
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
     `;
 
-    // Real-time auto-save & pace calculation listeners
-    const inputKm = card.querySelector(".input-run-km");
-    const inputMins = card.querySelector(".input-run-mins");
-    const selectRpe = card.querySelector(".select-run-rpe");
-    const paceBadge = card.querySelector("#cardLivePaceBadge");
+    // Bind Pace Calculator Math
+    const inputKm = card.querySelector("#inputPaceKm");
+    const inputMins = card.querySelector("#inputPaceMins");
+    const outPace = card.querySelector("#outputPaceDisplay");
+    const outSpeed = card.querySelector("#outputSpeedDisplay");
+    const outHM = card.querySelector("#outputHMProjection");
 
-    const updateAndSaveRun = () => {
+    const updatePaceMath = () => {
       const km = parseFloat(inputKm.value) || 0;
       const mins = parseFloat(inputMins.value) || 0;
-      const rpe = selectRpe.value;
-      const pace = this.calculatePace(km, mins);
+      if (km > 0 && mins > 0) {
+        const paceDec = mins / km;
+        const pM = Math.floor(paceDec);
+        const pS = Math.round((paceDec - pM) * 60);
+        const paceStr = `${pM}:${pS < 10 ? '0' : ''}${pS}/km`;
+        const speed = Math.round((km / (mins / 60)) * 10) / 10;
+        const hmTotalMins = paceDec * 21.0975;
+        const hmHrs = Math.floor(hmTotalMins / 60);
+        const hmM = Math.floor(hmTotalMins % 60);
 
-      if (paceBadge) {
-        paceBadge.textContent = `⚡ Pace: ${pace}`;
+        outPace.textContent = paceStr;
+        outSpeed.textContent = `${speed} km/h`;
+        outHM.textContent = `${hmHrs}h${hmM < 10 ? '0' : ''}${hmM}m`;
+
+        this.storage.setSessionRunData(this.activeProgram.id, this.currentWeek, day.dayIndex, {
+          distanceKm: km,
+          durationMinutes: mins,
+          pace: paceStr
+        });
+      } else {
+        outPace.textContent = "--:--/km";
+        outSpeed.textContent = "-- km/h";
+        outHM.textContent = "--:--:--";
       }
-
-      this.storage.setSessionRunData(this.activeProgram.id, this.currentWeek, day.dayIndex, {
-        distanceKm: km,
-        durationMinutes: mins,
-        rpe: rpe,
-        pace: pace
-      });
     };
 
-    inputKm.addEventListener("input", updateAndSaveRun);
-    inputMins.addEventListener("input", updateAndSaveRun);
-    selectRpe.addEventListener("change", updateAndSaveRun);
-
-    // Initial draft save
-    updateAndSaveRun();
-
-    card.querySelectorAll(".option-box").forEach(box => {
-      box.addEventListener("click", () => {
-        const optId = box.dataset.optId;
-        this.storage.setSelectedOption(this.activeProgram.id, this.currentWeek, day.dayIndex, optId);
-        card.querySelectorAll(".option-box").forEach(b => b.classList.toggle("selected", b === box));
-        this.showToast("Đã lưu lựa chọn bài tập!");
-      });
-    });
+    inputKm.addEventListener("input", updatePaceMath);
+    inputMins.addEventListener("input", updatePaceMath);
+    setTimeout(updatePaceMath, 50);
 
     return card;
   }
 
-  // Create Soccer / Rest Day Card
-  createHevyGameOrRestCard(day) {
+  // Create For Time Circuit Grouped Block Card
+  createForTimeCircuitCard(day) {
     const card = document.createElement("div");
-    card.className = "hevy-run-card";
+    card.className = "circuit-block-card";
+
+    const cData = day.circuitData || {
+      format: "For Time",
+      title: "Hyrox-Style Conditioning Block",
+      items: [
+        { id: "c1", name: "1 km Run @ Moderate", reps: "1 km" },
+        { id: "c2", name: "50 Burpees over line", reps: "50 reps" },
+        { id: "c3", name: "1 km Run @ Steady", reps: "1 km" },
+        { id: "c4", name: "50 Med Ball Slams", reps: "50 reps" },
+        { id: "c5", name: "1 km Run Finish", reps: "1 km" }
+      ]
+    };
+
+    let itemsHtml = "";
+    cData.items.forEach((item, idx) => {
+      itemsHtml += `
+        <div class="circuit-task-row" data-task-id="${item.id}">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--red-primary); font-weight: 800;">#${idx + 1}</span>
+            <span style="font-weight: 700; font-size: 13px; color: var(--text-white);">${item.name}</span>
+          </div>
+          <button type="button" class="btn-set-check btn-task-check" title="Hoàn thành động tác">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
+        </div>
+      `;
+    });
 
     card.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between;">
-        <h3 style="font-family: var(--font-heading); font-size: 16px; font-weight: 800; color: var(--text-white);">
-          ${day.title}
-        </h3>
-        <span class="day-badge ${day.type === 'game' ? 'badge-game' : 'badge-rest'}">${day.badge || 'DAY'}</span>
+      <div class="circuit-block-header">
+        <div>
+          <span style="font-size: 11px; font-weight: 900; color: var(--red-primary); letter-spacing: 0.8px;">⚡ FOR TIME CIRCUIT BLOCK</span>
+          <h3 style="font-family: var(--font-heading); font-size: 17px; font-weight: 900; color: var(--text-white);">${cData.title}</h3>
+        </div>
+        <span class="prog-badge" style="color: var(--color-gold); border-color: rgba(255,215,0,0.3);">${cData.format}</span>
       </div>
-      <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">
-        ${day.details || day.focus}
-      </p>
-      <div class="checklist-container" style="margin-top: 6px;">
-        ${(day.checklist || []).map(item => `
-          <div class="checklist-item ${this.storage.isChecklistCompleted(item.id) ? 'done' : ''}" data-check-id="${item.id}">
-            <div class="check-box-mini">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            </div>
-            <div class="checklist-text-wrap">
-              <span class="checklist-label">${item.label}</span>
-              <span class="checklist-subnote">${item.note || ''}</span>
-            </div>
-          </div>
-        `).join("")}
+
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+        Tập trung hoàn thành toàn bộ chuỗi động tác trong thời gian nhanh nhất với pacing ổn định.
+      </div>
+
+      <div class="circuit-tasks-list">
+        ${itemsHtml}
       </div>
     `;
 
-    card.querySelectorAll(".checklist-item").forEach(item => {
-      item.addEventListener("click", () => {
-        const checkId = item.dataset.checkId;
-        const current = this.storage.isChecklistCompleted(checkId);
-        this.storage.setChecklistCompleted(checkId, !current);
-        item.classList.toggle("done", !current);
-        if (!current) this.audio.playSetComplete();
+    card.querySelectorAll(".btn-task-check").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const row = btn.closest(".circuit-task-row");
+        const isDone = btn.classList.contains("completed");
+        btn.classList.toggle("completed", !isDone);
+        row.classList.toggle("completed", !isDone);
+        if (!isDone) {
+          this.audio.playSetComplete();
+          this.showToast("✓ Hoàn thành động tác trong Circuit!");
+        }
       });
     });
 
     return card;
   }
 
-  // =========================================================================
-  // POST-WORKOUT SUMMARY CELEBRATION MODAL (Unified for Running & Strength)
-  // =========================================================================
-  openPostWorkoutSummary() {
-    const weekData = this.activeProgram.weeks ? this.activeProgram.weeks[this.currentWeek] : null;
-    const activeDay = weekData ? weekData.days[this.currentDayIndex] : null;
-    if (!activeDay) return;
+  createHevyGameOrRestCard(day) {
+    const card = document.createElement("div");
+    card.className = "hevy-exercise-card";
 
-    let totalVol = 0;
-    let totalSets = 0;
-    let prCount = 0;
-    const completedExercises = [];
-
-    // 1. Gather Strength sets data
-    if (activeDay.exercises && activeDay.exercises.length > 0) {
-      const swappedMap = this.storage.getSwappedExercises(this.activeProgram.id, this.currentWeek, activeDay.dayIndex);
-
-      activeDay.exercises.forEach(origEx => {
-        const ex = swappedMap[origEx.id] || origEx;
-        const sets = this.storage.getSessionSets(this.activeProgram.id, this.currentWeek, activeDay.dayIndex, ex);
-        const done = sets.filter(s => s.isCompleted);
-        if (done.length > 0) {
-          totalSets += done.length;
-          done.forEach(s => {
-            totalVol += (parseFloat(s.weightKg) || 0) * (parseInt(s.reps) || 0);
-            if (s.progressStatus === "overload") prCount++;
-          });
-          completedExercises.push({
-            name: ex.name,
-            sets: `${done.length} sets (${done.map(s => `${s.weightKg}k × ${s.reps}`).join(", ")})`
-          });
-        }
-      });
-    }
-
-    // 2. Gather Running metrics
-    const runDraft = this.storage.getSessionRunData(this.activeProgram.id, this.currentWeek, activeDay.dayIndex);
-    const hasRun = activeDay.type === "run" || activeDay.type === "hybrid" || (runDraft && runDraft.distanceKm > 0);
-    const runKm = runDraft && runDraft.distanceKm ? parseFloat(runDraft.distanceKm) : (activeDay.targetKm ? parseFloat(activeDay.targetKm) : 0);
-    const runMins = runDraft && runDraft.durationMinutes ? parseFloat(runDraft.durationMinutes) : (runKm ? Math.round(runKm * 5.75) : 0);
-    const runPace = runDraft && runDraft.pace && runDraft.pace !== "—" ? runDraft.pace : (runKm > 0 && runMins > 0 ? this.calculatePace(runKm, runMins) : "—");
-    const runRpe = runDraft && runDraft.rpe ? runDraft.rpe : (activeDay.rpe || "RPE 7.0");
-
-    // Stopwatch or run duration
-    const durationMins = runKm > 0 && totalSets === 0 && runMins > 0
-      ? Math.round(runMins)
-      : Math.max(1, Math.round(this.stopwatchSeconds / 60));
-
-    const notesText = this.storage.getSessionNotes(this.activeProgram.id, this.currentWeek, activeDay.dayIndex);
-
-    // Update Modal DOM
-    const subtitleEl = document.getElementById("summaryWorkoutTitleSubtitle");
-    if (subtitleEl) subtitleEl.textContent = `${activeDay.dayKey} • ${activeDay.title}`;
-
-    const durEl = document.getElementById("summaryDuration");
-    if (durEl) durEl.textContent = `${durationMins} phút`;
-
-    // Dynamic Metric Cards Visibility
-    const cardVol = document.getElementById("summaryMetricCardVolume");
-    const cardSets = document.getElementById("summaryMetricCardSets");
-    const cardPRs = document.getElementById("summaryMetricCardPRs");
-    const cardDist = document.getElementById("summaryMetricCardDistance");
-    const cardPace = document.getElementById("summaryMetricCardPace");
-
-    const volEl = document.getElementById("summaryTotalVolume");
-    const setsEl = document.getElementById("summaryTotalSets");
-    const distEl = document.getElementById("summaryTotalDistance");
-    const paceEl = document.getElementById("summaryAveragePace");
-    const prEl = document.getElementById("summaryPrCount");
-
-    if (hasRun && runKm > 0) {
-      if (cardDist) cardDist.style.display = "flex";
-      if (cardPace) cardPace.style.display = "flex";
-      if (distEl) distEl.textContent = `${runKm} km`;
-      if (paceEl) paceEl.textContent = runPace;
-
-      if (totalSets === 0) {
-        if (cardVol) cardVol.style.display = "none";
-        if (cardSets) cardSets.style.display = "none";
-        if (cardPRs) cardPRs.style.display = "none";
-      } else {
-        if (cardVol) cardVol.style.display = "flex";
-        if (cardSets) cardSets.style.display = "flex";
-        if (cardPRs) cardPRs.style.display = "flex";
-        if (volEl) volEl.textContent = `${totalVol.toLocaleString()} kg`;
-        if (setsEl) setsEl.textContent = `${totalSets} sets`;
-        if (prEl) prEl.textContent = `${prCount} PRs`;
-      }
-    } else {
-      if (cardDist) cardDist.style.display = "none";
-      if (cardPace) cardPace.style.display = "none";
-      if (cardVol) cardVol.style.display = "flex";
-      if (cardSets) cardSets.style.display = "flex";
-      if (cardPRs) cardPRs.style.display = "flex";
-      if (volEl) volEl.textContent = `${totalVol.toLocaleString()} kg`;
-      if (setsEl) setsEl.textContent = `${totalSets} sets`;
-      if (prEl) prEl.textContent = `${prCount} PRs`;
-    }
-
-    const listEl = document.getElementById("summaryExercisesList");
-    if (listEl) {
-      let breakdownHtml = "";
-      if (hasRun && runKm > 0) {
-        breakdownHtml += `<div>🏃 <strong>Chạy bộ:</strong> ${runKm} km • ${runPace} (${runRpe})</div>`;
-      }
-      if (completedExercises.length > 0) {
-        breakdownHtml += completedExercises.map(e => `<div>• <strong>${e.name}:</strong> ${e.sets}</div>`).join("");
-      }
-      if (!breakdownHtml) {
-        breakdownHtml = `<div>• Hoàn thành buổi tập theo giáo án.</div>`;
-      }
-      listEl.innerHTML = breakdownHtml;
-    }
-
-    const notesDisplayEl = document.getElementById("summaryNotesDisplay");
-    if (notesDisplayEl) {
-      notesDisplayEl.textContent = notesText ? `"${notesText}"` : "Không có ghi chú.";
-    }
-
-    // Play Victory Fanfare and confetti
-    this.audio.playVictoryFanfare();
-    this.audio.triggerConfetti();
-
-    this.openModal("modalWorkoutSummary");
-  }
-
-  handleConfirmSaveWorkout() {
-    const weekData = this.activeProgram.weeks ? this.activeProgram.weeks[this.currentWeek] : null;
-    const activeDay = weekData ? weekData.days[this.currentDayIndex] : null;
-
-    let totalVol = 0;
-    let totalSets = 0;
-    let prCount = 0;
-    const exerciseRecords = [];
-
-    // 1. Gather Strength sets
-    if (activeDay && activeDay.exercises) {
-      const swappedMap = this.storage.getSwappedExercises(this.activeProgram.id, this.currentWeek, activeDay.dayIndex);
-      activeDay.exercises.forEach(origEx => {
-        const ex = swappedMap[origEx.id] || origEx;
-        const sets = this.storage.getSessionSets(this.activeProgram.id, this.currentWeek, activeDay.dayIndex, ex);
-        const completedSets = sets.filter(s => s.isCompleted);
-        if (completedSets.length > 0) {
-          totalSets += completedSets.length;
-          completedSets.forEach(s => {
-            totalVol += (parseFloat(s.weightKg) || 0) * (parseInt(s.reps) || 0);
-            if (s.progressStatus === "overload") prCount++;
-          });
-          exerciseRecords.push({
-            name: ex.name,
-            sets: `${completedSets.length} sets (${completedSets.map(s => `${s.weightKg}k × ${s.reps}`).join(", ")})`
-          });
-        }
-      });
-    }
-
-    // 2. Gather Running metrics
-    const runDraft = this.storage.getSessionRunData(this.activeProgram.id, this.currentWeek, activeDay ? activeDay.dayIndex : 0);
-    const hasRun = activeDay && (activeDay.type === "run" || activeDay.type === "hybrid" || (runDraft && runDraft.distanceKm > 0));
-    const runKm = runDraft && runDraft.distanceKm ? parseFloat(runDraft.distanceKm) : (activeDay && activeDay.targetKm ? parseFloat(activeDay.targetKm) : 0);
-    const runMins = runDraft && runDraft.durationMinutes ? parseFloat(runDraft.durationMinutes) : (runKm ? Math.round(runKm * 5.75) : 0);
-    const runPace = runDraft && runDraft.pace && runDraft.pace !== "—" ? runDraft.pace : (runKm > 0 && runMins > 0 ? this.calculatePace(runKm, runMins) : "—");
-    const runRpe = runDraft && runDraft.rpe ? runDraft.rpe : (activeDay ? activeDay.rpe : "RPE 7.0");
-
-    const finalDuration = runKm > 0 && totalSets === 0 && runMins > 0
-      ? Math.round(runMins)
-      : Math.max(1, Math.round(this.stopwatchSeconds / 60));
-
-    const notesText = this.storage.getSessionNotes(this.activeProgram.id, this.currentWeek, activeDay ? activeDay.dayIndex : 0);
-
-    // Archive unified session to permanent history
-    this.storage.archiveWorkoutSession({
-      programId: this.activeProgram.id,
-      programName: this.activeProgram.name,
-      weekId: this.currentWeek,
-      dayKey: activeDay ? activeDay.dayKey : "T2",
-      dayTitle: activeDay ? activeDay.title : "Workout",
-      date: new Date().toISOString().split("T")[0],
-      durationMinutes: finalDuration,
-      totalVolumeKg: totalVol,
-      totalSetsCount: totalSets,
-      totalDistanceKm: runKm,
-      prCount: prCount,
-      notes: notesText,
-      exercises: exerciseRecords,
-      runDetail: runKm > 0 ? {
-        distanceKm: runKm,
-        durationMinutes: finalDuration,
-        pace: runPace,
-        rpe: runRpe
-      } : null,
-      type: activeDay ? (activeDay.type || (runKm > 0 && totalSets > 0 ? "hybrid" : runKm > 0 ? "run" : "strength")) : "workout"
-    });
-
-    this.storage.setDayCompleted(this.activeProgram.id, this.currentWeek, this.currentDayIndex, true);
-    this.resetStopwatch();
-    this.closeAllModals();
-
-    this.renderWorkoutTab();
-    this.renderHistoryTab();
-
-    const toastMsg = runKm > 0 && totalVol > 0
-      ? `🏆 Đã lưu buổi tập Hybrid: ${runKm}km chạy + ${totalVol.toLocaleString()}kg tạ!`
-      : runKm > 0
-        ? `🏃 Đã lưu buổi chạy ${runKm}km (Pace ${runPace}) vào Lịch sử!`
-        : `🏆 Đã lưu buổi tập tạ: ${totalVol.toLocaleString()}kg (${totalSets} sets)!`;
-
-    this.showToast(toastMsg);
-  }
-
-  // =========================================================================
-  // EXERCISE DETAIL & SWAP MODALS
-  // =========================================================================
-  openExerciseDetailModal(exercise) {
-    this.selectedExerciseForDetail = exercise;
-    const detailData = (this.data.exerciseDetails && this.data.exerciseDetails[exercise.id]) || {
-      name: exercise.name,
-      category: exercise.category || "Compound",
-      primaryMuscles: "Cơ toàn thân",
-      formCues: "Kiểm soát chuyển động và giữ vững RIR.",
-      progressionTip: "Tăng tạ khi đạt đủ số reps ở set cuối."
-    };
-
-    const nameEl = document.getElementById("modalExDetailName");
-    if (nameEl) nameEl.textContent = detailData.name;
-
-    const catEl = document.getElementById("modalExDetailCategory");
-    if (catEl) catEl.textContent = detailData.category;
-
-    const targetEl = document.getElementById("modalExDetailTarget");
-    if (targetEl) targetEl.textContent = exercise.targetRequirement || "2 sets × 6-10 reps @ RIR 0-1";
-
-    const musclesEl = document.getElementById("modalExDetailMuscles");
-    if (musclesEl) musclesEl.textContent = detailData.primaryMuscles;
-
-    const cuesEl = document.getElementById("modalExDetailCues");
-    if (cuesEl) cuesEl.innerHTML = `${detailData.formCues}<br><br><strong>Tiêu chuẩn Overload:</strong> ${detailData.progressionTip}`;
-
-    // Render Past Performance Log
-    const historyList = document.getElementById("exerciseDetailHistoryList");
-    const history = this.storage.getLiftHistory(exercise.id);
-
-    if (historyList) {
-      if (history.length === 0) {
-        historyList.innerHTML = `<div style="font-size: 12px; color: var(--text-dim); text-align: center; padding: 10px;">Chưa có dữ liệu lịch sử cho bài này.</div>`;
-      } else {
-        historyList.innerHTML = history.slice(0, 6).map(item => `
-          <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 12px;">
-            <div>
-              <span style="font-weight: 800; color: var(--text-white);">${item.weightKg} kg</span>
-              <span style="color: var(--text-muted);">× ${item.reps} reps</span>
-              <span style="font-size: 10px; color: var(--color-amber); margin-left: 4px;">(${item.rir})</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--color-green);">e1RM: ${item.e1rm}k</span>
-              <span style="font-size: 10.5px; color: var(--text-dim);">${item.date}</span>
-            </div>
-          </div>
-        `).join("");
-      }
-    }
-
-    // Render Canvas Chart
-    if (window.DinoCharts) {
-      setTimeout(() => {
-        window.DinoCharts.renderOverloadChart("canvasExerciseDetail", history, detailData.name);
-      }, 100);
-    }
-
-    this.openModal("modalExerciseDetail");
-  }
-
-  openSwapExerciseModal(originalEx) {
-    this.selectedExerciseForSwap = originalEx;
-    const titleEl = document.getElementById("swapCurrentExTitle");
-    if (titleEl) titleEl.textContent = `Đang đổi bài: ${originalEx.name}`;
-
-    const container = document.getElementById("swapOptionsListContainer");
-    if (!container) return;
-
-    const detailData = this.data.exerciseDetails ? this.data.exerciseDetails[originalEx.id] : null;
-    const swaps = (detailData && detailData.swaps) ? detailData.swaps : [
-      { id: "leg_press", name: "Leg Press", category: "Lower", reason: "Bài tập thay thế an toàn cho khớp gối/cột sống" },
-      { id: "lat_pulldown", name: "Lat Pulldown", category: "Upper", reason: "Điều chỉnh mức tạ chính xác theo reps" }
-    ];
-
-    container.innerHTML = "";
-    swaps.forEach(opt => {
-      const card = document.createElement("div");
-      card.className = "swap-option-card";
-      card.innerHTML = `
-        <div class="swap-opt-header">
-          <span class="swap-opt-name">${opt.name}</span>
-          <span class="day-badge badge-run" style="font-size: 9.5px;">${opt.category}</span>
+    card.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <div>
+          <span style="font-size: 11px; font-weight: 800; color: ${day.type === 'game' ? 'var(--color-green)' : 'var(--text-dim)'}; text-transform: uppercase;">
+            ${day.type === 'game' ? '⚽ MATCH DAY (SOCCER)' : '💤 REST & RECOVERY'}
+          </span>
+          <div style="font-family: var(--font-heading); font-size: 16px; font-weight: 800; color: var(--text-white);">${day.title}</div>
         </div>
-        <div class="swap-reason">💡 ${opt.reason}</div>
-      `;
-
-      card.addEventListener("click", () => {
-        const replacementEx = {
-          ...originalEx,
-          id: opt.id,
-          name: opt.name,
-          category: opt.category,
-          isSwapped: true
-        };
-        this.storage.swapSessionExercise(this.activeProgram.id, this.currentWeek, this.currentDayIndex, originalEx.id, replacementEx);
-        this.closeAllModals();
-        this.renderWorkoutTab();
-        this.showToast(`Đã đổi sang bài: ${opt.name}! 🔄`);
-      });
-
-      container.appendChild(card);
-    });
-
-    this.openModal("modalSwapExercise");
-  }
-
-  // =========================================================================
-  // TAB 3: AI COACH INTERFACE & CHAT CONTROLLER
-  // =========================================================================
-  renderAICoachTab() {
-    this.renderAIQuickPrompts();
-    this.renderAIChatMessages();
-  }
-
-  renderAIQuickPrompts() {
-    if (!this.aiQuickPromptsContainer || !this.data.aiCoachPrompts) return;
-    this.aiQuickPromptsContainer.innerHTML = "";
-
-    this.data.aiCoachPrompts.forEach(p => {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "ai-prompt-chip";
-      chip.textContent = p.label;
-      chip.addEventListener("click", () => {
-        this.sendAICoachQuery(p.prompt);
-      });
-      this.aiQuickPromptsContainer.appendChild(chip);
-    });
-  }
-
-  formatMarkdown(text) {
-    if (!text) return "";
-    let html = text;
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-    // Bold
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Italic
-    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    // Code
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-    // Bullet lists
-    html = html.replace(/^\s*[-•]\s+(.*$)/gim, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>)/gim, '<ul>$1</ul>');
-    html = html.replace(/<\/ul>\s*<ul>/g, '');
-    // Paragraphs / Line breaks
-    html = html.replace(/\n\n+/g, '<br><br>');
-    html = html.replace(/\n/g, '<br>');
-    return html;
-  }
-
-  renderAIChatMessages() {
-    if (!this.aiChatHistoryContainer) return;
-    const history = this.storage.getAIChatHistory();
-
-    if (history.length === 0) {
-      this.aiChatHistoryContainer.innerHTML = `
-        <div class="ai-msg-row">
-          <div class="ai-bubble assistant">
-            <h3>⚡ Xin chào Athlete!</h3>
-            Tôi là <strong>Dino AI Coach</strong> (Trợ lý 2-trong-1). Tôi có thể phân tích dữ liệu tập luyện cá nhân (tạ, chạy, ghi chú) và giải đáp mọi câu hỏi về dinh dưỡng, biomechanics, RIR hay chiến thuật Half-Marathon Sub-2!
-          </div>
-        </div>
-      `;
-      return;
-    }
-
-    this.aiChatHistoryContainer.innerHTML = history.map(msg => `
-      <div class="ai-msg-row ${msg.role === 'user' ? 'user' : ''}">
-        <div class="ai-bubble ${msg.role === 'user' ? 'user' : 'assistant ai-msg-bubble'}">
-          ${msg.role === 'user' ? msg.content.replace(/\n/g, '<br>') : this.formatMarkdown(msg.content)}
-        </div>
+        <span class="prog-badge">${day.estimatedTime || '60 mins'}</span>
       </div>
-    `).join("");
 
-    this.aiChatHistoryContainer.scrollTop = this.aiChatHistoryContainer.scrollHeight;
+      <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">
+        ${day.details || "Hoạt động thể thao tự do hoặc phục hồi cơ bắp toàn diện."}
+      </p>
+
+      ${day.checklist ? `
+        <div style="font-size: 11.5px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">
+          Checklist lưu ý:
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          ${day.checklist.map(c => `
+            <label style="display: flex; align-items: center; gap: 8px; background: #0a0a0a; border: 1px solid var(--border-subtle); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 12px; color: var(--text-muted); cursor: pointer;">
+              <input type="checkbox" style="accent-color: var(--red-primary);">
+              <span><strong>${c.label}</strong> ${c.note ? `— ${c.note}` : ''}</span>
+            </label>
+          `).join("")}
+        </div>
+      ` : ""}
+    `;
+    return card;
   }
 
-  async sendAICoachQuery(queryText) {
-    if (!queryText || !queryText.trim()) return;
+  // Render SVG Muscle Heatmap
+  renderWorkoutMuscleHeatmap(customMuscles = null) {
+    const anteriorBox = document.getElementById("anteriorMuscleSvgWrap");
+    const posteriorBox = document.getElementById("posteriorMuscleSvgWrap");
+    const tagsBox = document.getElementById("heroTargetMusclesTags");
+    if (!anteriorBox || !posteriorBox) return;
 
-    const history = this.storage.getAIChatHistory();
-    history.push({ role: "user", content: queryText });
-    this.storage.saveAIChatHistory(history);
-    this.renderAIChatMessages();
+    let targetMuscles = [];
 
-    // Show typing placeholder
-    if (this.aiChatHistoryContainer) {
-      const typingRow = document.createElement("div");
-      typingRow.className = "ai-msg-row typing-row";
-      typingRow.innerHTML = `<div class="ai-bubble assistant"><em>Coach đang phân tích dữ liệu... ⚡</em></div>`;
-      this.aiChatHistoryContainer.appendChild(typingRow);
-      this.aiChatHistoryContainer.scrollTop = this.aiChatHistoryContainer.scrollHeight;
+    if (customMuscles) {
+      targetMuscles = customMuscles;
+    } else {
+      const weekData = (this.activeProgram.weeks && this.activeProgram.weeks[this.currentWeek])
+        ? this.activeProgram.weeks[this.currentWeek]
+        : null;
+      const activeDay = (weekData && weekData.days) ? weekData.days[this.currentDayIndex] : null;
+
+      if (activeDay) {
+        if (activeDay.exercises) {
+          activeDay.exercises.forEach(ex => {
+            const cat = (ex.category || "").toLowerCase();
+            if (cat.includes("quad") || cat.includes("squat") || cat.includes("leg press")) targetMuscles.push("Quads");
+            if (cat.includes("hamstring") || cat.includes("curl")) targetMuscles.push("Hamstrings");
+            if (cat.includes("chest") || cat.includes("bench") || cat.includes("dips")) targetMuscles.push("Chest");
+            if (cat.includes("lat") || cat.includes("pull") || cat.includes("back") || cat.includes("row")) targetMuscles.push("Lats");
+            if (cat.includes("shoulder") || cat.includes("delt") || cat.includes("lateral")) targetMuscles.push("Shoulders");
+            if (cat.includes("biceps")) targetMuscles.push("Biceps");
+            if (cat.includes("triceps")) targetMuscles.push("Triceps");
+            if (cat.includes("core") || cat.includes("abs")) targetMuscles.push("Core");
+            if (cat.includes("calf")) targetMuscles.push("Calves");
+          });
+        }
+        if (activeDay.type === "run") {
+          targetMuscles.push("Cardio", "Quads", "Hamstrings", "Calves");
+        }
+      }
     }
 
-    const response = await this.aiCoach.generateResponse(queryText);
+    targetMuscles = [...new Set(targetMuscles)];
 
-    // Save Assistant Response
-    const updatedHistory = this.storage.getAIChatHistory();
-    updatedHistory.push({ role: "assistant", content: response });
-    this.storage.saveAIChatHistory(updatedHistory);
-    this.renderAIChatMessages();
-  }
+    const hasMuscle = (m) => targetMuscles.includes(m);
 
-  handleSendAIChat() {
-    if (!this.inputAIChat) return;
-    const text = this.inputAIChat.value.trim();
-    if (!text) return;
-    this.inputAIChat.value = "";
-    this.sendAICoachQuery(text);
+    // Anterior SVG Silhouette
+    anteriorBox.innerHTML = `
+      <svg viewBox="0 0 100 180" width="100%" height="100%">
+        <!-- Head -->
+        <circle cx="50" cy="18" r="10" fill="#27272a"/>
+        <!-- Chest -->
+        <path class="muscle-path ${hasMuscle('Chest') ? 'highlight' : ''}" d="M38 36 Q50 38 62 36 L60 52 Q50 56 40 52 Z"/>
+        <!-- Shoulders Anterior -->
+        <circle class="muscle-path ${hasMuscle('Shoulders') ? 'highlight' : ''}" cx="33" cy="38" r="6"/>
+        <circle class="muscle-path ${hasMuscle('Shoulders') ? 'highlight' : ''}" cx="67" cy="38" r="6"/>
+        <!-- Biceps -->
+        <ellipse class="muscle-path ${hasMuscle('Biceps') ? 'highlight' : ''}" cx="30" cy="54" rx="4" ry="8"/>
+        <ellipse class="muscle-path ${hasMuscle('Biceps') ? 'highlight' : ''}" cx="70" cy="54" rx="4" ry="8"/>
+        <!-- Abs / Core -->
+        <path class="muscle-path ${hasMuscle('Core') ? 'highlight' : ''}" d="M42 54 L58 54 L56 82 L44 82 Z"/>
+        <!-- Quads -->
+        <path class="muscle-path ${hasMuscle('Quads') ? 'highlight' : ''}" d="M36 86 L48 86 L46 126 L34 126 Z"/>
+        <path class="muscle-path ${hasMuscle('Quads') ? 'highlight' : ''}" d="M52 86 L64 86 L66 126 L54 126 Z"/>
+        <!-- Calves Anterior -->
+        <path class="muscle-path ${hasMuscle('Calves') ? 'highlight' : ''}" d="M35 132 L45 132 L43 166 L37 166 Z"/>
+        <path class="muscle-path ${hasMuscle('Calves') ? 'highlight' : ''}" d="M55 132 L65 132 L63 166 L57 166 Z"/>
+        <text x="50" y="178" font-size="8" fill="#71717a" text-anchor="middle">MẶT TRƯỚC</text>
+      </svg>
+    `;
+
+    // Posterior SVG Silhouette
+    posteriorBox.innerHTML = `
+      <svg viewBox="0 0 100 180" width="100%" height="100%">
+        <!-- Head -->
+        <circle cx="50" cy="18" r="10" fill="#27272a"/>
+        <!-- Traps / Upper Back -->
+        <path class="muscle-path ${hasMuscle('Upper Back') || hasMuscle('Shoulders') ? 'highlight' : ''}" d="M38 32 Q50 36 62 32 L58 46 L42 46 Z"/>
+        <!-- Lats -->
+        <path class="muscle-path ${hasMuscle('Lats') ? 'highlight' : ''}" d="M38 46 L62 46 L58 72 L42 72 Z"/>
+        <!-- Triceps -->
+        <ellipse class="muscle-path ${hasMuscle('Triceps') ? 'highlight' : ''}" cx="29" cy="54" rx="4" ry="8"/>
+        <ellipse class="muscle-path ${hasMuscle('Triceps') ? 'highlight' : ''}" cx="71" cy="54" rx="4" ry="8"/>
+        <!-- Glutes -->
+        <ellipse class="muscle-path ${hasMuscle('Glutes') || hasMuscle('Quads') ? 'highlight' : ''}" cx="43" cy="88" rx="7" ry="9"/>
+        <ellipse class="muscle-path ${hasMuscle('Glutes') || hasMuscle('Quads') ? 'highlight' : ''}" cx="57" cy="88" rx="7" ry="9"/>
+        <!-- Hamstrings -->
+        <path class="muscle-path ${hasMuscle('Hamstrings') ? 'highlight' : ''}" d="M36 98 L48 98 L46 128 L34 128 Z"/>
+        <path class="muscle-path ${hasMuscle('Hamstrings') ? 'highlight' : ''}" d="M52 98 L64 98 L66 128 L54 128 Z"/>
+        <!-- Calves Posterior -->
+        <path class="muscle-path ${hasMuscle('Calves') ? 'highlight' : ''}" d="M34 134 L46 134 L43 166 L37 166 Z"/>
+        <path class="muscle-path ${hasMuscle('Calves') ? 'highlight' : ''}" d="M54 134 L66 134 L63 166 L57 166 Z"/>
+        <text x="50" y="178" font-size="8" fill="#71717a" text-anchor="middle">MẶT SAU</text>
+      </svg>
+    `;
+
+    if (tagsBox) {
+      tagsBox.innerHTML = targetMuscles.map(m => `<span class="heatmap-tag-pill">🔥 ${m}</span>`).join("");
+    }
   }
 
   // =========================================================================
-  // TAB 2: HISTORY & MONTH CALENDAR
+  // TAB 2: STATS & PROGRESS (WITH DYNAMIC RECALCULATION & DELETION)
   // =========================================================================
-  renderHistoryTab() {
+  renderStatsTab() {
+    const stats = this.storage.getHistoryStats(this.statsFilter);
+
+    if (this.statSummaryVolume) {
+      this.statSummaryVolume.textContent = `${stats.totalVolumeKg.toLocaleString()} kg`;
+    }
+    if (this.statSummaryDistance) {
+      this.statSummaryDistance.textContent = `${stats.totalDistanceKm} km`;
+    }
+    if (this.statSummaryWorkouts) {
+      this.statSummaryWorkouts.textContent = stats.totalWorkouts;
+    }
+    if (this.statSummaryPRs) {
+      this.statSummaryPRs.textContent = stats.totalPRs;
+    }
+
+    // Render Canvas Charts
+    this.renderStatsCharts();
     this.renderCalendarMonth();
-    this.renderHistoryStats();
-    this.renderHistoryCards();
+    this.renderHistoryCardsList();
   }
 
-  changeCalMonth(delta) {
-    this.calMonth += delta;
-    if (this.calMonth < 0) {
-      this.calMonth = 11;
-      this.calYear -= 1;
-    } else if (this.calMonth > 11) {
-      this.calMonth = 0;
-      this.calYear += 1;
-    }
-    this.renderCalendarMonth();
+  renderStatsCharts() {
+    if (!window.DinoCharts) return;
+
+    setTimeout(() => {
+      // 1. Overload Lift Chart
+      const overloadLogs = this.storage.getLiftHistory(this.selectedChartLift);
+      window.DinoCharts.renderOverloadChart("canvasStatsOverload", overloadLogs, this.selectedChartLift);
+
+      // 2. Mileage Chart
+      const runLogs = this.storage.getRunLogs();
+      window.DinoCharts.renderMileageChart("canvasStatsMileage", runLogs, this.statsFilter);
+
+      // 3. Volume Progression Chart
+      const history = this.storage.getWorkoutHistory();
+      window.DinoCharts.renderVolumeChart("canvasStatsVolume", history, this.statsFilter);
+    }, 60);
   }
 
   renderCalendarMonth() {
@@ -1473,32 +1345,38 @@ class DinoApp {
       cell.addEventListener("click", () => {
         if (this.calFilterDate === dateStr) {
           this.calFilterDate = null;
-          this.showToast("Đã bỏ lọc ngày. Hiển thị tất cả!");
+          this.showToast("Đã bỏ lọc ngày.");
         } else {
           this.calFilterDate = dateStr;
           this.showToast(`Đang lọc nhật ký ngày: ${dayStr}/${monthStr}/${this.calYear}`);
         }
-        this.renderHistoryTab();
+        this.renderStatsTab();
       });
 
       this.calendarDaysGrid.appendChild(cell);
     }
   }
 
-  renderHistoryStats() {
-    const stats = this.storage.getHistoryStats();
-    if (this.statTotalWorkouts) this.statTotalWorkouts.textContent = stats.totalWorkouts;
-    if (this.statTotalVolume) this.statTotalVolume.textContent = `${stats.totalVolumeKg.toLocaleString()} kg`;
-    if (this.statTotalKm) this.statTotalKm.textContent = `${stats.totalDistanceKm} km`;
+  changeCalMonth(delta) {
+    this.calMonth += delta;
+    if (this.calMonth < 0) {
+      this.calMonth = 11;
+      this.calYear -= 1;
+    } else if (this.calMonth > 11) {
+      this.calMonth = 0;
+      this.calYear += 1;
+    }
+    this.renderCalendarMonth();
   }
 
-  renderHistoryCards() {
+  // Render History Cards with Instant Dynamic Deletion & Stats Update
+  renderHistoryCardsList() {
     if (!this.historyCardsContainer) return;
 
     if (this.historySelectedDateFilter) {
       if (this.calFilterDate) {
         const parts = this.calFilterDate.split("-");
-        this.historySelectedDateFilter.innerHTML = `Ngày: ${parts[2]}/${parts[1]}/${parts[0]} <span style="cursor:pointer; text-decoration: underline;">[✕ Bỏ lọc]</span>`;
+        this.historySelectedDateFilter.innerHTML = `Ngày: ${parts[2]}/${parts[1]}/${parts[0]} <span style="text-decoration: underline;">[✕ Bỏ lọc]</span>`;
       } else {
         this.historySelectedDateFilter.textContent = "Tất cả các buổi";
       }
@@ -1511,9 +1389,9 @@ class DinoApp {
 
     if (history.length === 0) {
       this.historyCardsContainer.innerHTML = `
-        <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 28px 16px; text-align: center; color: var(--text-dim); font-size: 13px;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 24px 16px; text-align: center; color: var(--text-dim); font-size: 13px;">
           Chưa có nhật ký buổi tập nào ${this.calFilterDate ? 'trong ngày đã chọn' : ''}.<br>
-          Hãy hoàn thành buổi tập đầu tiên ở tab <strong>Workout</strong>!
+          Hãy hoàn thành buổi tập ở tab <strong>Workout</strong>!
         </div>
       `;
       return;
@@ -1542,7 +1420,7 @@ class DinoApp {
       card.innerHTML = `
         <div class="hist-card-top">
           <div>
-            <span style="font-size: 11px; font-weight: 800; color: var(--red-primary);">${h.dayKey} • ${h.programName || 'Dino Hybrid'}</span>
+            <span style="font-size: 11px; font-weight: 800; color: var(--red-primary);">${h.dayKey || 'DAY'} • ${h.programName || 'Dino Hybrid'}</span>
             <div class="hist-workout-name">${h.dayTitle}</div>
           </div>
           <span class="hist-date-tag">${h.date}</span>
@@ -1553,29 +1431,30 @@ class DinoApp {
           ${h.totalVolumeKg > 0 ? `<span class="hist-pill" style="color: var(--color-green);">⚖️ ${h.totalVolumeKg.toLocaleString()} kg</span>` : ""}
           ${h.totalSetsCount > 0 ? `<span class="hist-pill">🔢 ${h.totalSetsCount} sets</span>` : ""}
           ${h.totalDistanceKm > 0 ? `<span class="hist-pill" style="color: var(--color-blue);">🏃 ${h.totalDistanceKm} km</span>` : ""}
-          ${h.prCount > 0 ? `<span class="hist-pill" style="color: var(--color-gold); border-color: rgba(255,215,0,0.3);">⚡ ${h.prCount} PRs</span>` : ""}
+          ${h.prCount > 0 ? `<span class="hist-pill" style="color: var(--color-gold);">⚡ ${h.prCount} PRs</span>` : ""}
         </div>
 
         ${exercisesHtml}
 
         ${h.notes ? `
-          <div style="font-size: 12px; color: var(--text-muted); font-style: italic; background: var(--bg-card-elevated); padding: 8px 10px; border-radius: var(--radius-sm); margin-top: 4px;">
+          <div style="font-size: 12px; color: var(--text-muted); font-style: italic; background: var(--bg-card-elevated); padding: 8px 10px; border-radius: var(--radius-sm); margin-top: 6px;">
             📝 "${h.notes}"
           </div>
         ` : ""}
 
-        <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+        <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
           <button class="btn-del-hist" style="background: transparent; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; padding: 4px 8px;">
             Xóa nhật ký ✕
           </button>
         </div>
       `;
 
+      // 1-Click Delete Event: Recalculates stats immediately
       card.querySelector(".btn-del-hist").addEventListener("click", () => {
-        if (confirm("Bạn có chắc chắn muốn xóa bản ghi nhật ký này?")) {
+        if (confirm(`Bạn có chắc chắn muốn xóa bản ghi "${h.dayTitle}" (${h.date})? Tổng khối lượng và cự ly sẽ tự động trừ đi.`)) {
           this.storage.deleteHistoryRecord(h.id);
-          this.renderHistoryTab();
-          this.showToast("Đã xóa bản ghi nhật ký.");
+          this.renderStatsTab();
+          this.showToast("✓ Đã xóa bản ghi & tự động cập nhật lại tổng thống kê!");
         }
       });
 
@@ -1584,154 +1463,892 @@ class DinoApp {
   }
 
   // =========================================================================
-  // TAB 4: PROGRAMS & CUSTOM PROGRAM BUILDER
+  // TAB 3: EXERCISES & CROSSFIT WOD ROULETTE
   // =========================================================================
-  renderProgramsTab() {
-    if (!this.programsListContainer) return;
+  renderExerciseLibrary() {
+    if (!this.exerciseLibraryGrid) return;
 
-    const programs = this.storage.getPrograms();
-    const activeProgId = this.storage.getActiveProgramId();
+    const catalog = window.EXERCISE_LIBRARY || [];
+    const searchVal = (this.inputSearchExercise ? this.inputSearchExercise.value : "").trim().toLowerCase();
+    const muscleVal = this.selectMuscleFilter ? this.selectMuscleFilter.value : "all";
+    const equipVal = this.selectEquipmentFilter ? this.selectEquipmentFilter.value : "all";
 
-    this.programsListContainer.innerHTML = "";
+    const filtered = catalog.filter(ex => {
+      const matchSearch = !searchVal || ex.name.toLowerCase().includes(searchVal) || (ex.category && ex.category.toLowerCase().includes(searchVal));
+      const matchMuscle = muscleVal === "all" || (ex.primaryMuscles && ex.primaryMuscles.includes(muscleVal)) || (ex.secondaryMuscles && ex.secondaryMuscles.includes(muscleVal));
+      const matchEquip = equipVal === "all" || ex.equipment === equipVal;
+      return matchSearch && matchMuscle && matchEquip;
+    });
 
-    programs.forEach(prog => {
-      const isActive = prog.id === activeProgId;
-      const card = document.createElement("div");
-      card.className = `program-card ${isActive ? "active" : ""}`;
-
-      card.innerHTML = `
-        <div class="prog-card-header">
-          <div class="prog-title-row">
-            <span class="prog-title">${prog.name}</span>
-            ${prog.isBuiltIn ? `<span class="prog-badge">Mặc Định</span>` : `<span class="prog-badge" style="color: var(--color-blue); border-color: rgba(59,130,246,0.3); background: var(--color-blue-bg);">Tự Tạo</span>`}
-          </div>
-          ${isActive ? `<span style="font-size: 11px; font-weight: 800; color: var(--red-primary);">✓ Đang Tập</span>` : ""}
-        </div>
-
-        <div class="prog-desc">${prog.description || prog.philosophy || "Chương trình tập luyện cá nhân"}</div>
-
-        <div style="font-size: 11.5px; color: var(--text-dim);">
-          Chu kỳ: <strong>${prog.rotationWeeks || 1} Tuần</strong> • ${(prog.weeks ? Object.keys(prog.weeks).length : 1)} pha xoay vòng
-        </div>
-
-        <div class="prog-actions-row">
-          ${!isActive ? `
-            <button class="btn-day-action btn-activate-prog" style="font-size: 11.5px; padding: 6px 12px;">
-              Kích Hoạt
-            </button>
-          ` : `
-            <button class="btn-day-action secondary" style="font-size: 11.5px; padding: 6px 12px; pointer-events: none; opacity: 0.8;">
-              ✓ Đang Kích Hoạt
-            </button>
-          `}
-          <button class="btn-day-action secondary btn-clone-prog" style="font-size: 11.5px; padding: 6px 12px;">
-            Nhân Bản
-          </button>
-          ${!prog.isBuiltIn ? `
-            <button class="btn-day-action secondary btn-delete-prog" style="font-size: 11.5px; padding: 6px 12px; color: var(--red-primary);">
-              Xóa
-            </button>
-          ` : ""}
+    if (filtered.length === 0) {
+      this.exerciseLibraryGrid.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; color: var(--text-dim); padding: 30px 14px; font-size: 13px;">
+          Không tìm thấy bài tập phù hợp với bộ lọc.
         </div>
       `;
-
-      const btnActivate = card.querySelector(".btn-activate-prog");
-      if (btnActivate) {
-        btnActivate.addEventListener("click", () => {
-          this.storage.setActiveProgramId(prog.id);
-          this.activeProgram = prog;
-          this.showToast(`Đã kích hoạt giáo án: ${prog.name}!`);
-          this.switchTab("workout");
-        });
-      }
-
-      const btnClone = card.querySelector(".btn-clone-prog");
-      if (btnClone) {
-        btnClone.addEventListener("click", () => {
-          const clonedProg = JSON.parse(JSON.stringify(prog));
-          clonedProg.id = "custom_prog_" + Date.now();
-          clonedProg.name = `${prog.name} (Bản Sao)`;
-          clonedProg.isBuiltIn = false;
-          this.storage.saveCustomProgram(clonedProg);
-          this.renderProgramsTab();
-          this.showToast(`Đã nhân bản giáo án: ${clonedProg.name}!`);
-        });
-      }
-
-      const btnDelete = card.querySelector(".btn-delete-prog");
-      if (btnDelete) {
-        btnDelete.addEventListener("click", () => {
-          if (confirm(`Bạn có chắc chắn muốn xóa giáo án "${prog.name}"?`)) {
-            this.storage.deleteProgram(prog.id);
-            this.renderProgramsTab();
-            this.showToast("Đã xóa giáo án.");
-          }
-        });
-      }
-
-      this.programsListContainer.appendChild(card);
-    });
-  }
-
-  handleCreateProgram() {
-    const name = this.inputProgName.value.trim();
-    const desc = this.inputProgDesc.value.trim();
-    const rotationWeeks = parseInt(this.selectProgRotation.value) || 1;
-
-    if (!name) {
-      alert("Vui lòng nhập tên giáo án!");
       return;
     }
 
-    const defaultTemplate = window.DEFAULT_PROGRAMS ? window.DEFAULT_PROGRAMS[0] : null;
-    let weeksObj = {};
+    this.exerciseLibraryGrid.innerHTML = "";
+    filtered.forEach(ex => {
+      const card = document.createElement("div");
+      card.className = "exercise-library-card";
 
-    if (rotationWeeks === 2 && defaultTemplate && defaultTemplate.weeks) {
-      weeksObj = JSON.parse(JSON.stringify(defaultTemplate.weeks));
-    } else if (defaultTemplate && defaultTemplate.weeks && defaultTemplate.weeks.A) {
-      weeksObj = {
-        A: JSON.parse(JSON.stringify(defaultTemplate.weeks.A))
-      };
-    } else {
-      weeksObj = {
-        A: {
-          id: "A",
-          title: "Tuần 1 — Khởi động & Sức mạnh",
-          targetKm: 15,
-          days: [
-            { dayIndex: 0, dayKey: "T2", title: "Upper Body", type: "strength", badge: "Upper", exercises: [] },
-            { dayIndex: 1, dayKey: "T3", title: "Lower Body", type: "strength", badge: "Lower", exercises: [] },
-            { dayIndex: 2, dayKey: "T4", title: "Easy Run", type: "run", badge: "Easy Run", targetKm: 5.0 },
-            { dayIndex: 3, dayKey: "T5", title: "Full Body", type: "strength", badge: "Full Body", exercises: [] },
-            { dayIndex: 4, dayKey: "T6", title: "Long Run", type: "run", badge: "Long Run", targetKm: 10.0 },
-            { dayIndex: 5, dayKey: "T7", title: "Match / Game", type: "game", badge: "Match", details: "Thể thao tự do" },
-            { dayIndex: 6, dayKey: "CN", title: "Rest Day", type: "rest", badge: "Rest", details: "Nghỉ ngơi hồi phục" }
-          ]
-        }
+      card.innerHTML = `
+        <div class="ex-lib-top-row">
+          <span class="ex-lib-name">${ex.name}</span>
+          <span class="prog-badge">${ex.equipment || 'Gym'}</span>
+        </div>
+
+        <div class="ex-lib-tags-row">
+          ${(ex.primaryMuscles || []).map(m => `<span class="ex-lib-tag primary">${m}</span>`).join("")}
+          ${(ex.secondaryMuscles || []).map(m => `<span class="ex-lib-tag">${m}</span>`).join("")}
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin: 6px 0;">
+          ${ex.formCues || "Thực hiện chuyển động kiểm soát và chuẩn form."}
+        </div>
+
+        <div style="display: flex; gap: 6px; margin-top: 10px;">
+          <button class="btn-day-action secondary btn-lib-detail" style="flex: 1; font-size: 11.5px; padding: 6px;">
+            ℹ️ Chi Tiết & 1RM
+          </button>
+          <button class="btn-day-action secondary btn-lib-heatmap" style="flex: 1; font-size: 11.5px; padding: 6px;">
+            🔥 Cơ Tác Động
+          </button>
+        </div>
+      `;
+
+      card.querySelector(".btn-lib-detail").addEventListener("click", () => {
+        this.openExerciseDetailModal(ex);
+      });
+
+      card.querySelector(".btn-lib-heatmap").addEventListener("click", () => {
+        this.openModal("modalExerciseDetail");
+        this.selectedExerciseForDetail = ex;
+        this.openExerciseDetailModal(ex);
+      });
+
+      this.exerciseLibraryGrid.appendChild(card);
+    });
+  }
+
+  // CrossFit WOD Roulette Wheel Renderer & Physics
+  initRouletteWheel() {
+    this.drawRouletteWheel();
+  }
+
+  drawRouletteWheel() {
+    const canvas = this.canvasRouletteWheel;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const size = canvas.width;
+    const center = size / 2;
+    const radius = center - 8;
+
+    ctx.clearRect(0, 0, size, size);
+
+    const slices = 12; // 12 visible visual segments on wheel
+    const sliceAngle = (Math.PI * 2) / slices;
+
+    ctx.save();
+    ctx.translate(center, center);
+    ctx.rotate(this.rouletteRotation);
+
+    const colors = ["#ff2a2a", "#1a1a1a", "#b31010", "#27272a", "#ff4545", "#141414"];
+    const labels = ["FRAN", "MURPH", "CINDY", "HYROX", "HELEN", "DT", "GRACE", "KAREN", "CHIPPER", "ANNIE", "DIANE", "BADGER"];
+
+    for (let i = 0; i < slices; i++) {
+      const angle = i * sliceAngle;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, angle, angle + sliceAngle);
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Label text
+      ctx.save();
+      ctx.rotate(angle + sliceAngle / 2);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 11px 'Outfit', sans-serif";
+      ctx.fillText(labels[i % labels.length], radius - 14, 4);
+      ctx.restore();
+    }
+
+    // Outer rim glow
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255, 42, 42, 0.6)";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Center hub
+    ctx.beginPath();
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.fillStyle = "#0a0a0a";
+    ctx.fill();
+    ctx.strokeStyle = "#ffd700";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffd700";
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("⚡", 0, 4);
+
+    ctx.restore();
+  }
+
+  spinRouletteWheel() {
+    if (this.isSpinning) return;
+    this.isSpinning = true;
+    if (this.btnSpinRoulette) this.btnSpinRoulette.disabled = true;
+
+    // Pick a random WOD from 100+ database
+    const wods = window.CROSSFIT_WOD_DATABASE || [];
+    const randomIndex = Math.floor(Math.random() * wods.length);
+    this.selectedWOD = wods[randomIndex];
+
+    const spinDuration = 3200; // ms
+    const startTime = Date.now();
+    const initialVelocity = 0.45 + Math.random() * 0.25;
+    let lastTickTime = 0;
+
+    const animateSpin = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(1, elapsed / spinDuration);
+      // Easing out cubic
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+
+      this.rouletteRotation += (initialVelocity * (1 - easeOut));
+      this.drawRouletteWheel();
+
+      // Audio click ticks
+      if (Date.now() - lastTickTime > (40 + easeOut * 240)) {
+        this.audio.playRouletteTick();
+        lastTickTime = Date.now();
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(animateSpin);
+      } else {
+        this.isSpinning = false;
+        if (this.btnSpinRoulette) this.btnSpinRoulette.disabled = false;
+        this.audio.playRouletteWin();
+        this.audio.triggerConfetti();
+        this.displayLandedWOD(this.selectedWOD);
+      }
+    };
+
+    requestAnimationFrame(animateSpin);
+  }
+
+  displayLandedWOD(wod) {
+    if (!this.landedWODCard || !wod) return;
+
+    const diffBadge = document.getElementById("wodDifficultyBadge");
+    if (diffBadge) {
+      diffBadge.textContent = wod.difficulty;
+      diffBadge.className = `wod-diff-badge badge-${wod.difficulty.toLowerCase()}`;
+    }
+
+    const catBadge = document.getElementById("wodCategoryBadge");
+    if (catBadge) catBadge.textContent = wod.category;
+
+    const formatBadge = document.getElementById("wodFormatBadge");
+    if (formatBadge) formatBadge.textContent = wod.format;
+
+    const timeTag = document.getElementById("wodRxTimeTag");
+    if (timeTag) timeTag.textContent = wod.format.includes("AMRAP") ? wod.format : "Time Cap: 20-30m";
+
+    const titleEl = document.getElementById("wodNameTitle");
+    if (titleEl) titleEl.textContent = wod.name;
+
+    const descEl = document.getElementById("wodDescriptionText");
+    if (descEl) descEl.textContent = wod.description;
+
+    const rxM = document.getElementById("wodRxMaleText");
+    if (rxM) rxM.textContent = wod.rxMale;
+
+    const rxF = document.getElementById("wodRxFemaleText");
+    if (rxF) rxF.textContent = wod.rxFemale;
+
+    const listEl = document.getElementById("wodMovementsList");
+    if (listEl && wod.movements) {
+      listEl.innerHTML = wod.movements.map(m => `
+        <div class="wod-move-item">
+          <span style="color: var(--red-primary); font-weight: 800;">⚡</span>
+          <span>${m}</span>
+        </div>
+      `).join("");
+    }
+
+    this.landedWODCard.style.display = "block";
+    this.landedWODCard.scrollIntoView({ behavior: "smooth" });
+    this.showToast(`🎰 Đã chọn WOD: ${wod.name}!`);
+  }
+
+  handleLoadWodToWorkout() {
+    if (!this.selectedWOD) return;
+
+    // Build circuit block on active day
+    const weekData = (this.activeProgram.weeks && this.activeProgram.weeks[this.currentWeek])
+      ? this.activeProgram.weeks[this.currentWeek]
+      : null;
+    const activeDay = (weekData && weekData.days) ? weekData.days[this.currentDayIndex] : null;
+
+    if (activeDay) {
+      activeDay.type = "circuit";
+      activeDay.title = `CrossFit WOD: ${this.selectedWOD.name}`;
+      activeDay.circuitData = {
+        title: this.selectedWOD.name,
+        format: this.selectedWOD.format,
+        items: this.selectedWOD.movements.map((m, idx) => ({ id: `wod_m_${idx}`, name: m }))
       };
     }
+
+    this.switchTab("workout");
+    this.showToast(`🚀 Đã nạp "${this.selectedWOD.name}" vào Buổi tập!`);
+  }
+
+  // =========================================================================
+  // MODALS & ADVANCED CALCULATORS
+  // =========================================================================
+  openPlateAnd1RMModal(initialKg = 100) {
+    const inputPlate = document.getElementById("inputTargetPlateKg");
+    const input1RMW = document.getElementById("input1RMWeight");
+    if (inputPlate) inputPlate.value = initialKg;
+    if (input1RMW) input1RMW.value = initialKg;
+
+    this.calculateBarbellPlates(initialKg);
+    this.update1RMCalculations();
+    this.openModal("modalPlateAnd1RM");
+  }
+
+  calculateBarbellPlates(totalKg) {
+    const stack = document.getElementById("barbellPlatesStack");
+    const pills = document.getElementById("platesPerSideDisplay");
+    if (!stack || !pills) return;
+
+    const barWeight = 20;
+    let weightPerSide = Math.max(0, (totalKg - barWeight) / 2);
+
+    const plateTypes = [
+      { kg: 25, class: "plate-25k", label: "25kg" },
+      { kg: 20, class: "plate-20k", label: "20kg" },
+      { kg: 15, class: "plate-15k", label: "15kg" },
+      { kg: 10, class: "plate-10k", label: "10kg" },
+      { kg: 5, class: "plate-5k", label: "5kg" },
+      { kg: 2.5, class: "plate-2_5k", label: "2.5kg" },
+      { kg: 1.25, class: "plate-1_25k", label: "1.25kg" }
+    ];
+
+    const sidePlates = [];
+    plateTypes.forEach(p => {
+      while (weightPerSide >= p.kg - 0.001) {
+        sidePlates.push(p);
+        weightPerSide -= p.kg;
+      }
+    });
+
+    stack.innerHTML = sidePlates.map(p => `<div class="plate-disc ${p.class}">${p.kg}</div>`).join("");
+
+    if (sidePlates.length === 0) {
+      pills.innerHTML = `<span style="font-size: 12px; color: var(--text-dim);">Chỉ cần thanh đòn không (20kg).</span>`;
+    } else {
+      const counts = {};
+      sidePlates.forEach(p => counts[p.label] = (counts[p.label] || 0) + 1);
+      pills.innerHTML = Object.entries(counts).map(([label, qty]) => `
+        <span class="plate-pill-item">${qty} × <strong>${label}</strong></span>
+      `).join("");
+    }
+  }
+
+  update1RMCalculations() {
+    const inputW = document.getElementById("input1RMWeight");
+    const inputR = document.getElementById("input1RMReps");
+    const resultBig = document.getElementById("calculated1RMResult");
+    const tableBody = document.getElementById("rmTableBody");
+    if (!inputW || !inputR || !resultBig || !tableBody) return;
+
+    const w = parseFloat(inputW.value) || 0;
+    const r = parseInt(inputR.value) || 0;
+
+    if (w <= 0 || r <= 0) {
+      resultBig.textContent = "0.0 kg";
+      tableBody.innerHTML = "";
+      return;
+    }
+
+    // Epley & Brzycki formula hybrid
+    const e1rm = w * (1 + r / 30);
+    const rounded1RM = Math.round(e1rm * 10) / 10;
+    resultBig.textContent = `${rounded1RM} kg`;
+
+    const percentages = [
+      { pct: 100, reps: "1 Rep (Max)" },
+      { pct: 95, reps: "2 Reps" },
+      { pct: 90, reps: "3-4 Reps" },
+      { pct: 85, reps: "5-6 Reps" },
+      { pct: 80, reps: "7-8 Reps" },
+      { pct: 75, reps: "9-10 Reps" },
+      { pct: 70, reps: "11-12 Reps" },
+      { pct: 60, reps: "15+ Reps" }
+    ];
+
+    tableBody.innerHTML = percentages.map(p => `
+      <tr>
+        <td style="font-weight: 800; color: var(--red-primary);">${p.pct}%</td>
+        <td style="font-family: var(--font-mono); font-weight: 800; color: #fff;">${Math.round(rounded1RM * (p.pct / 100) * 10) / 10} kg</td>
+        <td style="color: var(--text-muted);">${p.reps}</td>
+      </tr>
+    `).join("");
+  }
+
+  // Smart Fatigue Daily Check-in Modal
+  openSmartFatigueModal() {
+    this.openModal("modalSmartFatigueCheckin");
+    this.updateCheckinRecommendations();
+  }
+
+  updateCheckinRecommendations() {
+    const sleepBtn = document.querySelector(".btn-checkin-pill[data-sleep].active");
+    const domsBtn = document.querySelector(".btn-checkin-pill[data-doms].active");
+    const recBox = document.getElementById("checkinRecommendationBox");
+    if (!recBox) return;
+
+    const sleep = sleepBtn ? sleepBtn.dataset.sleep : "good";
+    const doms = domsBtn ? domsBtn.dataset.doms : "none";
+
+    if (sleep === "poor" || doms === "legs") {
+      recBox.innerHTML = `
+        <div style="font-weight: 800; font-size: 12px; color: var(--red-primary); text-transform: uppercase;">
+          ⚠️ Khuyến nghị tự động điều chỉnh:
+        </div>
+        <div style="font-size: 12px; color: #fecaca; margin-top: 3px; line-height: 1.4;">
+          ${doms === "legs" ? "• Đùi mỏi rõ rệt: Đổi Pin Squat sang Leg Press máy, giữ RIR 2." : ""}
+          ${sleep === "poor" ? "• Ngủ kém (< 6h): Giảm 1 mức RIR ở tất cả các bài tập để tránh tích lũy kiệt sức." : ""}
+        </div>
+      `;
+    } else if (sleep === "fair" || doms === "upper") {
+      recBox.innerHTML = `
+        <div style="font-weight: 800; font-size: 12px; color: var(--color-amber); text-transform: uppercase;">
+          ⚡ Gợi ý thể trạng trung bình:
+        </div>
+        <div style="font-size: 12px; color: #fef08a; margin-top: 3px;">
+          Tập trung warm-up kỹ khớp vai/gối. Giữ RIR 1-2 chuẩn, không đẩy quá ngưỡng failure.
+        </div>
+      `;
+    } else {
+      recBox.innerHTML = `
+        <div style="font-weight: 800; font-size: 12px; color: var(--color-green); text-transform: uppercase;">
+          ✓ Sẵn sàng tập luyện 100%:
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
+          Thể trạng phục hồi tối ưu. Giữ nguyên mức tạ và chiến lược Overload.
+        </div>
+      `;
+    }
+  }
+
+  handleConfirmCheckinAndStart() {
+    const sleepBtn = document.querySelector(".btn-checkin-pill[data-sleep].active");
+    const domsBtn = document.querySelector(".btn-checkin-pill[data-doms].active");
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    this.storage.saveSmartFatigueCheckin(todayStr, {
+      sleep: sleepBtn ? sleepBtn.dataset.sleep : "good",
+      doms: domsBtn ? domsBtn.dataset.doms : "none"
+    });
+
+    this.closeAllModals();
+    this.startWorkoutTimer();
+  }
+
+  // Clean Slate Program Builder
+  openCleanProgramBuilder() {
+    const list = document.getElementById("builderDaysListContainer");
+    const form = document.getElementById("formProgramBuilder");
+    if (form) form.reset();
+    if (list) {
+      list.innerHTML = `
+        <div id="builderEmptyNotice" style="font-size: 12px; color: var(--text-dim); text-align: center; padding: 14px; background: var(--bg-card); border-radius: var(--radius-sm);">
+          Chưa có ngày tập nào. Bấm <strong>"+ Thêm Ngày"</strong> để bắt đầu tạo lịch tập cá nhân.
+        </div>
+      `;
+    }
+    this.openModal("modalProgramBuilder");
+  }
+
+  addDayToProgramBuilder() {
+    const list = document.getElementById("builderDaysListContainer");
+    const emptyNotice = document.getElementById("builderEmptyNotice");
+    if (emptyNotice) emptyNotice.remove();
+
+    const dayIndex = list.querySelectorAll(".builder-day-card").length;
+    const card = document.createElement("div");
+    card.className = "builder-day-card";
+    card.dataset.dayIndex = dayIndex;
+
+    card.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <select class="form-select b-day-key" style="width: 80px; padding: 5px;">
+            <option value="T2">T2</option>
+            <option value="T3">T3</option>
+            <option value="T4">T4</option>
+            <option value="T5">T5</option>
+            <option value="T6">T6</option>
+            <option value="T7">T7</option>
+            <option value="CN">CN</option>
+          </select>
+          <input type="text" class="form-input b-day-title" placeholder="Tên ngày tập (VD: Push Day)" style="padding: 5px 8px;" required>
+        </div>
+        <button type="button" class="btn-del-day-mini" style="background: transparent; border: none; color: var(--red-primary); cursor: pointer; font-size: 12px;">✕ Xóa</button>
+      </div>
+
+      <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+        <select class="form-select b-day-type" style="padding: 5px;">
+          <option value="strength">Tập tạ (Strength / Gym)</option>
+          <option value="run">Chạy bộ (Running)</option>
+          <option value="circuit">Circuit / Hyrox</option>
+          <option value="rest">Nghỉ ngơi (Rest)</option>
+        </select>
+        <button type="button" class="btn-builder-add-mini b-btn-add-ex">+ Thêm Bài</button>
+      </div>
+
+      <div class="b-day-exercises-container" style="display: flex; flex-direction: column; gap: 6px;">
+        <!-- Exercise rows -->
+      </div>
+    `;
+
+    card.querySelector(".btn-del-day-mini").addEventListener("click", () => card.remove());
+
+    const exContainer = card.querySelector(".b-day-exercises-container");
+    card.querySelector(".b-btn-add-ex").addEventListener("click", () => {
+      const exRow = document.createElement("div");
+      exRow.className = "b-ex-row";
+      exRow.style.display = "flex";
+      exRow.style.gap = "6px";
+      exRow.style.alignItems = "center";
+      exRow.innerHTML = `
+        <input type="text" class="form-input b-ex-name" placeholder="Tên bài tập" style="flex: 1.5; padding: 4px 6px;" required>
+        <input type="text" class="form-input b-ex-sets" placeholder="2 sets" style="flex: 0.8; padding: 4px 6px;" value="2">
+        <input type="text" class="form-input b-ex-reps" placeholder="6-10" style="flex: 0.8; padding: 4px 6px;" value="6-10">
+        <button type="button" class="btn-del-ex-mini" style="background: transparent; border: none; color: var(--text-dim); cursor: pointer;">✕</button>
+      `;
+      exRow.querySelector(".btn-del-ex-mini").addEventListener("click", () => exRow.remove());
+      exContainer.appendChild(exRow);
+    });
+
+    list.appendChild(card);
+  }
+
+  handleSaveCustomProgram() {
+    const nameInput = document.getElementById("inputProgName");
+    const descInput = document.getElementById("inputProgDesc");
+    const rotSelect = document.getElementById("selectProgRotation");
+    const list = document.getElementById("builderDaysListContainer");
+
+    const name = nameInput.value.trim();
+    const desc = descInput.value.trim();
+    const rotation = parseInt(rotSelect.value) || 1;
+
+    const dayCards = list.querySelectorAll(".builder-day-card");
+    if (dayCards.length === 0) {
+      alert("Vui lòng thêm ít nhất 1 ngày tập!");
+      return;
+    }
+
+    const days = [];
+    dayCards.forEach((dc, idx) => {
+      const key = dc.querySelector(".b-day-key").value;
+      const title = dc.querySelector(".b-day-title").value.trim() || `Day ${idx + 1}`;
+      const type = dc.querySelector(".b-day-type").value;
+
+      const exercises = [];
+      dc.querySelectorAll(".b-ex-row").forEach((er, eIdx) => {
+        const exName = er.querySelector(".b-ex-name").value.trim();
+        const setsCount = parseInt(er.querySelector(".b-ex-sets").value) || 2;
+        const reps = er.querySelector(".b-ex-reps").value.trim() || "6-10";
+
+        if (exName) {
+          const defaultSets = [];
+          for (let s = 1; s <= setsCount; s++) {
+            defaultSets.push({ setNum: s, reps, rir: "RIR 1", restSec: 120 });
+          }
+          exercises.push({
+            id: `custom_ex_${Date.now()}_${eIdx}`,
+            name: exName,
+            category: "Custom",
+            defaultSets
+          });
+        }
+      });
+
+      days.push({
+        dayIndex: idx,
+        dayKey: key,
+        title: title,
+        type: type,
+        badge: title,
+        exercises: exercises
+      });
+    });
 
     const newProg = {
       id: "custom_prog_" + Date.now(),
       name: name,
       description: desc || "Giáo án cá nhân tùy biến",
-      rotationWeeks: rotationWeeks,
+      rotationWeeks: rotation,
       isBuiltIn: false,
-      weeks: weeksObj
+      weeks: {
+        A: {
+          id: "A",
+          title: "Week A",
+          days: days
+        }
+      }
     };
 
     this.storage.saveCustomProgram(newProg);
     this.storage.setActiveProgramId(newProg.id);
     this.activeProgram = newProg;
-
     this.closeAllModals();
-    this.formProgramBuilder.reset();
+    this.renderAll();
     this.showToast(`🎉 Đã tạo và kích hoạt giáo án: ${name}!`);
     this.switchTab("workout");
   }
 
+  renderProgramsListModal() {
+    const container = document.getElementById("programsListContainerModal");
+    if (!container) return;
+
+    const programs = this.storage.getPrograms();
+    const activeId = this.storage.getActiveProgramId();
+
+    container.innerHTML = "";
+    programs.forEach(prog => {
+      const isActive = prog.id === activeId;
+      const card = document.createElement("div");
+      card.className = `program-card ${isActive ? "active" : ""}`;
+      card.style.background = "#0d0d0d";
+      card.style.border = "1px solid var(--border-subtle)";
+      card.style.borderRadius = "var(--radius-md)";
+      card.style.padding = "12px";
+
+      card.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+          <span style="font-weight: 800; font-size: 14px; color: var(--text-white);">${prog.name}</span>
+          ${isActive ? `<span style="font-size: 11px; font-weight: 800; color: var(--red-primary);">✓ Đang Tập</span>` : ""}
+        </div>
+        <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px;">${prog.description || 'Chương trình tập luyện'}</div>
+        <div style="display: flex; gap: 6px;">
+          ${!isActive ? `<button class="btn-day-action btn-act-p" style="padding: 6px 12px; font-size: 11.5px;">Kích Hoạt</button>` : ""}
+          ${!prog.isBuiltIn ? `<button class="btn-day-action secondary btn-del-p" style="padding: 6px 12px; font-size: 11.5px; color: var(--red-primary);">Xóa</button>` : ""}
+        </div>
+      `;
+
+      const btnAct = card.querySelector(".btn-act-p");
+      if (btnAct) {
+        btnAct.addEventListener("click", () => {
+          this.storage.setActiveProgramId(prog.id);
+          this.activeProgram = prog;
+          this.closeAllModals();
+          this.renderAll();
+          this.showToast(`Đã kích hoạt: ${prog.name}`);
+        });
+      }
+
+      const btnDel = card.querySelector(".btn-del-p");
+      if (btnDel) {
+        btnDel.addEventListener("click", () => {
+          if (confirm(`Xóa giáo án "${prog.name}"?`)) {
+            this.storage.deleteProgram(prog.id);
+            this.renderProgramsListModal();
+            this.showToast("Đã xóa giáo án.");
+          }
+        });
+      }
+
+      container.appendChild(card);
+    });
+  }
+
+  // Exercise Detail Modal
+  openExerciseDetailModal(exercise) {
+    this.selectedExerciseForDetail = exercise;
+    const detail = (this.data.exerciseDetails && this.data.exerciseDetails[exercise.id]) || {
+      name: exercise.name,
+      category: exercise.category || "Compound",
+      primaryMuscles: "Toàn thân",
+      formCues: "Thực hiện chuyển động kiểm soát và chuẩn form.",
+      progressionTip: "Tăng tạ khi đạt đủ số reps ở set cuối."
+    };
+
+    const nameEl = document.getElementById("modalExDetailName");
+    if (nameEl) nameEl.textContent = detail.name || exercise.name;
+
+    const catEl = document.getElementById("modalExDetailCategory");
+    if (catEl) catEl.textContent = detail.category || exercise.category;
+
+    const targetEl = document.getElementById("modalExDetailTarget");
+    if (targetEl) targetEl.textContent = exercise.targetRequirement || "2 sets × 6-10 reps @ RIR 0-1";
+
+    const musclesEl = document.getElementById("modalExDetailMuscles");
+    if (musclesEl) musclesEl.textContent = detail.primaryMuscles || "Toàn thân";
+
+    const cuesEl = document.getElementById("modalExDetailCues");
+    if (cuesEl) cuesEl.innerHTML = `${detail.formCues}<br><br><strong>Tiêu chuẩn Overload:</strong> ${detail.progressionTip}`;
+
+    const historyList = document.getElementById("exerciseDetailHistoryList");
+    const history = this.storage.getLiftHistory(exercise.id);
+
+    if (historyList) {
+      if (history.length === 0) {
+        historyList.innerHTML = `<div style="font-size: 12px; color: var(--text-dim); text-align: center; padding: 10px;">Chưa có lịch sử tập cho bài này.</div>`;
+      } else {
+        historyList.innerHTML = history.slice(0, 5).map(item => `
+          <div style="display: flex; align-items: center; justify-content: space-between; background: #0a0a0a; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 12px;">
+            <div>
+              <span style="font-weight: 800; color: #fff;">${item.weightKg} kg</span>
+              <span style="color: var(--text-muted);">× ${item.reps} reps</span>
+              <span style="color: var(--color-amber); font-size: 10.5px;">(${item.rir})</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-family: var(--font-mono); color: var(--color-green); font-size: 11px;">e1RM: ${item.e1rm}k</span>
+              <span style="font-size: 10px; color: var(--text-dim);">${item.date}</span>
+            </div>
+          </div>
+        `).join("");
+      }
+    }
+
+    if (window.DinoCharts) {
+      setTimeout(() => {
+        window.DinoCharts.renderOverloadChart("canvasExerciseDetail", history, detail.name);
+      }, 80);
+    }
+
+    this.openModal("modalExerciseDetail");
+  }
+
+  openSwapExerciseModal(originalEx) {
+    this.selectedExerciseForSwap = originalEx;
+    const titleEl = document.getElementById("swapCurrentExTitle");
+    if (titleEl) titleEl.textContent = `Đang đổi bài: ${originalEx.name}`;
+
+    const container = document.getElementById("swapOptionsListContainer");
+    if (!container) return;
+
+    const detailData = this.data.exerciseDetails ? this.data.exerciseDetails[originalEx.id] : null;
+    const swaps = (detailData && detailData.swaps) ? detailData.swaps : [
+      { id: "leg_press", name: "Leg Press", category: "Lower", reason: "Bài tập thay thế an toàn cho khớp gối và lưng dưới" },
+      { id: "lat_pulldown", name: "Lat Pulldown", category: "Upper", reason: "Điều chỉnh mức tạ chính xác theo reps" }
+    ];
+
+    container.innerHTML = "";
+    swaps.forEach(opt => {
+      const card = document.createElement("div");
+      card.className = "swap-option-card";
+      card.style.background = "#0d0d0d";
+      card.style.border = "1px solid var(--border-subtle)";
+      card.style.borderRadius = "var(--radius-md)";
+      card.style.padding = "10px";
+      card.style.cursor = "pointer";
+
+      card.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
+          <span style="font-weight: 800; font-size: 13.5px; color: #fff;">${opt.name}</span>
+          <span class="prog-badge">${opt.category || 'Swap'}</span>
+        </div>
+        <div style="font-size: 11.5px; color: var(--text-muted);">💡 ${opt.reason}</div>
+      `;
+
+      card.addEventListener("click", () => {
+        const replacementEx = {
+          ...originalEx,
+          id: opt.id,
+          name: opt.name,
+          category: opt.category,
+          isSwapped: true
+        };
+        this.storage.swapSessionExercise(this.activeProgram.id, this.currentWeek, this.currentDayIndex, originalEx.id, replacementEx);
+        this.closeAllModals();
+        this.renderWorkoutTab();
+        this.showToast(`Đã đổi sang bài: ${opt.name}! 🔄`);
+      });
+
+      container.appendChild(card);
+    });
+
+    this.openModal("modalSwapExercise");
+  }
+
+  // Post-Workout Summary Celebration
+  openPostWorkoutSummary() {
+    const weekData = (this.activeProgram.weeks && this.activeProgram.weeks[this.currentWeek])
+      ? this.activeProgram.weeks[this.currentWeek]
+      : null;
+    const activeDay = (weekData && weekData.days) ? weekData.days[this.currentDayIndex] : null;
+
+    const subtitleEl = document.getElementById("summaryWorkoutTitleSubtitle");
+    if (subtitleEl && activeDay) {
+      subtitleEl.textContent = `${activeDay.dayKey} • ${activeDay.title}`;
+    }
+
+    const sessionSetsMap = JSON.parse(localStorage.getItem(STORAGE_KEYS.SESSION_SETS) || "{}");
+    const runDraft = this.storage.getSessionRunData(this.activeProgram.id, this.currentWeek, this.currentDayIndex) || {};
+
+    let totalVolume = 0;
+    let totalSets = 0;
+    let prCount = 0;
+    const completedExercises = [];
+
+    if (activeDay && activeDay.exercises) {
+      const swappedMap = this.storage.getSwappedExercises(this.activeProgram.id, this.currentWeek, activeDay.dayIndex);
+      activeDay.exercises.forEach(origEx => {
+        const effectiveEx = swappedMap[origEx.id] || origEx;
+        const key = this.storage.getExerciseSessionKey(this.activeProgram.id, this.currentWeek, activeDay.dayIndex, effectiveEx.id);
+        const sets = sessionSetsMap[key] || [];
+
+        const doneSets = sets.filter(s => s.isCompleted && parseFloat(s.weightKg) > 0);
+        if (doneSets.length > 0) {
+          totalSets += doneSets.length;
+          const setsSummaryStr = doneSets.map(s => `${s.weightKg}k×${s.reps}`).join(", ");
+          doneSets.forEach(s => {
+            totalVolume += (parseFloat(s.weightKg) || 0) * (parseInt(s.reps) || 0);
+            if (s.progressStatus === "overload") prCount++;
+          });
+          completedExercises.push({ name: effectiveEx.name, sets: `${doneSets.length} sets (${setsSummaryStr})` });
+        }
+      });
+    }
+
+    const elapsedSec = this.timer.getSessionElapsedSeconds();
+    const durationMins = Math.max(1, Math.round(elapsedSec / 60));
+
+    const totalVolEl = document.getElementById("summaryTotalVolume");
+    if (totalVolEl) totalVolEl.textContent = `${totalVolume.toLocaleString()} kg`;
+
+    const totalSetsEl = document.getElementById("summaryTotalSets");
+    if (totalSetsEl) totalSetsEl.textContent = `${totalSets} sets`;
+
+    const durationEl = document.getElementById("summaryDuration");
+    if (durationEl) durationEl.textContent = this.timer.formatSessionTime(elapsedSec);
+
+    const prEl = document.getElementById("summaryPrCount");
+    if (prEl) prEl.textContent = `${prCount} PRs`;
+
+    const distanceCard = document.getElementById("summaryMetricCardDistance");
+    const paceCard = document.getElementById("summaryMetricCardPace");
+    const totalDistEl = document.getElementById("summaryTotalDistance");
+    const avgPaceEl = document.getElementById("summaryAveragePace");
+
+    if (runDraft.distanceKm && parseFloat(runDraft.distanceKm) > 0) {
+      if (distanceCard) distanceCard.style.display = "block";
+      if (paceCard) paceCard.style.display = "block";
+      if (totalDistEl) totalDistEl.textContent = `${runDraft.distanceKm} km`;
+      if (avgPaceEl) avgPaceEl.textContent = runDraft.pace || "--:--/km";
+    } else {
+      if (distanceCard) distanceCard.style.display = "none";
+      if (paceCard) paceCard.style.display = "none";
+    }
+
+    const exListEl = document.getElementById("summaryExercisesList");
+    if (exListEl) {
+      if (completedExercises.length === 0 && !runDraft.distanceKm) {
+        exListEl.innerHTML = `<div style="font-size: 12px; color: var(--text-dim);">Chưa có set nào được tích hoàn thành.</div>`;
+      } else {
+        exListEl.innerHTML = completedExercises.map(e => `
+          <div style="font-size: 12px; color: var(--text-white); margin-bottom: 3px;">
+            • <strong>${e.name}:</strong> <span style="color: var(--text-muted);">${e.sets}</span>
+          </div>
+        `).join("");
+      }
+    }
+
+    const notes = this.storage.getSessionNotes(this.activeProgram.id, this.currentWeek, activeDay ? activeDay.dayIndex : 0);
+    const notesEl = document.getElementById("summaryNotesDisplay");
+    if (notesEl) {
+      notesEl.textContent = notes || "Không có ghi chú.";
+    }
+
+    this.audio.playVictoryFanfare();
+    this.audio.triggerConfetti();
+    this.openModal("modalWorkoutSummary");
+  }
+
+  handleConfirmSaveWorkout() {
+    const weekData = (this.activeProgram.weeks && this.activeProgram.weeks[this.currentWeek])
+      ? this.activeProgram.weeks[this.currentWeek]
+      : null;
+    const activeDay = (weekData && weekData.days) ? weekData.days[this.currentDayIndex] : null;
+    if (!activeDay) return;
+
+    const sessionSetsMap = JSON.parse(localStorage.getItem(STORAGE_KEYS.SESSION_SETS) || "{}");
+    const runDraft = this.storage.getSessionRunData(this.activeProgram.id, this.currentWeek, this.currentDayIndex) || {};
+
+    let totalVolume = 0;
+    let totalSets = 0;
+    let prCount = 0;
+    const completedExercises = [];
+
+    if (activeDay.exercises) {
+      const swappedMap = this.storage.getSwappedExercises(this.activeProgram.id, this.currentWeek, activeDay.dayIndex);
+      activeDay.exercises.forEach(origEx => {
+        const effectiveEx = swappedMap[origEx.id] || origEx;
+        const key = this.storage.getExerciseSessionKey(this.activeProgram.id, this.currentWeek, activeDay.dayIndex, effectiveEx.id);
+        const sets = sessionSetsMap[key] || [];
+
+        const doneSets = sets.filter(s => s.isCompleted && parseFloat(s.weightKg) > 0);
+        if (doneSets.length > 0) {
+          totalSets += doneSets.length;
+          const setsSummaryStr = doneSets.map(s => `${s.weightKg}k×${s.reps}`).join(", ");
+          doneSets.forEach(s => {
+            totalVolume += (parseFloat(s.weightKg) || 0) * (parseInt(s.reps) || 0);
+            if (s.progressStatus === "overload") prCount++;
+          });
+          completedExercises.push({ name: effectiveEx.name, sets: `${doneSets.length} sets (${setsSummaryStr})` });
+        }
+      });
+    }
+
+    const elapsedSec = this.timer.getSessionElapsedSeconds();
+    const durationMins = Math.max(1, Math.round(elapsedSec / 60));
+    const notes = this.storage.getSessionNotes(this.activeProgram.id, this.currentWeek, activeDay.dayIndex);
+
+    const record = {
+      programId: this.activeProgram.id,
+      programName: this.activeProgram.name,
+      weekId: this.currentWeek,
+      dayKey: activeDay.dayKey,
+      dayTitle: activeDay.title,
+      durationMinutes: durationMins,
+      totalVolumeKg: totalVolume,
+      totalSetsCount: totalSets,
+      totalDistanceKm: parseFloat(runDraft.distanceKm) || 0,
+      exercises: completedExercises,
+      runDetail: runDraft.distanceKm ? runDraft : null,
+      notes: notes,
+      prCount: prCount
+    };
+
+    this.storage.archiveWorkoutSession(record);
+    this.storage.setDayCompleted(this.activeProgram.id, this.currentWeek, activeDay.dayIndex, true);
+    this.timer.stopSession();
+
+    this.closeAllModals();
+    this.showToast("🏆 Buổi tập đã hoàn tất & lưu trữ thành công!");
+    this.switchTab("stats");
+  }
+
   // =========================================================================
-  // TAB 5: RECOVERY RULES & KNOWLEDGE MATRIX
+  // TAB 4: RULES & RECOVERY
   // =========================================================================
   renderRecoveryTab() {
     if (this.recoveryRulesList && this.data.smartRecoveryRules) {
@@ -1742,7 +2359,7 @@ class DinoApp {
         el.innerHTML = `
           <div class="rule-header">
             <span class="rule-condition">⚡ ${r.condition}</span>
-            <span class="rule-badge ${r.badgeClass || 'badge-warning'}">${r.badge}</span>
+            <span class="prog-badge" style="color: var(--red-primary);">${r.badge}</span>
           </div>
           <div class="rule-action">${r.action}</div>
         `;
@@ -1792,72 +2409,93 @@ class DinoApp {
   }
 
   // =========================================================================
-  // REST TIMER HUD ENGINE
+  // AI COACH MODAL CONTROLLER
   // =========================================================================
-  startTimer(durationSeconds, isRestPause = false) {
-    this.stopTimer();
-    this.timerSecondsLeft = durationSeconds;
-    this.isTimerRP = isRestPause;
+  renderAIQuickPrompts() {
+    const container = document.getElementById("aiQuickPromptsContainerModal");
+    if (!container || !this.data.aiCoachPrompts) return;
+    container.innerHTML = "";
 
-    if (this.timerTitleText) {
-      this.timerTitleText.textContent = isRestPause ? "⚡ REST-PAUSE (15s)" : "⏱️ NGHỈ GIỮA SET";
+    this.data.aiCoachPrompts.forEach(p => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "ai-prompt-chip";
+      chip.textContent = p.label;
+      chip.addEventListener("click", () => {
+        this.sendAICoachQuery(p.prompt);
+      });
+      container.appendChild(chip);
+    });
+  }
+
+  renderAIChatMessages() {
+    const container = document.getElementById("aiChatHistoryModal");
+    if (!container) return;
+    const history = this.storage.getAIChatHistory();
+
+    if (history.length === 0) {
+      container.innerHTML = `
+        <div class="ai-msg-row">
+          <div class="ai-bubble assistant">
+            <h3 style="font-family: var(--font-heading); font-size: 15px; margin-bottom: 4px;">⚡ Xin chào Athlete!</h3>
+            Tôi là <strong>Dino AI Coach</strong>. Tôi phân tích lịch sử tập luyện, tải tạ, giấc ngủ và trả lời mọi câu hỏi về dinh dưỡng, phục hồi hay chiến thuật chạy Half-Marathon!
+          </div>
+        </div>
+      `;
+      return;
     }
 
-    if (this.timerHudPill) {
-      this.timerHudPill.classList.add("visible");
+    container.innerHTML = history.map(msg => `
+      <div class="ai-msg-row ${msg.role === 'user' ? 'user' : ''}">
+        <div class="ai-bubble ${msg.role === 'user' ? 'user' : 'assistant'}">
+          ${msg.role === 'user' ? msg.content.replace(/\n/g, '<br>') : this.formatMarkdown(msg.content)}
+        </div>
+      </div>
+    `).join("");
+
+    container.scrollTop = container.scrollHeight;
+  }
+
+  formatMarkdown(text) {
+    if (!text) return "";
+    let html = text;
+    html = html.replace(/^### (.*$)/gim, '<h4 style="font-size: 13.5px; margin: 6px 0 2px 0;">$1</h4>');
+    html = html.replace(/^## (.*$)/gim, '<h3 style="font-size: 14.5px; margin: 8px 0 4px 0;">$1</h3>');
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/`([^`]+)`/g, '<code style="background:#222; padding:1px 4px; border-radius:3px;">$1</code>');
+    html = html.replace(/^\s*[-•]\s+(.*$)/gim, '<li style="margin-left: 14px;">$1</li>');
+    html = html.replace(/\n\n+/g, '<br><br>');
+    html = html.replace(/\n/g, '<br>');
+    return html;
+  }
+
+  async sendAICoachQuery(queryText) {
+    if (!queryText || !queryText.trim()) return;
+
+    const history = this.storage.getAIChatHistory();
+    history.push({ role: "user", content: queryText });
+    this.storage.saveAIChatHistory(history);
+    this.renderAIChatMessages();
+
+    const container = document.getElementById("aiChatHistoryModal");
+    if (container) {
+      const typingRow = document.createElement("div");
+      typingRow.className = "ai-msg-row typing-row";
+      typingRow.innerHTML = `<div class="ai-bubble assistant"><em>Coach đang phân tích dữ liệu... ⚡</em></div>`;
+      container.appendChild(typingRow);
+      container.scrollTop = container.scrollHeight;
     }
 
-    this.updateTimerDisplay();
+    const response = await this.aiCoach.generateResponse(queryText);
 
-    this.timerInterval = setInterval(() => {
-      this.timerSecondsLeft -= 1;
-      this.updateTimerDisplay();
-
-      if (this.timerSecondsLeft === 3 || this.timerSecondsLeft === 2 || this.timerSecondsLeft === 1) {
-        this.audio.playWarningTick();
-      } else if (this.timerSecondsLeft <= 0) {
-        this.audio.playTimerDone();
-        this.showToast("⏰ Hết giờ nghỉ! Sẵn sàng cho set tiếp theo!");
-        this.stopTimer();
-      }
-    }, 1000);
+    const updatedHistory = this.storage.getAIChatHistory();
+    updatedHistory.push({ role: "assistant", content: response });
+    this.storage.saveAIChatHistory(updatedHistory);
+    this.renderAIChatMessages();
   }
 
-  addTimerSeconds(sec) {
-    this.timerSecondsLeft += sec;
-    this.updateTimerDisplay();
-    this.showToast(`+${sec}s vào thời gian nghỉ`);
-  }
-
-  stopTimer() {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-      this.timerInterval = null;
-    }
-    if (this.timerHudPill) {
-      this.timerHudPill.classList.remove("visible");
-    }
-  }
-
-  updateTimerDisplay() {
-    if (!this.timerTimeText) return;
-    const mins = Math.floor(Math.max(0, this.timerSecondsLeft) / 60);
-    const secs = Math.max(0, this.timerSecondsLeft) % 60;
-    this.timerTimeText.textContent = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  }
-
-  // =========================================================================
-  // MODALS & SETTINGS CONTROLLER
-  // =========================================================================
-  openModal(modalId) {
-    const m = document.getElementById(modalId);
-    if (m) m.classList.add("open");
-  }
-
-  closeAllModals() {
-    document.querySelectorAll(".modal-overlay").forEach(m => m.classList.remove("open"));
-  }
-
+  // Settings Modal
   openSettingsModal() {
     const modal = document.getElementById("modalSettings");
     if (!modal) return;
@@ -1865,6 +2503,8 @@ class DinoApp {
     const settings = this.storage.getSettings();
     const soundToggle = document.getElementById("settingSound");
     const vibrateToggle = document.getElementById("settingVibrate");
+    const smartFatigueToggle = document.getElementById("settingSmartFatigue");
+
     if (soundToggle) {
       soundToggle.checked = settings.sound !== false;
       soundToggle.onchange = () => this.storage.updateSettings({ sound: soundToggle.checked });
@@ -1873,7 +2513,11 @@ class DinoApp {
       vibrateToggle.checked = settings.vibrate !== false;
       vibrateToggle.onchange = () => this.storage.updateSettings({ vibrate: vibrateToggle.checked });
     }
-    // Supabase Cloud Sync settings in modal
+    if (smartFatigueToggle) {
+      smartFatigueToggle.checked = settings.enableSmartFatigue !== false;
+      smartFatigueToggle.onchange = () => this.storage.updateSettings({ enableSmartFatigue: smartFatigueToggle.checked });
+    }
+
     const inputCloudAthleteId = document.getElementById("inputCloudAthleteId");
     const btnSaveCloudAthleteId = document.getElementById("btnSaveCloudAthleteId");
     if (inputCloudAthleteId && this.supabaseSync) {
@@ -1883,7 +2527,7 @@ class DinoApp {
           const val = (inputCloudAthleteId.value || "").trim();
           if (val) {
             this.supabaseSync.setUserId(val);
-            this.showToast(`Đã đổi Athlete Sync ID thành: "${val}"`);
+            this.showToast(`Đã đổi Athlete Sync ID: "${val}"`);
           }
         };
       }
@@ -1936,7 +2580,39 @@ class DinoApp {
       };
     }
 
-    modal.classList.add("open");
+    this.openModal("modalSettings");
+  }
+
+  updateCloudSyncDisplay(detail) {
+    if (!this.cloudSyncBadge) return;
+    const { status, message, lastSyncedAt } = detail;
+    this.cloudSyncBadge.className = `cloud-sync-pill ${status}`;
+
+    if (this.cloudSyncText) {
+      if (status === "synced") this.cloudSyncText.textContent = "Cloud";
+      else if (status === "syncing") this.cloudSyncText.textContent = "Syncing...";
+      else if (status === "offline") this.cloudSyncText.textContent = "Offline";
+      else if (status === "error") this.cloudSyncText.textContent = "Error";
+    }
+
+    const settingsCloudPill = document.getElementById("settingsCloudPill");
+    if (settingsCloudPill) {
+      settingsCloudPill.className = `cloud-status-pill ${status}`;
+      if (status === "synced") settingsCloudPill.textContent = "● Đã kết nối Cloud";
+      else if (status === "syncing") settingsCloudPill.textContent = "● Đang đồng bộ...";
+      else if (status === "offline") settingsCloudPill.textContent = "● Ngoại tuyến (Offline)";
+      else settingsCloudPill.textContent = "● Lỗi kết nối";
+    }
+  }
+
+  // Modals Controller
+  openModal(modalId) {
+    const m = document.getElementById(modalId);
+    if (m) m.classList.add("open");
+  }
+
+  closeAllModals() {
+    document.querySelectorAll(".modal-overlay").forEach(m => m.classList.remove("open"));
   }
 
   // Toast Notification

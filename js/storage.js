@@ -1,26 +1,28 @@
 /**
- * Dino Tracking - Storage & History Engine
- * Multi-program manager, Hevy-style dynamic sets, Workout History archive, and Calendar indexer
+ * Dino Tracking - Storage & Dynamic Analytics Engine
+ * Manages Multi-Program storage, Hevy-style Session sets, Workout History with dynamic recalculation,
+ * Overload progression, Smart Fatigue settings, and Supabase cloud sync snapshotting.
  */
 
 const STORAGE_KEYS = {
-  PROGRAMS: "dino_programs_v4",
-  ACTIVE_PROGRAM_ID: "dino_active_program_id_v4",
-  ACTIVE_WEEK: "dino_active_week_v4",
-  ACTIVE_DAY_INDEX: "dino_active_day_index_v4",
-  COMPLETED_DAYS: "dino_completed_days_v4",
-  COMPLETED_CHECKLIST: "dino_completed_checklist_v4",
-  DAY_SELECTED_OPTIONS: "dino_day_selected_options_v4",
-  SESSION_SETS: "dino_session_sets_v4",
+  PROGRAMS: "dino_programs_v5",
+  ACTIVE_PROGRAM_ID: "dino_active_program_id_v5",
+  ACTIVE_WEEK: "dino_active_week_v5",
+  ACTIVE_DAY_INDEX: "dino_active_day_index_v5",
+  COMPLETED_DAYS: "dino_completed_days_v5",
+  COMPLETED_CHECKLIST: "dino_completed_checklist_v5",
+  DAY_SELECTED_OPTIONS: "dino_day_selected_options_v5",
+  SESSION_SETS: "dino_session_sets_v5",
   SESSION_RUN_DATA: "dino_session_run_data_v5",
   SWAPPED_EXERCISES: "dino_swapped_exercises_v5",
   SESSION_NOTES: "dino_session_notes_v5",
-  ACTIVE_WORKOUT_TIMER: "dino_workout_timer_v5",
+  ACTIVE_CIRCUIT_STATE: "dino_active_circuit_state_v5",
   AI_CHAT_HISTORY: "dino_ai_chat_v5",
-  WORKOUT_HISTORY: "dino_workout_history_v4",
-  OVERLOAD_LOGS: "dino_overload_logs_v4",
-  RUN_LOGS: "dino_run_logs_v4",
-  SETTINGS: "dino_settings_v4"
+  WORKOUT_HISTORY: "dino_workout_history_v5",
+  OVERLOAD_LOGS: "dino_overload_logs_v5",
+  RUN_LOGS: "dino_run_logs_v5",
+  SMART_FATIGUE_LOGS: "dino_smart_fatigue_logs_v5",
+  SETTINGS: "dino_settings_v5"
 };
 
 class DinoStorage {
@@ -80,7 +82,8 @@ class DinoStorage {
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({
         sound: true,
         vibrate: true,
-        restTimerDuration: 120,
+        enableSmartFatigue: true,
+        restTimerDuration: 150,
         rpTimerDuration: 15
       }));
     }
@@ -127,7 +130,7 @@ class DinoStorage {
 
   deleteProgram(programId) {
     let progs = this.getPrograms();
-    if (programId === "dino_hybrid_1") return false; // Prevent deleting default built-in preset
+    if (programId === "dino_hybrid_1") return false; // built-in preset protected
     progs = progs.filter(p => p.id !== programId);
     localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(progs));
 
@@ -136,6 +139,63 @@ class DinoStorage {
     }
     this.triggerSync();
     return true;
+  }
+
+  // ATHLETE CONTEXT SUMMARY FOR AI COACH
+  getAthleteContextSummary() {
+    const activeProgram = this.getActiveProgram();
+    const activeWeek = this.getActiveWeek();
+    const activeDayIndex = this.getActiveDayIndex();
+    const history = this.getWorkoutHistory();
+    const runs = this.getRunLogs();
+    const stats = this.getHistoryStats("all");
+    const overloadLogs = this.getOverloadLogs();
+
+    const coreExerciseKeys = ["pin_squat", "pull_up", "incline_db_bench", "leg_curl", "lateral_raise", "leg_press", "chest_supported_row"];
+    const bestLifts = {};
+
+    coreExerciseKeys.forEach(key => {
+      const logs = overloadLogs[key] || [];
+      if (logs.length > 0) {
+        let bestEntry = logs[0];
+        logs.forEach(l => {
+          if ((l.e1rm || 0) > (bestEntry.e1rm || 0)) bestEntry = l;
+        });
+        bestLifts[key] = {
+          name: bestEntry.exerciseName || key,
+          weightKg: bestEntry.weightKg,
+          reps: bestEntry.reps,
+          rir: bestEntry.rir,
+          e1rm: bestEntry.e1rm,
+          date: bestEntry.date
+        };
+      }
+    });
+
+    const recentNotes = [];
+    history.slice(0, 5).forEach(h => {
+      if (h.notes && h.notes.trim().length > 0) {
+        recentNotes.push({ date: h.date, workout: h.dayTitle, text: h.notes });
+      }
+    });
+
+    let weekKm = 0;
+    runs.slice(0, 5).forEach(r => {
+      if (r.week === activeWeek) weekKm += (parseFloat(r.distanceKm) || 0);
+    });
+
+    return {
+      activeProgramName: activeProgram ? activeProgram.name : "Dino Hybrid 1.0",
+      activeProgramTarget: activeProgram ? activeProgram.target : "Hybrid Athlete Performance",
+      activeWeek,
+      activeDayIndex,
+      stats,
+      recentWorkouts: history.slice(0, 5),
+      recentRuns: runs.slice(0, 5),
+      bestLifts,
+      recentNotes,
+      weekRunningKm: Math.round(weekKm * 10) / 10
+    };
   }
 
   // Active Week & Day Navigation
@@ -228,8 +288,8 @@ class DinoStorage {
 
     // Default initialization from program exercise data
     const initialSets = (exercise.defaultSets || [
-      { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 120 },
-      { setNum: 2, reps: "6-10", rir: "RIR 0-1", restSec: 120 }
+      { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 150 },
+      { setNum: 2, reps: "6-10", rir: "RIR 0-1", restSec: 150 }
     ]).map((s, idx) => {
       const prev = this.getPreviousPerformance(exercise.id, idx + 1);
       return {
@@ -336,7 +396,6 @@ class DinoStorage {
     }
   }
 
-  // Evaluate if current set is Overload (PR), Regression, or Equal
   evaluateSetProgress(weight, reps, rir, prev) {
     if (!prev || !prev.weightKg || !prev.reps) return "first_time";
 
@@ -345,12 +404,12 @@ class DinoStorage {
 
     // Overload: heavier weight, or more reps with same/heavier weight, or higher e1RM
     if (weight > prev.weightKg || (weight === prev.weightKg && reps > prev.reps) || currentE1rm > (prevE1rm + 0.5)) {
-      return "overload"; // PR / Progress beat!
+      return "overload";
     }
 
     // Regression: lower weight or less reps with same/lighter weight
     if (weight < prev.weightKg || (weight === prev.weightKg && reps < prev.reps) || currentE1rm < (prevE1rm - 1.5)) {
-      return "regression"; // Deload / dropped
+      return "regression";
     }
 
     return "equal";
@@ -381,7 +440,7 @@ class DinoStorage {
   }
 
   getSwappedExercises(programId, week, dayIndex) {
-    const all = JSON.parse(localStorage.getItem(STORAGE_KEYS.SWAPPED_EXERCISES || "dino_swapped_exercises_v5") || "{}");
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEYS.SWAPPED_EXERCISES) || "{}");
     const key = this.getSwappedExerciseKey(programId, week, dayIndex);
     return all[key] || {};
   }
@@ -412,7 +471,7 @@ class DinoStorage {
     return notes;
   }
 
-  // Session Draft Running Data Persistence
+  // Running Draft Data Persistence
   getSessionRunData(programId, week, dayIndex) {
     const all = JSON.parse(localStorage.getItem(STORAGE_KEYS.SESSION_RUN_DATA) || "{}");
     const key = this.getSwappedExerciseKey(programId, week, dayIndex);
@@ -432,19 +491,6 @@ class DinoStorage {
     return all[key];
   }
 
-  // Active Workout Stopwatch state persistence
-  getWorkoutTimerState() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVE_WORKOUT_TIMER) || "null");
-  }
-
-  saveWorkoutTimerState(state) {
-    if (state === null) {
-      localStorage.removeItem(STORAGE_KEYS.ACTIVE_WORKOUT_TIMER);
-    } else {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKOUT_TIMER, JSON.stringify(state));
-    }
-  }
-
   // AI Coach Chat History
   getAIChatHistory() {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.AI_CHAT_HISTORY) || "[]");
@@ -461,14 +507,10 @@ class DinoStorage {
   }
 
   // =========================================================================
-  // WORKOUT HISTORY ARCHIVE & CALENDAR ENGINE
+  // WORKOUT HISTORY ARCHIVE & DYNAMIC STATS ENGINE (Automatic Recalculation)
   // =========================================================================
   getWorkoutHistory() {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.WORKOUT_HISTORY) || "[]");
-  }
-
-  getHistory() {
-    return this.getWorkoutHistory();
   }
 
   archiveWorkoutSession(sessionData) {
@@ -496,7 +538,7 @@ class DinoStorage {
     history.unshift(newRecord);
     localStorage.setItem(STORAGE_KEYS.WORKOUT_HISTORY, JSON.stringify(history));
 
-    // Synchronize to RUN_LOGS so running charts and stats update consistently
+    // Also sync to RUN_LOGS if distance is present
     if (newRecord.totalDistanceKm > 0 || newRecord.runDetail) {
       this.logRun({
         id: "run_" + newRecord.id,
@@ -515,10 +557,17 @@ class DinoStorage {
     return newRecord;
   }
 
+  // Deleting a workout record automatically cascades and cleans up linked run logs
   deleteHistoryRecord(recordId) {
     let history = this.getWorkoutHistory();
     history = history.filter(h => h.id !== recordId);
     localStorage.setItem(STORAGE_KEYS.WORKOUT_HISTORY, JSON.stringify(history));
+
+    // Clean linked run log
+    let runs = this.getRunLogs();
+    runs = runs.filter(r => r.id !== ("run_" + recordId) && r.id !== ("run_hist_" + recordId));
+    localStorage.setItem(STORAGE_KEYS.RUN_LOGS, JSON.stringify(runs));
+
     this.triggerSync();
   }
 
@@ -545,22 +594,56 @@ class DinoStorage {
     return dateSet;
   }
 
-  getHistoryStats(filter = "month") {
+  // DYNAMIC TOTALS CALCULATION: Recalculates directly from active records
+  getHistoryStats(filter = "all") {
     const history = this.getWorkoutHistory();
-    let totalWorkouts = history.length;
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
+
+    // Filter by timeframe if requested
+    let filteredHistory = history;
+    if (filter === "daily") {
+      filteredHistory = history.filter(h => h.date === todayStr);
+    } else if (filter === "week") {
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000).toISOString().split("T")[0];
+      filteredHistory = history.filter(h => h.date >= sevenDaysAgo);
+    } else if (filter === "month") {
+      const monthPrefix = todayStr.substring(0, 7); // 'YYYY-MM'
+      filteredHistory = history.filter(h => h.date && h.date.startsWith(monthPrefix));
+    }
+
+    let totalWorkouts = filteredHistory.length;
     let totalVolumeKg = 0;
     let totalDistanceKm = 0;
+    let totalSets = 0;
+    let totalPRs = 0;
 
-    history.forEach(h => {
+    filteredHistory.forEach(h => {
       totalVolumeKg += (parseFloat(h.totalVolumeKg) || 0);
       totalDistanceKm += (parseFloat(h.totalDistanceKm) || 0);
+      totalSets += (parseInt(h.totalSetsCount) || 0);
+      totalPRs += (parseInt(h.prCount) || 0);
     });
 
-    // Also include any standalone runs that might not have a full history card
+    // Also account for any standalone runs
     const runs = this.getRunLogs();
-    runs.forEach(r => {
-      const alreadyCounted = history.some(h => h.id === "hist_" + (r.id ? r.id.replace("run_hist_", "") : ""));
-      if (!alreadyCounted && r.distanceKm && !history.some(h => h.date === r.date && h.totalDistanceKm === r.distanceKm)) {
+    let filteredRuns = runs;
+    if (filter === "daily") {
+      filteredRuns = runs.filter(r => r.date === todayStr);
+    } else if (filter === "week") {
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000).toISOString().split("T")[0];
+      filteredRuns = runs.filter(r => r.date >= sevenDaysAgo);
+    } else if (filter === "month") {
+      const monthPrefix = todayStr.substring(0, 7);
+      filteredRuns = runs.filter(r => r.date && r.date.startsWith(monthPrefix));
+    }
+
+    filteredRuns.forEach(r => {
+      const isCountedInHistory = filteredHistory.some(h => (
+        h.id === r.id.replace("run_", "") ||
+        (h.date === r.date && Math.abs((parseFloat(h.totalDistanceKm) || 0) - (parseFloat(r.distanceKm) || 0)) < 0.01)
+      ));
+      if (!isCountedInHistory && r.distanceKm) {
         totalDistanceKm += parseFloat(r.distanceKm) || 0;
       }
     });
@@ -568,68 +651,9 @@ class DinoStorage {
     return {
       totalWorkouts,
       totalVolumeKg: Math.round(totalVolumeKg),
-      totalDistanceKm: Math.round(totalDistanceKm * 10) / 10
-    };
-  }
-
-  // ATHLETE DATA AGGREGATOR FOR AI COACH
-  getAthleteContextSummary() {
-    const activeProgram = this.getActiveProgram();
-    const activeWeek = this.getActiveWeek();
-    const activeDayIndex = this.getActiveDayIndex();
-    const history = this.getWorkoutHistory();
-    const runs = this.getRunLogs();
-    const stats = this.getHistoryStats();
-    const overloadLogs = this.getOverloadLogs();
-
-    // Extract best lift metrics for major movements
-    const coreExerciseKeys = ["pin_squat", "pull_up", "incline_db_bench", "leg_curl", "lateral_raise", "smith_squat", "leg_press", "chest_supported_row"];
-    const bestLifts = {};
-
-    coreExerciseKeys.forEach(key => {
-      const logs = overloadLogs[key] || [];
-      if (logs.length > 0) {
-        // Find best weight and best e1rm
-        let bestEntry = logs[0];
-        logs.forEach(l => {
-          if ((l.e1rm || 0) > (bestEntry.e1rm || 0)) bestEntry = l;
-        });
-        bestLifts[key] = {
-          name: bestEntry.exerciseName || key,
-          weightKg: bestEntry.weightKg,
-          reps: bestEntry.reps,
-          rir: bestEntry.rir,
-          e1rm: bestEntry.e1rm,
-          date: bestEntry.date
-        };
-      }
-    });
-
-    // Recent session notes
-    const recentNotes = [];
-    history.slice(0, 5).forEach(h => {
-      if (h.notes && h.notes.trim().length > 0) {
-        recentNotes.push({ date: h.date, workout: h.dayTitle, text: h.notes });
-      }
-    });
-
-    // Calculate this week's running mileage
-    let weekKm = 0;
-    runs.slice(0, 5).forEach(r => {
-      if (r.week === activeWeek) weekKm += (parseFloat(r.distanceKm) || 0);
-    });
-
-    return {
-      activeProgramName: activeProgram ? activeProgram.name : "Dino Hybrid 1.0",
-      activeProgramTarget: activeProgram ? activeProgram.target : "Hybrid Athlete Performance",
-      activeWeek,
-      activeDayIndex,
-      stats,
-      recentWorkouts: history.slice(0, 5),
-      recentRuns: runs.slice(0, 5),
-      bestLifts,
-      recentNotes,
-      weekRunningKm: Math.round(weekKm * 10) / 10
+      totalDistanceKm: Math.round(totalDistanceKm * 10) / 10,
+      totalSets,
+      totalPRs
     };
   }
 
@@ -707,7 +731,7 @@ class DinoStorage {
   logRun(runData) {
     const logs = this.getRunLogs();
     const newLog = {
-      id: "run_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+      id: runData.id || ("run_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6)),
       date: runData.date || new Date().toISOString().split("T")[0],
       programId: runData.programId || this.getActiveProgramId(),
       week: runData.week || this.getActiveWeek(),
@@ -721,7 +745,14 @@ class DinoStorage {
       createdAt: new Date().toISOString()
     };
 
-    logs.unshift(newLog);
+    // Replace if exists, else prepend
+    const existingIdx = logs.findIndex(l => l.id === newLog.id);
+    if (existingIdx >= 0) {
+      logs[existingIdx] = newLog;
+    } else {
+      logs.unshift(newLog);
+    }
+
     localStorage.setItem(STORAGE_KEYS.RUN_LOGS, JSON.stringify(logs));
     this.triggerSync();
     return newLog;
@@ -744,7 +775,28 @@ class DinoStorage {
     return `${pMinutes}:${pSeconds < 10 ? "0" : ""}${pSeconds}/km`;
   }
 
-  // Settings
+  // =========================================================================
+  // SMART FATIGUE CHECK-IN STATE
+  // =========================================================================
+  getSmartFatigueCheckin(dateStr) {
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEYS.SMART_FATIGUE_LOGS) || "{}");
+    return all[dateStr] || null;
+  }
+
+  saveSmartFatigueCheckin(dateStr, data) {
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEYS.SMART_FATIGUE_LOGS) || "{}");
+    all[dateStr] = {
+      ...data,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEYS.SMART_FATIGUE_LOGS, JSON.stringify(all));
+    this.triggerSync();
+    return all[dateStr];
+  }
+
+  // =========================================================================
+  // SETTINGS & SYNC
+  // =========================================================================
   getSettings() {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS) || "{}");
   }
@@ -757,7 +809,6 @@ class DinoStorage {
     return updated;
   }
 
-  // Full state snapshot for Supabase Cloud Sync
   exportFullSnapshot() {
     return {
       programs: this.getPrograms(),
@@ -772,6 +823,7 @@ class DinoStorage {
       aiChatHistory: this.getAIChatHistory(),
       overloadLogs: this.getOverloadLogs(),
       runLogs: this.getRunLogs(),
+      smartFatigueLogs: JSON.parse(localStorage.getItem(STORAGE_KEYS.SMART_FATIGUE_LOGS) || "{}"),
       completedDays: JSON.parse(localStorage.getItem(STORAGE_KEYS.COMPLETED_DAYS) || "{}"),
       completedChecklist: JSON.parse(localStorage.getItem(STORAGE_KEYS.COMPLETED_CHECKLIST) || "{}"),
       daySelectedOptions: JSON.parse(localStorage.getItem(STORAGE_KEYS.DAY_SELECTED_OPTIONS) || "{}"),
@@ -794,6 +846,7 @@ class DinoStorage {
       if (data.aiChatHistory) localStorage.setItem(STORAGE_KEYS.AI_CHAT_HISTORY, JSON.stringify(data.aiChatHistory));
       if (data.overloadLogs) localStorage.setItem(STORAGE_KEYS.OVERLOAD_LOGS, JSON.stringify(data.overloadLogs));
       if (data.runLogs) localStorage.setItem(STORAGE_KEYS.RUN_LOGS, JSON.stringify(data.runLogs));
+      if (data.smartFatigueLogs) localStorage.setItem(STORAGE_KEYS.SMART_FATIGUE_LOGS, JSON.stringify(data.smartFatigueLogs));
       if (data.completedDays) localStorage.setItem(STORAGE_KEYS.COMPLETED_DAYS, JSON.stringify(data.completedDays));
       if (data.completedChecklist) localStorage.setItem(STORAGE_KEYS.COMPLETED_CHECKLIST, JSON.stringify(data.completedChecklist));
       if (data.daySelectedOptions) localStorage.setItem(STORAGE_KEYS.DAY_SELECTED_OPTIONS, JSON.stringify(data.daySelectedOptions));
@@ -811,11 +864,10 @@ class DinoStorage {
     }
   }
 
-  // JSON Export & Import (Legacy Backup)
   exportAllData() {
     const bundle = {
       app: "DinoTracking",
-      version: "5.0",
+      version: "5.5",
       exportedAt: new Date().toISOString(),
       ...this.exportFullSnapshot()
     };
@@ -833,7 +885,6 @@ class DinoStorage {
     }
   }
 
-  // Seed sample demo data
   seedDemoData() {
     const completedDays = {
       "dino_hybrid_1_A-0": { completed: true, timestamp: new Date(Date.now() - 86400000 * 2).toISOString() },
@@ -841,58 +892,20 @@ class DinoStorage {
     };
     localStorage.setItem(STORAGE_KEYS.COMPLETED_DAYS, JSON.stringify(completedDays));
 
-    // Sample Overload Benchmarks
     const sampleOverload = {
       pin_squat: [
-        {
-          id: "set_sq_prev_1",
-          date: new Date(Date.now() - 86400000 * 7).toISOString().split("T")[0],
-          week: "A",
-          setNum: 1,
-          weightKg: 105,
-          reps: 6,
-          rir: "RIR 1-2",
-          e1rm: 131.3
-        },
-        {
-          id: "set_sq_prev_2",
-          date: new Date(Date.now() - 86400000 * 7).toISOString().split("T")[0],
-          week: "A",
-          setNum: 2,
-          weightKg: 100,
-          reps: 7,
-          rir: "RIR 1-2",
-          e1rm: 128.3
-        }
+        { id: "set_sq_1", date: new Date(Date.now() - 86400000 * 7).toISOString().split("T")[0], setNum: 1, weightKg: 105, reps: 6, rir: "RIR 1-2", e1rm: 131.3 },
+        { id: "set_sq_2", date: new Date(Date.now() - 86400000 * 7).toISOString().split("T")[0], setNum: 2, weightKg: 100, reps: 7, rir: "RIR 1-2", e1rm: 128.3 }
       ],
       pull_up: [
-        {
-          id: "set_pu_prev_1",
-          date: new Date(Date.now() - 86400000 * 7).toISOString().split("T")[0],
-          week: "A",
-          setNum: 1,
-          weightKg: 15,
-          reps: 6,
-          rir: "RIR 1",
-          e1rm: 18.5
-        }
+        { id: "set_pu_1", date: new Date(Date.now() - 86400000 * 7).toISOString().split("T")[0], setNum: 1, weightKg: 15, reps: 6, rir: "RIR 1", e1rm: 18.5 }
       ],
       incline_db_bench: [
-        {
-          id: "set_db_prev_1",
-          date: new Date(Date.now() - 86400000 * 7).toISOString().split("T")[0],
-          week: "A",
-          setNum: 1,
-          weightKg: 32,
-          reps: 8,
-          rir: "RIR 1",
-          e1rm: 41.6
-        }
+        { id: "set_db_1", date: new Date(Date.now() - 86400000 * 7).toISOString().split("T")[0], setNum: 1, weightKg: 32, reps: 8, rir: "RIR 1", e1rm: 41.6 }
       ]
     };
     localStorage.setItem(STORAGE_KEYS.OVERLOAD_LOGS, JSON.stringify(sampleOverload));
 
-    // Sample Workout History
     const sampleHistory = [
       {
         id: "hist_demo_1",
@@ -935,28 +948,9 @@ class DinoStorage {
     ];
     localStorage.setItem(STORAGE_KEYS.WORKOUT_HISTORY, JSON.stringify(sampleHistory));
 
-    // Sample Runs
     const sampleRuns = [
-      {
-        id: "run_demo_1",
-        date: new Date(Date.now() - 86400000 * 2).toISOString().split("T")[0],
-        week: "A",
-        dayKey: "T2",
-        distanceKm: 9.5,
-        durationMinutes: 54,
-        pace: "5:41/km",
-        rpe: "RPE 8.0"
-      },
-      {
-        id: "run_demo_2",
-        date: new Date(Date.now() - 86400000 * 6).toISOString().split("T")[0],
-        week: "A",
-        dayKey: "T6",
-        distanceKm: 11.2,
-        durationMinutes: 72,
-        pace: "6:25/km",
-        rpe: "RPE 6.5"
-      }
+      { id: "run_demo_1", date: new Date(Date.now() - 86400000 * 2).toISOString().split("T")[0], distanceKm: 9.5, durationMinutes: 54, pace: "5:41/km", rpe: "RPE 8.0" },
+      { id: "run_demo_2", date: new Date(Date.now() - 86400000 * 6).toISOString().split("T")[0], distanceKm: 11.2, durationMinutes: 72, pace: "6:25/km", rpe: "RPE 6.5" }
     ];
     localStorage.setItem(STORAGE_KEYS.RUN_LOGS, JSON.stringify(sampleRuns));
   }
