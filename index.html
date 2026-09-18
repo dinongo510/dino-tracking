@@ -1154,6 +1154,112 @@
     </div>
   </div>
 
+  <!-- MODAL 7: EXERCISE PICKER MODAL (PROGRAM BUILDER) -->
+  <div id="modalExercisePicker" class="modal-overlay">
+    <div class="modal-bottom-sheet" style="max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div>
+          <span style="font-size: 11px; font-weight: 800; color: var(--red-primary); text-transform: uppercase;">Thư Viện Bài Tập (50+)</span>
+          <div class="sheet-title">Chọn Bài Tập Thêm Vào Buổi</div>
+        </div>
+        <button class="btn-sheet-close">✕</button>
+      </div>
+
+      <!-- Search & Category Filters -->
+      <div style="padding: 0 0 10px 0;">
+        <input type="text" id="inputPickerExSearch" class="form-input" placeholder="🔍 Tìm tên bài tập, nhóm cơ, dụng cụ..." style="margin-bottom: 8px; width: 100%;">
+        
+        <div class="picker-category-filters">
+          <button type="button" class="btn-picker-cat active" data-cat="all">Tất Cả</button>
+          <button type="button" class="btn-picker-cat" data-cat="Strength">Strength (Tạ)</button>
+          <button type="button" class="btn-picker-cat" data-cat="Cardio">Cardio (Chạy)</button>
+          <button type="button" class="btn-picker-cat" data-cat="Hybrid">Hybrid / Hyrox</button>
+          <button type="button" class="btn-picker-cat" data-cat="Lower">Đùi / Chân</button>
+          <button type="button" class="btn-picker-cat" data-cat="Upper">Thân Trên</button>
+          <button type="button" class="btn-picker-cat" data-cat="Core">Core / Cơ Lõi</button>
+        </div>
+      </div>
+
+      <!-- Action: Create New Exercise Button -->
+      <div style="margin-bottom: 10px;">
+        <button id="btnPickerLaunchCreateCustom" class="btn-day-action secondary" style="width: 100%; padding: 9px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>➕</span>
+          <span>Tự Tạo Bài Tập Mới (Lưu Vào Thư Viện Toàn Cục)</span>
+        </button>
+      </div>
+
+      <!-- Exercises List Scrollable Container -->
+      <div id="pickerExercisesList" class="picker-exercises-scroll-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 16px;">
+        <!-- Populated dynamically by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 8: INTERACTIVE EXERCISE DETAIL & 3D HEATMAP & OVERLOAD HISTORY -->
+  <div id="modalExerciseDetail" class="modal-overlay">
+    <div class="modal-bottom-sheet" style="max-height: 90vh; overflow-y: auto;">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div>
+          <span id="detailExCategoryBadge" class="prog-badge" style="color: var(--red-primary); border-color: rgba(255,42,42,0.3);">Strength</span>
+          <div id="detailExName" class="sheet-title" style="margin-top: 2px;">Pin Back Squat</div>
+        </div>
+        <button class="btn-sheet-close">✕</button>
+      </div>
+
+      <div class="detail-modal-body" style="display: flex; flex-direction: column; gap: 14px; margin-top: 8px;">
+        <!-- Meta Tags -->
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px;">
+          <span id="detailExEquipment" class="meta-tag-pill">Barbell</span>
+          <span id="detailExTargetRequirement" class="meta-tag-pill highlight">2 sets × 5–8 reps @ RIR 1–2</span>
+        </div>
+
+        <!-- 3D SVG Heatmap Mini Stage -->
+        <div class="detail-heatmap-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div style="font-size: 11px; font-weight: 800; color: var(--red-primary); text-transform: uppercase;">Nhóm Cơ Tác Động (3D Heatmap)</div>
+            <div id="detailExMusclesList" style="font-size: 12px; font-weight: 700; color: var(--text-white);">Quads, Glutes</div>
+          </div>
+          <div class="heatmap-3d-stage mini" style="display: flex; gap: 10px; justify-content: center;">
+            <div class="body-view-column mini">
+              <div class="view-label mini">MẶT TRƯỚC</div>
+              <div id="svgDetailAnteriorContainer" class="svg-body-wrapper mini"></div>
+            </div>
+            <div class="body-view-column mini">
+              <div class="view-label mini">MẶT SAU</div>
+              <div id="svgDetailPosteriorContainer" class="svg-body-wrapper mini"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Movement Cues -->
+        <div class="detail-cues-card" style="background: rgba(255,42,42,0.05); border-left: 3px solid var(--red-primary); padding: 10px 12px; border-radius: 4px;">
+          <div style="font-size: 11px; font-weight: 800; color: var(--red-primary); text-transform: uppercase; margin-bottom: 4px;">💡 Mẹo Kỹ Thuật (Movement Cues):</div>
+          <p id="detailExCuesText" style="font-size: 12.5px; color: var(--text-white); line-height: 1.5; margin: 0;">
+            Gánh tạ ngang vai, hạ chậm chạm chốt pin, dừng 1s không nhún rồi đẩy bùng nổ lên.
+          </p>
+        </div>
+
+        <!-- Option Note if available -->
+        <div id="detailExOptionNoteBox" class="detail-cues-card" style="background: rgba(245,158,11,0.08); border-left: 3px solid var(--color-gold); padding: 10px 12px; border-radius: 4px; display: none;">
+          <div style="font-size: 11px; font-weight: 800; color: var(--color-gold); text-transform: uppercase; margin-bottom: 4px;">🔄 Phương Án Thay Thế (Option Note):</div>
+          <p id="detailExOptionNoteText" style="font-size: 12.5px; color: var(--text-white); line-height: 1.5; margin: 0;"></p>
+        </div>
+
+        <!-- Progressive Overload History Table -->
+        <div class="detail-history-card">
+          <div style="font-size: 12px; font-weight: 800; color: var(--text-white); text-transform: uppercase; margin-bottom: 8px;">
+            📈 Lịch Sử Tạ & Reps Gần Nhất (Overload History)
+          </div>
+          <div id="detailExHistoryContainer">
+            <!-- Populated dynamically with past logged sets -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts in dependency order -->
   <script src="js/data.js"></script>
   <script src="js/audio.js"></script>

@@ -24,6 +24,9 @@ class DinoApp {
     this.prehabTimerRemaining = 0;
     this.prehabTimerIsPaused = false;
     this.isSpinningRoulette = false;
+    this.pickerSearchQuery = "";
+    this.pickerCategory = "all";
+    this.builderPendingTarget = null;
     
     this.init();
   }
@@ -344,10 +347,15 @@ class DinoApp {
       card.innerHTML = `
         <div class="hevy-card-top-row">
           <div>
-            <div class="hevy-ex-title">${ex.name}</div>
+            <div class="hevy-ex-title" data-ex-idx="${exIdx}" title="Bấm để xem chi tiết bài tập & 3D heatmap">
+              <span>${ex.name}</span>
+              <span class="info-dot">ℹ️</span>
+            </div>
             <div class="hevy-ex-meta">${ex.category || 'Compound'} • ${ex.equipment || 'Barbell'} • ${(ex.primaryMuscles || []).join(', ')}</div>
+            ${ex.optionNote ? `<div class="ex-option-note">💡 <strong>Option:</strong> ${ex.optionNote}</div>` : ''}
           </div>
           <div class="hevy-ex-actions-top">
+            <button class="btn-mini-ex-tool btn-open-ex-detail" data-ex-idx="${exIdx}" title="Xem 3D Heatmap & Form Cues">🔍</button>
             <button class="btn-mini-ex-tool btn-open-plate-calc" title="Tính đĩa tạ">🏋️</button>
           </div>
         </div>
@@ -371,6 +379,17 @@ class DinoApp {
           <button class="btn-add-set-mini" data-ex-idx="${exIdx}">+ Thêm Set</button>
         </div>
       `;
+
+      // Interactive Exercise Detail Modal Shortcut
+      const titleClickEl = card.querySelector(".hevy-ex-title");
+      if (titleClickEl) {
+        titleClickEl.addEventListener("click", () => this.openExerciseDetailModal(ex));
+      }
+
+      const btnDetail = card.querySelector(".btn-open-ex-detail");
+      if (btnDetail) {
+        btnDetail.addEventListener("click", () => this.openExerciseDetailModal(ex));
+      }
 
       // Set Completion Checkmark
       card.querySelectorAll(".btn-check-set").forEach(btn => {
@@ -408,6 +427,156 @@ class DinoApp {
 
       container.appendChild(card);
     });
+  }
+
+  openExerciseDetailModal(ex) {
+    if (!ex) return;
+
+    const nameEl = document.getElementById("detailExName");
+    if (nameEl) nameEl.textContent = ex.name;
+
+    const catBadge = document.getElementById("detailExCategoryBadge");
+    if (catBadge) catBadge.textContent = ex.category || "Strength";
+
+    const eqEl = document.getElementById("detailExEquipment");
+    if (eqEl) eqEl.textContent = `Dụng cụ: ${ex.equipment || "Barbell"}`;
+
+    const targetEl = document.getElementById("detailExTargetRequirement");
+    if (targetEl) targetEl.textContent = `Mục tiêu: ${ex.targetRequirement || "2–3 sets × 6–10 reps"}`;
+
+    const musclesEl = document.getElementById("detailExMusclesList");
+    if (musclesEl) musclesEl.textContent = (ex.primaryMuscles || []).join(", ") || "Toàn thân";
+
+    const cuesEl = document.getElementById("detailExCuesText");
+    if (cuesEl) cuesEl.textContent = ex.formCues || "Kiểm soát chuyển động chậm rãi ở pha eccentric (hạ tạ) và bùng nổ ở pha concentric (đẩy tạ). Giữ thân cốt lõi vững chắc.";
+
+    const optBox = document.getElementById("detailExOptionNoteBox");
+    const optText = document.getElementById("detailExOptionNoteText");
+    if (optBox && optText) {
+      if (ex.optionNote) {
+        optText.textContent = ex.optionNote;
+        optBox.style.display = "block";
+      } else {
+        optBox.style.display = "none";
+      }
+    }
+
+    // Render Mini 3D Heatmap
+    this.renderMini3DHeatmap(ex.primaryMuscles || []);
+
+    // Render Overload History
+    const historyContainer = document.getElementById("detailExHistoryContainer");
+    if (historyContainer) {
+      const history = this.storage.getWorkoutHistory() || [];
+      const matchingEntries = [];
+
+      history.forEach(session => {
+        if (session.exercises) {
+          session.exercises.forEach(sessionEx => {
+            if (sessionEx.name === ex.name || (sessionEx.id && sessionEx.id === ex.id)) {
+              matchingEntries.push({
+                date: session.completedAt ? new Date(session.completedAt).toLocaleDateString("vi-VN") : "Gần đây",
+                title: session.workoutTitle || "Buổi tập",
+                sets: sessionEx.sets || []
+              });
+            }
+          });
+        }
+      });
+
+      if (matchingEntries.length > 0) {
+        historyContainer.innerHTML = matchingEntries.slice(-5).reverse().map(entry => {
+          const setsSummary = entry.sets.map((s, idx) => `S${idx + 1}: ${s.weightKg || s.weight || 0}kg × ${s.reps || 0}`).join(" | ");
+          return `
+            <div class="history-log-row">
+              <div>
+                <div style="font-weight: 700; color: #fff;">${entry.title}</div>
+                <div class="history-log-date">📅 ${entry.date}</div>
+              </div>
+              <div class="history-log-sets">${setsSummary || "Hoàn thành"}</div>
+            </div>
+          `;
+        }).join("");
+      } else {
+        // Show default progressive overload recommendation
+        historyContainer.innerHTML = `
+          <div style="font-size: 12px; color: var(--text-dim); padding: 6px 0 8px 0;">
+            Chưa có lịch sử tập bài này. Bắt đầu ghi nhận buổi tập hôm nay để tự động lưu biểu đồ Progressive Overload!
+          </div>
+          <div class="history-log-row" style="opacity: 0.75;">
+            <div>
+              <div style="font-weight: 700; color: #fff;">Khởi điểm khuyến nghị</div>
+              <div class="history-log-date">Chuẩn BFS Hybrid</div>
+            </div>
+            <div class="history-log-sets">${(ex.defaultSets || []).map((s, i) => `S${i+1}: ${s.weightKg || 50}kg × ${s.reps}`).join(" | ")}</div>
+          </div>
+        `;
+      }
+    }
+
+    this.openModal("modalExerciseDetail");
+  }
+
+  renderMini3DHeatmap(primaryMuscles = []) {
+    const anteriorContainer = document.getElementById("svgDetailAnteriorContainer");
+    const posteriorContainer = document.getElementById("svgDetailPosteriorContainer");
+
+    const svgFilterDefs = `
+      <defs>
+        <filter id="miniGlowFilter" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <feFlood flood-color="#ff2a2a" flood-opacity="0.9" result="color"/>
+          <feComposite in2="blur" operator="in" result="glow"/>
+          <feMerge>
+            <feMergeNode in="glow"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+    `;
+
+    const isTarget = (m) => primaryMuscles.includes(m) ? 'targeted' : '';
+
+    if (anteriorContainer) {
+      anteriorContainer.innerHTML = `
+        <svg viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
+          ${svgFilterDefs}
+          <circle cx="50" cy="18" r="10" fill="#1c1c1c" stroke="#333" />
+          <path id="mini_pec_left" class="muscle-path ${isTarget('Chest')}" d="M38 42 C44 42 48 48 48 56 C42 58 35 54 34 46 Z" />
+          <path id="mini_pec_right" class="muscle-path ${isTarget('Chest')}" d="M62 42 C56 42 52 48 52 56 C58 58 65 54 66 46 Z" />
+          <path id="mini_delt_left" class="muscle-path ${isTarget('Shoulders')}" d="M28 42 C34 40 37 46 36 54 C30 52 26 48 28 42 Z" />
+          <path id="mini_delt_right" class="muscle-path ${isTarget('Shoulders')}" d="M72 42 C66 40 63 46 64 54 C70 52 74 48 72 42 Z" />
+          <path id="mini_biceps_left" class="muscle-path ${isTarget('Biceps')}" d="M25 56 C30 56 30 70 26 76 C23 72 22 62 25 56 Z" />
+          <path id="mini_biceps_right" class="muscle-path ${isTarget('Biceps')}" d="M75 56 C70 56 70 70 74 76 C77 72 78 62 75 56 Z" />
+          <rect id="mini_abs_upper" class="muscle-path ${isTarget('Core')}" x="44" y="60" width="12" height="12" rx="2" />
+          <rect id="mini_abs_lower" class="muscle-path ${isTarget('Core')}" x="44" y="74" width="12" height="14" rx="2" />
+          <path id="mini_quad_left" class="muscle-path ${isTarget('Quads')}" d="M37 98 C46 98 48 116 46 138 C40 140 35 125 34 106 Z" />
+          <path id="mini_quad_right" class="muscle-path ${isTarget('Quads')}" d="M63 98 C54 98 52 116 54 138 C60 140 65 125 66 106 Z" />
+          <path id="mini_calf_f_left" class="muscle-path ${isTarget('Calves')}" d="M37 146 C42 146 43 166 41 182 C37 182 36 166 37 146 Z" />
+          <path id="mini_calf_f_right" class="muscle-path ${isTarget('Calves')}" d="M63 146 C58 146 57 166 59 182 C63 182 64 166 63 146 Z" />
+        </svg>
+      `;
+    }
+
+    if (posteriorContainer) {
+      posteriorContainer.innerHTML = `
+        <svg viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
+          ${svgFilterDefs}
+          <circle cx="50" cy="18" r="10" fill="#1c1c1c" stroke="#333" />
+          <path id="mini_traps" class="muscle-path ${isTarget('Upper Back')}" d="M42 30 L58 30 L64 42 L36 42 Z" />
+          <path id="mini_lat_left" class="muscle-path ${isTarget('Lats')}" d="M36 44 C44 48 44 70 38 78 C33 68 32 54 36 44 Z" />
+          <path id="mini_lat_right" class="muscle-path ${isTarget('Lats')}" d="M64 44 C56 48 56 70 62 78 C67 68 68 54 64 44 Z" />
+          <path id="mini_tri_left" class="muscle-path ${isTarget('Triceps')}" d="M24 54 C28 54 28 70 24 74 C21 70 21 60 24 54 Z" />
+          <path id="mini_tri_right" class="muscle-path ${isTarget('Triceps')}" d="M76 54 C72 54 72 70 76 74 C79 70 79 60 76 54 Z" />
+          <path id="mini_glute_left" class="muscle-path ${isTarget('Glutes')}" d="M37 92 C48 90 49 110 40 114 C33 112 32 100 37 92 Z" />
+          <path id="mini_glute_right" class="muscle-path ${isTarget('Glutes')}" d="M63 92 C52 90 51 110 60 114 C67 112 68 100 63 92 Z" />
+          <path id="mini_ham_left" class="muscle-path ${isTarget('Hamstrings')}" d="M36 116 C46 116 47 136 44 142 C38 142 35 132 36 116 Z" />
+          <path id="mini_ham_right" class="muscle-path ${isTarget('Hamstrings')}" d="M64 116 C54 116 53 136 56 142 C62 142 65 132 64 116 Z" />
+          <path id="mini_calf_left" class="muscle-path ${isTarget('Calves')}" d="M36 148 C44 148 43 170 39 180 C34 176 34 160 36 148 Z" />
+          <path id="mini_calf_right" class="muscle-path ${isTarget('Calves')}" d="M64 148 C56 148 57 170 61 180 C66 176 66 160 64 148 Z" />
+        </svg>
+      `;
+    }
   }
 
   startActiveWorkout() {
@@ -580,7 +749,38 @@ class DinoApp {
 
     const btnOpenCustomExModal = document.getElementById("btnOpenCreateCustomExModal");
     if (btnOpenCustomExModal) {
-      btnOpenCustomExModal.addEventListener("click", () => this.openModal("modalCustomExercise"));
+      btnOpenCustomExModal.addEventListener("click", () => {
+        this.builderPendingTarget = null;
+        this.openModal("modalCustomExercise");
+      });
+    }
+
+    // Search in exercise picker modal
+    const inputPickerSearch = document.getElementById("inputPickerExSearch");
+    if (inputPickerSearch) {
+      inputPickerSearch.addEventListener("input", (e) => {
+        this.pickerSearchQuery = e.target.value.trim();
+        this.renderPickerExercises(this.pickerSearchQuery, this.pickerCategory);
+      });
+    }
+
+    // Category filters in exercise picker modal
+    document.querySelectorAll(".btn-picker-cat").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".btn-picker-cat").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        this.pickerCategory = btn.getAttribute("data-cat") || "all";
+        this.renderPickerExercises(this.pickerSearchQuery, this.pickerCategory);
+      });
+    });
+
+    // Launch Create Custom Exercise from inside Picker Modal
+    const btnPickerLaunch = document.getElementById("btnPickerLaunchCreateCustom");
+    if (btnPickerLaunch) {
+      btnPickerLaunch.addEventListener("click", () => {
+        this.closeModal("modalExercisePicker");
+        this.openModal("modalCustomExercise");
+      });
     }
 
     const selectProg = document.getElementById("selectBuilderProgram");
@@ -661,12 +861,26 @@ class DinoApp {
         const primary = document.getElementById("selectCustomExPrimaryMuscle").value;
         const cues = document.getElementById("inputCustomExCues").value;
 
-        this.storage.saveCustomExercise({
+        const savedEx = this.storage.saveCustomExercise({
           name, category, equipment, primaryMuscles: [primary], formCues: cues
         });
         this.closeModal("modalCustomExercise");
         formCustomEx.reset();
-        this.showToast("✓ Đã lưu bài tập mới vào thư viện toàn cục!");
+
+        // If launched while building a specific day, auto attach it!
+        if (this.builderPendingTarget) {
+          this.storage.addExerciseToDay(
+            this.builderPendingTarget.progId,
+            this.builderPendingTarget.weekId,
+            this.builderPendingTarget.dayId,
+            savedEx
+          );
+          this.builderPendingTarget = null;
+          this.renderBuilderTree();
+          this.showToast(`✓ Đã tạo và thêm "${name}" vào buổi tập!`);
+        } else {
+          this.showToast("✓ Đã lưu bài tập mới vào thư viện toàn cục!");
+        }
       });
     }
   }
@@ -786,18 +1000,21 @@ class DinoApp {
         });
       }
 
-      // Add Exercise to Day
+      // Add Exercise to Day via 50+ Library Modal
       weekCard.querySelectorAll(".btn-add-ex-to-day").forEach(btn => {
         btn.addEventListener("click", () => {
           const dayId = btn.getAttribute("data-day-id");
-          const allExs = this.storage.getAllExercises();
-          const exNames = allExs.map((e, idx) => `${idx + 1}. ${e.name} (${e.category})`).join("\n");
-          const pick = prompt(`Chọn số thứ tự bài tập muốn thêm:\n\n${exNames}`);
-          const pickedIdx = parseInt(pick, 10) - 1;
-          if (pickedIdx >= 0 && pickedIdx < allExs.length) {
-            this.storage.addExerciseToDay(prog.id, week.id, dayId, allExs[pickedIdx]);
-            this.renderBuilderTree();
-          }
+          const weekId = btn.getAttribute("data-week-id");
+          this.builderPendingTarget = { progId: prog.id, weekId, dayId };
+          this.pickerSearchQuery = "";
+          this.pickerCategory = "all";
+          const searchInput = document.getElementById("inputPickerExSearch");
+          if (searchInput) searchInput.value = "";
+          document.querySelectorAll(".btn-picker-cat").forEach(b => {
+            b.classList.toggle("active", b.getAttribute("data-cat") === "all");
+          });
+          this.renderPickerExercises();
+          this.openModal("modalExercisePicker");
         });
       });
 
@@ -846,6 +1063,81 @@ class DinoApp {
     });
   }
 
+  renderPickerExercises(searchQuery = "", category = "all") {
+    const container = document.getElementById("pickerExercisesList");
+    if (!container) return;
+
+    let list = this.storage.getAllExercises();
+
+    // Category filter
+    if (category && category !== "all") {
+      list = list.filter(ex => {
+        const catMatch = (ex.category || "").toLowerCase() === category.toLowerCase();
+        const primaryMatch = (ex.primaryMuscles || []).some(m => {
+          if (category === "Lower") return ["Quads", "Hamstrings", "Glutes", "Calves"].includes(m);
+          if (category === "Upper") return ["Chest", "Lats", "Upper Back", "Shoulders", "Biceps", "Triceps"].includes(m);
+          if (category === "Core") return m === "Core";
+          return m.toLowerCase() === category.toLowerCase();
+        });
+        return catMatch || primaryMatch;
+      });
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(ex => 
+        (ex.name && ex.name.toLowerCase().includes(q)) ||
+        (ex.category && ex.category.toLowerCase().includes(q)) ||
+        (ex.equipment && ex.equipment.toLowerCase().includes(q)) ||
+        (ex.primaryMuscles && ex.primaryMuscles.some(m => m.toLowerCase().includes(q))) ||
+        (ex.formCues && ex.formCues.toLowerCase().includes(q))
+      );
+    }
+
+    if (list.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 20px; color: var(--text-dim); font-size: 13px;">
+          Không tìm thấy bài tập nào khớp với từ khóa.
+          <div style="margin-top: 10px;">
+            <button type="button" class="btn-day-action secondary" style="font-size: 12px; padding: 6px 14px;" onclick="document.getElementById('btnPickerLaunchCreateCustom').click()">
+              + Tự Tạo Bài Tập Này
+            </button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = list.map(ex => `
+      <div class="picker-ex-item" data-ex-id="${ex.id}">
+        <div>
+          <div class="picker-ex-title">${ex.name}</div>
+          <div class="picker-ex-sub">${ex.category || 'Compound'} • ${ex.equipment || 'Barbell'} • ${(ex.primaryMuscles || []).join(', ')}</div>
+        </div>
+        <button type="button" class="picker-ex-add-badge">+ Thêm</button>
+      </div>
+    `).join("");
+
+    container.querySelectorAll(".picker-ex-item").forEach(item => {
+      item.addEventListener("click", () => {
+        const id = item.getAttribute("data-ex-id");
+        const found = list.find(e => e.id === id) || (this.storage.getAllExercises() || []).find(e => e.id === id);
+        if (found && this.builderPendingTarget) {
+          this.storage.addExerciseToDay(
+            this.builderPendingTarget.progId,
+            this.builderPendingTarget.weekId,
+            this.builderPendingTarget.dayId,
+            found
+          );
+          this.closeModal("modalExercisePicker");
+          this.renderBuilderTree();
+          this.showToast(`✓ Đã thêm "${found.name}" vào buổi tập!`);
+        }
+      });
+    });
+  }
+
   // =========================================================================
   // 5. TAB 3: PREHAB & RECOVERY (NASM CEX CONTINUUM)
   // =========================================================================
@@ -879,18 +1171,32 @@ class DinoApp {
     if (!db) return;
 
     const deviationsGrid = document.getElementById("prehabDeviationsGrid");
-    if (deviationsGrid) {
-      deviationsGrid.innerHTML = db.deviations.map(dev => `
-        <button type="button" class="btn-deviation-pill" data-dev-id="${dev.id}">
-          <span>${dev.name}</span>
-          <span class="chk">○</span>
-        </button>
+    if (deviationsGrid && db.deviationGroups) {
+      deviationsGrid.innerHTML = db.deviationGroups.map(grp => `
+        <div class="prehab-group-container">
+          <div class="prehab-group-title">${grp.groupTitle}</div>
+          <div class="prehab-radio-list">
+            ${grp.options.map(opt => `
+              <label class="prehab-radio-card ${opt.isNone ? 'selected' : ''}" data-group="${grp.groupKey}">
+                <input type="radio" name="nasm_dev_${grp.groupKey}" value="${opt.id}" class="prehab-radio-input" ${opt.isNone ? 'checked' : ''}>
+                <div class="prehab-radio-info">
+                  <div class="prehab-radio-name">${opt.name}</div>
+                  ${opt.overactive ? `<div class="prehab-radio-desc"><strong>Ức chế/Kéo giãn:</strong> ${opt.overactive.join(', ')}<br><strong>Kích hoạt:</strong> ${opt.underactive.join(', ')}</div>` : ''}
+                </div>
+              </label>
+            `).join("")}
+          </div>
+        </div>
       `).join("");
 
-      deviationsGrid.querySelectorAll(".btn-deviation-pill").forEach(btn => {
-        btn.addEventListener("click", () => {
-          btn.classList.toggle("active");
-          btn.querySelector(".chk").textContent = btn.classList.contains("active") ? "✓" : "○";
+      // Radio Selection Highlight Listener
+      deviationsGrid.querySelectorAll(".prehab-radio-input").forEach(radio => {
+        radio.addEventListener("change", () => {
+          const groupName = radio.name;
+          document.querySelectorAll(`input[name="${groupName}"]`).forEach(r => {
+            const card = r.closest(".prehab-radio-card");
+            if (card) card.classList.toggle("selected", r.checked);
+          });
         });
       });
     }
@@ -907,7 +1213,7 @@ class DinoApp {
     const matrixBody = document.getElementById("matrixTableBody");
     if (matrixBody) {
       matrixBody.innerHTML = `
-        <tr><td><strong>Ngực & Tay sau</strong></td><td>2 buổi (4 sets)</td><td>2 buổi (4 sets)</td><td>Tối ưu RIR 1</td></tr>
+        <tr><td><strong>Ngực & Tay sau</strong></td><td>2 buổi (4 sets)</td><td>2 buổi (4 sets)</td><td>Tối ưu RIR 0-1</td></tr>
         <tr><td><strong>Lưng xô & Tay trước</strong></td><td>2 buổi (4 sets)</td><td>2 buổi (4 sets)</td><td>Kéo giãn bả vai</td></tr>
         <tr><td><strong>Vai & Cơ thang</strong></td><td>2 buổi (RP)</td><td>2 buổi (RP)</td><td>Ưu tiên Rest-Pause</td></tr>
         <tr><td><strong>Đùi trước & Mông</strong></td><td>2 buổi (Pin/LegPress)</td><td>2 buổi (Hack/Press)</td><td>Giãn háng & Foam roll</td></tr>
@@ -917,27 +1223,17 @@ class DinoApp {
   }
 
   generateNASMPrehabRoutine() {
-    const selectedDevs = [];
-    document.querySelectorAll(".btn-deviation-pill.active").forEach(btn => {
-      selectedDevs.push(btn.getAttribute("data-dev-id"));
-    });
-
-    const activeType = document.querySelector(".btn-prehab-workout-type.active")?.getAttribute("data-type") || "full_body";
     const db = window.NASM_CEX_DATABASE;
     if (!db) return;
 
-    // Pick targeted exercises across the 4 continuum steps
-    const inhibitEx = db.exerciseLibrary.inhibit[selectedDevs.includes("rounded_shoulders") ? 0 : 3];
-    const lengthenEx = db.exerciseLibrary.lengthen[selectedDevs.includes("anterior_pelvic_tilt") ? 2 : 0];
-    const activateEx = db.exerciseLibrary.activate[selectedDevs.includes("knee_valgus") ? 2 : 1];
-    const integrateEx = db.exerciseLibrary.integrate[activeType === "run" ? 1 : 0];
+    const checkedRadios = document.querySelectorAll(".prehab-radio-input:checked");
+    const selectedDevIds = Array.from(checkedRadios)
+      .map(r => r.value)
+      .filter(val => !val.endsWith("_none"));
 
-    this.prehabSteps = [
-      { stepName: "BƯỚC 1: INHIBIT (Ức chế - SMR)", ex: inhibitEx, durationSec: inhibitEx.holdSec || 45 },
-      { stepName: "BƯỚC 2: LENGTHEN (Kéo giãn tĩnh)", ex: lengthenEx, durationSec: lengthenEx.holdSec || 30 },
-      { stepName: "BƯỚC 3: ACTIVATE (Kích hoạt cơ yếu)", ex: activateEx, durationSec: 45 },
-      { stepName: "BƯỚC 4: INTEGRATE (Tích hợp chuỗi vận động)", ex: integrateEx, durationSec: 60 }
-    ];
+    const activeType = document.querySelector(".btn-prehab-workout-type.active")?.getAttribute("data-type") || "full_body";
+
+    this.prehabSteps = db.generateRoutine(selectedDevIds, activeType);
 
     const resultBox = document.getElementById("prehabRoutineResultContainer");
     const stepsList = document.getElementById("prehab4StepsList");
@@ -947,7 +1243,7 @@ class DinoApp {
         <div class="cex-step-card">
           <div class="cex-step-num-title">${s.stepName}</div>
           <div class="cex-exercise-name">${s.ex.name}</div>
-          <div style="font-size: 11px; color: var(--color-green); margin-top: 2px;">Nhóm cơ: ${(s.ex.targetMuscles || []).join(', ')} • ${s.durationSec}s</div>
+          <div style="font-size: 11px; color: var(--color-green); margin-top: 2px;">Nhóm cơ tác động: ${s.ex.muscles || 'Toàn thân'} • ${s.ex.durationSec || 45}s</div>
           <div class="cex-cue-text">💡 ${s.ex.cue}</div>
         </div>
       `).join("");
@@ -982,7 +1278,7 @@ class DinoApp {
     if (title) title.textContent = step.ex.name;
     if (cue) cue.textContent = step.ex.cue;
 
-    this.prehabTimerRemaining = step.durationSec;
+    this.prehabTimerRemaining = step.ex.durationSec || step.durationSec || 45;
     this.prehabTimerIsPaused = false;
 
     const updateDisplay = () => {
