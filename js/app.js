@@ -346,13 +346,14 @@ class DinoApp {
 
       card.innerHTML = `
         <div class="hevy-card-top-row">
-          <div>
+          <div style="flex: 1; min-width: 0; padding-right: 8px;">
             <div class="hevy-ex-title" data-ex-idx="${exIdx}" title="Bấm để xem chi tiết bài tập & 3D heatmap">
               <span>${ex.name}</span>
               <span class="info-dot">ℹ️</span>
             </div>
             <div class="hevy-ex-meta">${ex.category || 'Compound'} • ${ex.equipment || 'Barbell'} • ${(ex.primaryMuscles || []).join(', ')}</div>
-            ${ex.optionNote ? `<div class="ex-option-note">💡 <strong>Option:</strong> ${ex.optionNote}</div>` : ''}
+            ${ex.targetRequirement ? `<div class="hevy-ex-target-note">${ex.targetRequirement}</div>` : ''}
+            ${ex.optionNote ? `<div class="hevy-ex-option-line"><span class="opt-tag-red">Option:</span> ${ex.optionNote.replace(/^Option:\s*/i, '')}</div>` : ''}
           </div>
           <div class="hevy-ex-actions-top">
             <button class="btn-mini-ex-tool btn-open-ex-detail" data-ex-idx="${exIdx}" title="Xem 3D Heatmap & Form Cues">🔍</button>
@@ -454,7 +455,7 @@ class DinoApp {
     const optText = document.getElementById("detailExOptionNoteText");
     if (optBox && optText) {
       if (ex.optionNote) {
-        optText.textContent = ex.optionNote;
+        optText.innerHTML = `<span style="color: #ff2a2a; font-weight: 800;">Option:</span> ${ex.optionNote.replace(/^Option:\s*/i, '')}`;
         optBox.style.display = "block";
       } else {
         optBox.style.display = "none";
@@ -951,6 +952,7 @@ class DinoApp {
                 <div class="builder-ex-info">
                   <div class="builder-ex-name">${ex.name}</div>
                   <div class="builder-ex-target">${ex.targetRequirement || '3 sets x 8-10 reps'}</div>
+                  ${ex.optionNote ? `<div class="builder-ex-opt"><span class="opt-tag-red">Option:</span> ${ex.optionNote.replace(/^Option:\s*/i, '')}</div>` : ''}
                 </div>
                 <div class="builder-ex-reorder-group">
                   <button class="btn-reorder-arrow btn-up" data-week-id="${week.id}" data-day-id="${day.id}" data-idx="${exIdx}" ${exIdx === 0 ? 'disabled' : ''}>▲</button>
@@ -2071,7 +2073,7 @@ class DinoApp {
         if (statusBox) {
           statusBox.style.display = "block";
           statusBox.style.color = "var(--color-gold)";
-          statusBox.innerHTML = "⏳ Đang kiểm tra kết nối tới Gemini API (gemini-1.5-flash)...";
+          statusBox.innerHTML = "⏳ Đang kiểm tra kết nối tới Gemini API (gemini-2.5-flash)...";
         }
 
         try {

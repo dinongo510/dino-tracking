@@ -551,6 +551,35 @@ html, body {
   margin-top: 2px;
 }
 
+.hevy-ex-target-note {
+  font-size: 11.5px;
+  color: #a1a1aa; /* text-gray-400 */
+  line-height: 1.45;
+  margin-top: 3px;
+  font-weight: 500;
+}
+
+.hevy-ex-option-line {
+  font-size: 11.5px;
+  color: #a1a1aa; /* text-gray-400 */
+  line-height: 1.45;
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+.opt-tag-red {
+  color: #ff2a2a; /* Athletic Red */
+  font-weight: 800;
+  margin-right: 3px;
+}
+
+.builder-ex-opt {
+  font-size: 10.5px;
+  color: #a1a1aa;
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
 .hevy-ex-actions-top {
   display: flex;
   gap: 4px;

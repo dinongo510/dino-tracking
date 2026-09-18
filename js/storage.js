@@ -28,10 +28,22 @@ class DinoStorage {
   }
 
   initDefaults() {
-    // 1. Programs Initialization
-    if (!localStorage.getItem(STORAGE_KEYS.PROGRAMS)) {
-      const defaultProgs = (window.DEFAULT_PROGRAMS || []);
+    // 1. Programs Initialization & Built-in Program Sync
+    const defaultProgs = (window.DEFAULT_PROGRAMS || []);
+    const storedProgsRaw = localStorage.getItem(STORAGE_KEYS.PROGRAMS);
+    if (!storedProgsRaw) {
       localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(defaultProgs));
+    } else {
+      try {
+        const stored = JSON.parse(storedProgsRaw);
+        const builtInIdx = stored.findIndex(p => p.id === "dino_hybrid_1");
+        if (builtInIdx !== -1 && defaultProgs.length > 0) {
+          stored[builtInIdx] = defaultProgs[0];
+          localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(stored));
+        }
+      } catch (e) {
+        localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(defaultProgs));
+      }
     }
 
     // 2. Active Program & Day IDs
@@ -39,10 +51,10 @@ class DinoStorage {
       localStorage.setItem(STORAGE_KEYS.ACTIVE_PROGRAM_ID, "dino_hybrid_1");
     }
     if (!localStorage.getItem(STORAGE_KEYS.ACTIVE_WEEK_ID)) {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_WEEK_ID, "wA");
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_WEEK_ID, "A");
     }
     if (!localStorage.getItem(STORAGE_KEYS.ACTIVE_DAY_ID)) {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_DAY_ID, "wA_d2");
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_DAY_ID, "wA_t3");
     }
 
     // 3. Custom Exercises
@@ -61,9 +73,17 @@ class DinoStorage {
         sound: true,
         vibrate: true,
         smartFatigue: true,
-        geminiModel: "gemini-1.5-flash",
+        geminiModel: "gemini-2.5-flash",
         restTimerSec: 120
       }));
+    } else {
+      try {
+        const settings = JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS));
+        if (settings && settings.geminiModel !== "gemini-2.5-flash") {
+          settings.geminiModel = "gemini-2.5-flash";
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+        }
+      } catch (e) {}
     }
   }
 

@@ -66,8 +66,8 @@ const DEFAULT_PROGRAMS = [
                 equipment: "Barbell",
                 primaryMuscles: ["Quads", "Glutes"],
                 secondaryMuscles: ["Lower Back", "Core"],
-                targetRequirement: "2 sets × 5–8 reps @ RIR 1–2 (Nghỉ 3m)",
-                optionNote: "Nếu chân mệt: Đổi Leg Press 2 × 6–10 @ RIR 1.",
+                targetRequirement: "1-2 × 5-8 | RIR 1-2; 2.5-4'",
+                optionNote: "Nếu chân mệt: Leg Press 2 × 6-10 @ RIR 1.",
                 formCues: "Gánh tạ ngang vai, hạ chậm đến chốt pin, dừng 1s không nhún rồi đẩy bùng nổ lên.",
                 defaultSets: [
                   { setNum: 1, reps: "5-8", rir: "RIR 1-2", restSec: 180, note: "Top hard set" },
@@ -76,13 +76,13 @@ const DEFAULT_PROGRAMS = [
               },
               {
                 id: "pull_up",
-                name: "Weighted / BW Pull-up",
+                name: "Weighted/BW Pull-up",
                 category: "Upper",
                 equipment: "Bodyweight",
                 primaryMuscles: ["Lats", "Upper Back"],
                 secondaryMuscles: ["Biceps", "Forearms"],
-                targetRequirement: "2 sets × 5–8 reps @ RIR 0–1 (Nghỉ 2–3m)",
-                optionNote: "Nếu grip/shoulder mệt: Đổi Lat Pulldown 2 × 6–10.",
+                targetRequirement: "2 × 5-8 | Set 1 RIR 1; set 2 RIR 0-1; 2-3'",
+                optionNote: "Nếu grip/shoulder mệt: Lat Pulldown 2 × 6-10.",
                 formCues: "Treo người thẳng tay, kéo bả vai xuống trước khi gập cùi chỏ. Cằm vượt qua xà.",
                 defaultSets: [
                   { setNum: 1, reps: "5-8", rir: "RIR 1", restSec: 150, note: "Set 1 chuẩn kỹ thuật" },
@@ -91,48 +91,48 @@ const DEFAULT_PROGRAMS = [
               },
               {
                 id: "incline_db_bench",
-                name: "Incline DB Bench Press",
+                name: "Incline DB Bench",
                 category: "Upper",
                 equipment: "Dumbbell",
                 primaryMuscles: ["Chest"],
                 secondaryMuscles: ["Shoulders", "Triceps"],
-                targetRequirement: "2 sets × 6–10 reps @ RIR 0–1 (Nghỉ 2–3m)",
-                optionNote: "Có thể đổi Machine Chest Press nếu thích máy.",
+                targetRequirement: "2 × 6-10 | Set cuối RIR 0-1; 2-3'",
+                optionNote: "Có thể đổi Machine Chest Press.",
                 formCues: "Góc ghế 30-45 độ. Hạ tạ sâu ngang ngực trên cảm nhận cơ căng, đẩy lên không khóa khớp.",
                 defaultSets: [
-                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 150, note: "Kiểm soát eccentric" },
+                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 150, note: "Set 1" },
                   { setNum: 2, reps: "6-10", rir: "RIR 0-1", restSec: 150, note: "Set cuối hard push" }
                 ]
               },
               {
                 id: "leg_curl",
-                name: "Lying / Seated Leg Curl",
+                name: "Leg Curl",
                 category: "Lower",
                 equipment: "Machine",
                 primaryMuscles: ["Hamstrings"],
                 secondaryMuscles: ["Calves"],
                 isRestPause: true,
-                targetRequirement: "1 Set chuẩn 6–10 reps + 1 Set Rest-Pause @ RIR 0",
-                optionNote: "Nếu hamstring nhạy cảm: 2 × 6–8 @ RIR 2, bỏ RP.",
+                targetRequirement: "1 conventional set 6-10 + 1 RP optional | Set đầu RIR 0-1; RP dừng khi <3 reps; 2'",
+                optionNote: "Nếu hamstring nhạy cảm: 2 × 6-8 @ RIR 2, bỏ RP.",
                 formCues: "Cố định đùi chặt vào đệm. Gập gót chân sát mông, giữ 1s đỉnh co thắt, hạ chậm 2-3s.",
                 defaultSets: [
                   { setNum: 1, reps: "6-10", rir: "RIR 0-1", restSec: 120, note: "Set thông thường" },
-                  { setNum: 2, reps: "10-15+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause (dừng khi < 3 reps)" }
+                  { setNum: 2, reps: "6-10+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause optional" }
                 ]
               },
               {
                 id: "lateral_raise",
-                name: "Lateral Raise (Cable / DB)",
+                name: "Lateral Raise",
                 category: "Upper",
                 equipment: "Cable",
                 primaryMuscles: ["Shoulders"],
                 secondaryMuscles: ["Traps"],
                 isRestPause: true,
-                targetRequirement: "1 Rest-Pause Extended Set (10–20 + mini sets)",
-                optionNote: "Ưu tiên Cable unilateral hoặc Machine.",
+                targetRequirement: "1 Rest-Pause extended set | 10-20 + mini sets; nghỉ 10-15s",
+                optionNote: "Ưu tiên cable/machine.",
                 formCues: "Nghiêng nhẹ người 10 độ. Nâng tay dang ngang theo mặt phẳng bả vai, cùi chỏ dẫn đường.",
                 defaultSets: [
-                  { setNum: 1, reps: "10-20+RP", rir: "RIR 0-1", restSec: 15, isRestPause: true, note: "1 Rest-Pause Extended Set" }
+                  { setNum: 1, reps: "10-20+RP", rir: "RIR 0-1", restSec: 15, isRestPause: true, note: "1 Rest-Pause extended set" }
                 ]
               },
               {
@@ -142,8 +142,8 @@ const DEFAULT_PROGRAMS = [
                 equipment: "Bodyweight",
                 primaryMuscles: ["Core"],
                 secondaryMuscles: ["Hip Flexors"],
-                targetRequirement: "2 sets × 8–15 reps (Kiểm soát khung chậu)",
-                optionNote: "Đổi AbMat Sit-up nếu vai mệt.",
+                targetRequirement: "2 × 8-15 | Dừng trước khi mất pelvic control",
+                optionNote: "Đổi Knee Raise nếu swing nhiều.",
                 formCues: "Treo người, cuộn xương chậu lên về phía ngực, không đung đưa theo quán tính.",
                 defaultSets: [
                   { setNum: 1, reps: "8-15", rir: "RIR 1", restSec: 60, note: "Cuộn chậm không đu" },
@@ -176,37 +176,39 @@ const DEFAULT_PROGRAMS = [
             id: "wA_t5",
             dayKey: "T5",
             dayName: "Thứ Năm (T5)",
-            title: "Upper Hypertrophy (Low Set, High Effort)",
+            title: "Upper Strength / Hypertrophy",
             type: "strength",
-            focus: "Upper Body & Ưu tiên Vai phát triển tối đa",
+            focus: "Upper Body & Ưu tiên Vai và Ngực phát triển tối đa",
             badge: "Upper Focus",
             exercises: [
               {
-                id: "incline_db_bench",
-                name: "Incline DB Bench Press",
+                id: "dips",
+                name: "Dips",
                 category: "Upper",
-                equipment: "Dumbbell",
-                primaryMuscles: ["Chest"],
-                secondaryMuscles: ["Shoulders", "Triceps"],
-                targetRequirement: "2 sets × 6–10 reps @ RIR 0–1 (Nghỉ 2–3m)",
-                optionNote: "Đổi Machine Chest Press nếu thích máy.",
+                equipment: "Bodyweight",
+                primaryMuscles: ["Chest", "Triceps"],
+                secondaryMuscles: ["Shoulders"],
+                targetRequirement: "2 × 5-8 | Set cuối RIR 0-1; 2-3'",
+                optionNote: "Nếu vai khó chịu: Machine Chest Press.",
+                formCues: "Nghiêng người về trước 20 độ để vào ngực. Xuống góc cùi chỏ 90 độ.",
                 defaultSets: [
-                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 150, note: "Set 1 hard work" },
-                  { setNum: 2, reps: "6-10", rir: "RIR 0-1", restSec: 150, note: "Set cuối near failure" }
+                  { setNum: 1, reps: "5-8", rir: "RIR 1", restSec: 150, note: "Set 1 chuẩn kỹ thuật" },
+                  { setNum: 2, reps: "5-8", rir: "RIR 0-1", restSec: 150, note: "Set cuối near failure" }
                 ]
               },
               {
-                id: "pull_up",
-                name: "Pull-up (Weighted / Bodyweight)",
+                id: "chest_supported_row",
+                name: "Chest-Supported Row",
                 category: "Upper",
-                equipment: "Bodyweight",
-                primaryMuscles: ["Lats"],
-                secondaryMuscles: ["Biceps"],
-                targetRequirement: "2 sets × 5–8 reps @ RIR 0–1 (Nghỉ 2–3m)",
-                optionNote: "Đổi Lat Pulldown / Neutral grip nếu mỏi grip.",
+                equipment: "Machine",
+                primaryMuscles: ["Upper Back", "Lats"],
+                secondaryMuscles: ["Biceps", "Rear Delts"],
+                targetRequirement: "2 × 6-10 | Set 2 RIR 0; 2'",
+                optionNote: "Đổi Seated Row.",
+                formCues: "Áp ngực sát đệm tựa, kéo cùi chỏ về sau siết chặt bả vai.",
                 defaultSets: [
-                  { setNum: 1, reps: "5-8", rir: "RIR 1", restSec: 150, note: "Full ROM cằm qua xà" },
-                  { setNum: 2, reps: "5-8", rir: "RIR 0-1", restSec: 150, note: "Set 2 hard effort" }
+                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 120, note: "Kéo sâu siết lưng giữa" },
+                  { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 120, note: "Set 2 RIR 0" }
                 ]
               },
               {
@@ -217,69 +219,74 @@ const DEFAULT_PROGRAMS = [
                 primaryMuscles: ["Shoulders"],
                 secondaryMuscles: ["Triceps"],
                 isRestPause: true,
-                targetRequirement: "1 Set 6–10 reps + 1 Set Rest-Pause (Nghỉ 15–20s)",
-                optionNote: "Nếu mỏi vai: Đổi DB Shoulder Press và bỏ RP.",
+                targetRequirement: "1 × 6-10 + 1 RP optional | Set đầu RIR 0-1; 15-20s RP",
+                optionNote: "Nếu vai mệt: DB high incline press 2 × 6-10.",
+                formCues: "Tay cầm ngang tai. Đẩy thẳng đứng kiểm soát, hạ sâu đến cằm.",
                 defaultSets: [
-                  { setNum: 1, reps: "6-10", rir: "RIR 0-1", restSec: 120, note: "Hard work set" },
-                  { setNum: 2, reps: "3-5+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause mini sets" }
+                  { setNum: 1, reps: "6-10", rir: "RIR 0-1", restSec: 120, note: "Set đầu RIR 0-1" },
+                  { setNum: 2, reps: "3-5+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause optional" }
                 ]
               },
               {
-                id: "chest_supported_row",
-                name: "Seated Cable Row / Chest-Supported",
+                id: "lat_pulldown",
+                name: "Lat Pulldown",
                 category: "Upper",
                 equipment: "Cable",
-                primaryMuscles: ["Upper Back", "Lats"],
-                secondaryMuscles: ["Biceps", "Rear Delts"],
-                targetRequirement: "2 sets × 6–10 reps @ RIR 0 (Nghỉ 2m)",
-                optionNote: "Đổi One-Arm DB Row.",
+                primaryMuscles: ["Lats"],
+                secondaryMuscles: ["Biceps"],
+                targetRequirement: "2 × 6-10 | Set cuối RIR 0; 2'",
+                optionNote: "Đổi neutral-grip pull-down.",
+                formCues: "Kéo thanh đòn về xương quai xanh, ép chặt bả vai.",
                 defaultSets: [
-                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 120, note: "Kéo sâu siết lưng giữa" },
+                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 120, note: "Set 1 chuẩn kỹ thuật" },
                   { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 120, note: "Set cuối RIR 0" }
                 ]
               },
               {
                 id: "lateral_raise",
-                name: "Lateral Raise (Cable / Machine)",
+                name: "Lateral Raise",
                 category: "Upper",
                 equipment: "Cable",
                 primaryMuscles: ["Shoulders"],
                 secondaryMuscles: [],
                 isRestPause: true,
-                targetRequirement: "1 Rest-Pause Extended Set (10–20 + mini sets)",
-                optionNote: "Tập trung co thắt vai giữa.",
+                targetRequirement: "1 Rest-Pause extended set | RIR 0-1 -> mini sets",
+                optionNote: "Có thể cable unilateral.",
+                formCues: "Nghiêng nhẹ người 10 độ. Nâng tay dang ngang theo mặt phẳng bả vai.",
                 defaultSets: [
-                  { setNum: 1, reps: "10-20+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause to failure" }
+                  { setNum: 1, reps: "10-20+RP", rir: "RIR 0-1", restSec: 15, isRestPause: true, note: "Rest-Pause extended set" }
                 ]
               },
               {
-                id: "biceps_curl",
-                name: "Incline DB Biceps Curl",
+                id: "curl",
+                name: "Curl",
                 category: "Upper",
                 equipment: "Dumbbell",
                 primaryMuscles: ["Biceps"],
                 secondaryMuscles: ["Forearms"],
                 isRestPause: true,
-                targetRequirement: "1 Set chuẩn 8–12 reps + 1 Set Rest-Pause",
-                optionNote: "Đổi Cable Curl / Hammer Curl.",
+                targetRequirement: "1 RP hoặc 2 × 6-10 | Set cuối RIR 0",
+                optionNote: "Cable/DB.",
+                formCues: "Khóa cố định cùi chỏ bên hông, cuộn tạ siết bắp tay, hạ chậm 2s.",
                 defaultSets: [
-                  { setNum: 1, reps: "8-12", rir: "RIR 1", restSec: 90, note: "Eccentric chậm 2s" },
-                  { setNum: 2, reps: "4-6+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause" }
+                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 90, note: "Set 1" },
+                  { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 90, note: "Set cuối RIR 0" }
                 ]
               },
               {
-                id: "triceps_pushdown",
-                name: "Triceps Pushdown (Rope / V-Bar)",
+                id: "triceps",
+                name: "Triceps",
                 category: "Upper",
                 equipment: "Cable",
                 primaryMuscles: ["Triceps"],
                 secondaryMuscles: [],
                 isRestPause: true,
-                targetRequirement: "1 Set chuẩn 8–12 reps + 1 Set Rest-Pause",
-                optionNote: "Đổi Overhead Triceps Ext.",
+                targetRequirement: "1 RP hoặc 2 × 6-10 | Set cuối RIR 0",
+                optionNote: "Rope pushdown/extension.",
+                formCues: "Khóa cùi chỏ sát thân, đẩy cáp xuống mở rộng ở đáy.",
                 defaultSets: [
-                  { setNum: 1, reps: "8-12", rir: "RIR 1", restSec: 90, note: "Khóa chặt cùi chỏ" },
-                  { setNum: 2, reps: "4-6+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause" }
+                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 90, note: "Set 1" },
+                  { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 90, note: "Set cuối RIR 0" }
                 ]
               }
             ]
@@ -288,70 +295,16 @@ const DEFAULT_PROGRAMS = [
             id: "wA_t6",
             dayKey: "T6",
             dayName: "Thứ Sáu (T6)",
-            title: "Lower Hypertrophy (Quad Priority)",
-            type: "strength",
-            focus: "Phát triển tối đa đùi trước, không gây mỏi lưng dưới trước thứ 7 đá bóng",
-            badge: "Lower Focus",
-            exercises: [
-              {
-                id: "leg_press",
-                name: "Leg Press 45°",
-                category: "Lower",
-                equipment: "Machine",
-                primaryMuscles: ["Quads"],
-                secondaryMuscles: ["Glutes"],
-                isRestPause: true,
-                targetRequirement: "1 Set chuẩn 6–10 reps @ RIR 1 + 1 Set Rest-Pause @ RIR 0",
-                optionNote: "Nếu chân mệt trước đá bóng: 2 × 8–10 @ RIR 2, bỏ RP.",
-                defaultSets: [
-                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 150, note: "Set 1 hard work" },
-                  { setNum: 2, reps: "8-12+RP", rir: "RIR 0", restSec: 20, isRestPause: true, note: "Rest-Pause cháy cơ" }
-                ]
-              },
-              {
-                id: "leg_curl",
-                name: "Lying / Seated Leg Curl",
-                category: "Lower",
-                equipment: "Machine",
-                primaryMuscles: ["Hamstrings"],
-                secondaryMuscles: [],
-                targetRequirement: "2 sets × 6–10 reps @ RIR 0–1 (Nghỉ 2m)",
-                optionNote: "Bảo vệ gân kheo trước trận bóng.",
-                defaultSets: [
-                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 120, note: "Gập dứt khoát giữ 1s" },
-                  { setNum: 2, reps: "6-10", rir: "RIR 0-1", restSec: 120, note: "Set 2 hard effort" }
-                ]
-              },
-              {
-                id: "leg_extension",
-                name: "Leg Extension (Quad Burner)",
-                category: "Lower",
-                equipment: "Machine",
-                primaryMuscles: ["Quads"],
-                secondaryMuscles: [],
-                isRestPause: true,
-                targetRequirement: "1 Set 10–15 reps + 1 Set Rest-Pause (dừng khi < 3 reps)",
-                optionNote: "Bơm máu tối đa đùi trước.",
-                defaultSets: [
-                  { setNum: 1, reps: "10-15", rir: "RIR 0-1", restSec: 90, note: "Khóa thẳng đùi 1s" },
-                  { setNum: 2, reps: "5-8+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause" }
-                ]
-              },
-              {
-                id: "calf_raise",
-                name: "Standing / Seated Calf Raise",
-                category: "Lower",
-                equipment: "Machine",
-                primaryMuscles: ["Calves"],
-                secondaryMuscles: [],
-                targetRequirement: "2 sets × 6–12 reps @ RIR 0 (Giữ 1s đáy)",
-                optionNote: "Hỗ trợ độ bật và cổ chân chạy bộ.",
-                defaultSets: [
-                  { setNum: 1, reps: "6-12", rir: "RIR 0", restSec: 90, note: "Giữ 1s dưới đáy" },
-                  { setNum: 2, reps: "6-12", rir: "RIR 0", restSec: 90, note: "Optional nếu phục hồi tốt" }
-                ]
-              }
-            ]
+            title: "Active Recovery / Rest",
+            type: "run",
+            focus: "Phục hồi chủ động, giãn cơ hoặc nghỉ ngơi hoàn toàn trước thứ 7",
+            badge: "Recovery",
+            targetKm: 0,
+            checklist: [
+              { id: "wA_t6_mob", label: "Mobility & Dynamic Foam Rolling 15 phút", note: "Phục hồi" },
+              { id: "wA_t6_hyd", label: "Bổ sung đủ nước, điện giải và giấc ngủ sâu 8 tiếng", note: "Recovery" }
+            ],
+            exercises: []
           },
           {
             id: "wA_t7",
@@ -398,7 +351,7 @@ const DEFAULT_PROGRAMS = [
       {
         id: "B",
         name: "Week B — Volume Accumulation & Speed",
-        focus: "Interval 1km Repeats, Hack Squat, Dips, Long Run 14km, Soccer",
+        focus: "Interval 1km Repeats, Back/Pin Squat, Incline DB Bench, Long Run 14km, Soccer",
         targetKm: 25,
         days: [
           {
@@ -425,83 +378,116 @@ const DEFAULT_PROGRAMS = [
             id: "wB_t3",
             dayKey: "T3",
             dayName: "Thứ Ba (T3)",
-            title: "Full Body Density",
+            title: "Lower Hypertrophy / Strength",
             type: "strength",
-            focus: "Tension toàn thân & Quads Volume",
-            badge: "Full Body",
+            focus: "Phát triển tối đa cơ đùi, mông, bắp chuối và sức mạnh chân",
+            badge: "Lower Strength",
             exercises: [
               {
-                id: "hack_squat",
-                name: "Hack Squat / Front Squat",
+                id: "back_pin_squat",
+                name: "Back/Pin Squat",
+                category: "Lower",
+                equipment: "Barbell",
+                primaryMuscles: ["Quads", "Glutes"],
+                secondaryMuscles: ["Lower Back"],
+                targetRequirement: "1-2 × 5-8 | RIR 1-2; 3-4'",
+                optionNote: "Nếu T2 chân nặng: Smith Squat hoặc Leg Press 2 × 6-10.",
+                formCues: "Gánh tạ ngang vai, hạ chậm chạm pin hoặc song song sàn, đẩy dứt khoát.",
+                defaultSets: [
+                  { setNum: 1, reps: "5-8", rir: "RIR 1-2", restSec: 180, note: "Top hard set" },
+                  { setNum: 2, reps: "5-8", rir: "RIR 1-2", restSec: 180, note: "Back-off set" }
+                ]
+              },
+              {
+                id: "leg_press",
+                name: "Leg Press",
                 category: "Lower",
                 equipment: "Machine",
                 primaryMuscles: ["Quads"],
                 secondaryMuscles: ["Glutes"],
-                targetRequirement: "2 sets × 6–10 reps @ RIR 1",
-                optionNote: "Đổi Leg Press nếu gối mỏi.",
-                formCues: "Tựa lưng sát đệm máy, hạ chậm cảm nhận đùi trước căng giãn tối đa rồi đạp thẳng chân.",
+                isRestPause: true,
+                targetRequirement: "1 × 8-10 + 1 RP optional | Set đầu RIR 0-1; 15-20s RP",
+                optionNote: "Không RP nếu tuần đó soccer/run fatigue cao.",
+                formCues: "Bàn chân giữa mâm máy, hạ gối sâu 90 độ, đẩy thẳng không khóa gối.",
                 defaultSets: [
-                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 150, note: "Đùi trước chịu tải tối đa" },
-                  { setNum: 2, reps: "6-10", rir: "RIR 1", restSec: 150, note: "Xuống sâu kiểm soát" }
+                  { setNum: 1, reps: "8-10", rir: "RIR 0-1", restSec: 150, note: "Set đầu RIR 0-1" },
+                  { setNum: 2, reps: "6-10+RP", rir: "RIR 0", restSec: 20, isRestPause: true, note: "Rest-Pause optional" }
                 ]
               },
               {
-                id: "lat_pulldown",
-                name: "Lat Pulldown (Neutral Grip)",
-                category: "Upper",
-                equipment: "Cable",
-                primaryMuscles: ["Lats"],
-                secondaryMuscles: ["Biceps"],
-                targetRequirement: "2 sets × 8–12 reps @ RIR 0–1",
-                optionNote: "Đổi Neutral-Grip Pull-up.",
-                formCues: "Kéo thanh đòn về xương quai xanh, ép chặt bả vai.",
+                id: "leg_extension",
+                name: "Leg Extension",
+                category: "Lower",
+                equipment: "Machine",
+                primaryMuscles: ["Quads"],
+                secondaryMuscles: [],
+                isRestPause: true,
+                targetRequirement: "1 Rest-Pause extended set | 10-15 + mini sets; dừng <3 reps",
+                optionNote: "Ưu tiên full ROM.",
+                formCues: "Đá chân thẳng hoàn toàn, siết chặt đùi trước 1s đỉnh co thắt.",
                 defaultSets: [
-                  { setNum: 1, reps: "8-12", rir: "RIR 1", restSec: 120, note: "Kéo sâu siết xô" },
-                  { setNum: 2, reps: "8-12", rir: "RIR 0", restSec: 120, note: "Eccentric chậm" }
-                ]
-              },
-              {
-                id: "flat_db_bench",
-                name: "Flat DB Bench Press",
-                category: "Upper",
-                equipment: "Dumbbell",
-                primaryMuscles: ["Chest"],
-                secondaryMuscles: ["Triceps", "Shoulders"],
-                targetRequirement: "2 sets × 6–10 reps @ RIR 1",
-                optionNote: "Đổi Machine Chest Press.",
-                formCues: "Nằm ngửa vững chãi, đẩy tạ vòng cung nhẹ, không khóa khớp.",
-                defaultSets: [
-                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 120, note: "Tải ngực toàn diện" },
-                  { setNum: 2, reps: "6-10", rir: "RIR 1", restSec: 120, note: "Kiểm soát đường tạ" }
+                  { setNum: 1, reps: "10-15+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause extended set" }
                 ]
               },
               {
                 id: "leg_curl",
-                name: "Seated Leg Curl",
+                name: "Leg Curl",
                 category: "Lower",
                 equipment: "Machine",
                 primaryMuscles: ["Hamstrings"],
                 secondaryMuscles: [],
-                targetRequirement: "2 sets × 8–12 reps @ RIR 0–1",
-                optionNote: "Giữ 1s co thắt đỉnh.",
+                targetRequirement: "1-2 × 6-10 | Set cuối RIR 0 nếu hamstring ổn",
+                optionNote: "Hamstring căng: RIR 2, bỏ failure.",
+                formCues: "Cố định đùi chặt vào đệm. Gập gót chân sát mông, giữ 1s đỉnh co thắt.",
                 defaultSets: [
-                  { setNum: 1, reps: "8-12", rir: "RIR 1", restSec: 90, note: "Gập sâu" },
-                  { setNum: 2, reps: "8-12", rir: "RIR 0", restSec: 90, note: "Set cuối failure" }
+                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 90, note: "Set 1" },
+                  { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 90, note: "Set cuối RIR 0" }
                 ]
               },
               {
-                id: "cable_lateral_raise",
-                name: "Cable Lateral Raise",
-                category: "Upper",
-                equipment: "Cable",
-                primaryMuscles: ["Shoulders"],
+                id: "hip_adduction",
+                name: "Hip Adduction",
+                category: "Lower",
+                equipment: "Machine",
+                primaryMuscles: ["Adductors"],
                 secondaryMuscles: [],
                 isRestPause: true,
-                targetRequirement: "1 Set 12–15 reps + 3 Mini-sets Rest-Pause",
-                optionNote: "Tension đều từ đáy đến đỉnh.",
+                targetRequirement: "1 RP hoặc 2 × 8-12 | Set cuối RIR 0",
+                optionNote: "Optional.",
+                formCues: "Khép đùi dứt khoát, siết chặt cơ khép 1s đỉnh co thắt, mở chậm 2-3s.",
                 defaultSets: [
-                  { setNum: 1, reps: "12-15", rir: "RIR 0", restSec: 60, note: "Tension đều" },
-                  { setNum: 2, reps: "4-5+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause" }
+                  { setNum: 1, reps: "8-12", rir: "RIR 1", restSec: 90, note: "Set 1" },
+                  { setNum: 2, reps: "8-12", rir: "RIR 0", restSec: 90, note: "Set cuối RIR 0" }
+                ]
+              },
+              {
+                id: "calf_raise",
+                name: "Calf Raise",
+                category: "Lower",
+                equipment: "Machine",
+                primaryMuscles: ["Calves"],
+                secondaryMuscles: [],
+                targetRequirement: "2 × 6-12 | Set cuối RIR 0",
+                optionNote: "Optional nếu recovery tốt.",
+                formCues: "Nhón cao hết biên độ giữ 1s, hạ gót sâu giữ 2s giãn bắp chuối.",
+                defaultSets: [
+                  { setNum: 1, reps: "6-12", rir: "RIR 0", restSec: 90, note: "Set 1" },
+                  { setNum: 2, reps: "6-12", rir: "RIR 0", restSec: 90, note: "Set 2" }
+                ]
+              },
+              {
+                id: "leg_ext_hold",
+                name: "Iso optional: Leg Extension hold",
+                category: "Lower",
+                equipment: "Machine",
+                primaryMuscles: ["Quads"],
+                secondaryMuscles: [],
+                targetRequirement: "1-2 × 20-40s | RPE 7-8",
+                optionNote: "Optional.",
+                formCues: "Đá thẳng chân và giữ chặt đùi trước ở vị trí khóa gối 20-40 giây tạo áp lực isometric.",
+                defaultSets: [
+                  { setNum: 1, reps: "30s", rir: "RPE 7-8", restSec: 60, note: "Isometric hold 1" },
+                  { setNum: 2, reps: "30s", rir: "RPE 7-8", restSec: 60, note: "Isometric hold 2" }
                 ]
               }
             ]
@@ -525,65 +511,116 @@ const DEFAULT_PROGRAMS = [
             id: "wB_t5",
             dayKey: "T5",
             dayName: "Thứ Năm (T5)",
-            title: "Upper Power & Rest-Pause",
+            title: "Upper Hypertrophy",
             type: "strength",
-            focus: "Ngực, Vai và Tay sau chuyên sâu",
-            badge: "Upper Power",
+            focus: "Ngực, Xô, Vai, Tay sau và Tay trước chuyên sâu",
+            badge: "Upper Focus",
             exercises: [
               {
                 id: "incline_db_bench",
-                name: "Incline DB Bench Press",
+                name: "Incline DB Bench",
                 category: "Upper",
                 equipment: "Dumbbell",
                 primaryMuscles: ["Chest"],
                 secondaryMuscles: ["Shoulders", "Triceps"],
-                targetRequirement: "2 sets × 6–10 reps @ RIR 1",
-                optionNote: "Heavy work set.",
+                targetRequirement: "2 × 6-10 | Set cuối RIR 0-1; 2-3'",
+                optionNote: "Đổi Machine Chest Press.",
+                formCues: "Góc ghế 30-45 độ. Hạ tạ sâu ngang ngực trên cảm nhận cơ căng giãn.",
                 defaultSets: [
-                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 120, note: "Heavy set" },
-                  { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 120, note: "Near failure" }
+                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 150, note: "Set 1" },
+                  { setNum: 2, reps: "6-10", rir: "RIR 0-1", restSec: 150, note: "Set cuối near failure" }
                 ]
               },
               {
                 id: "pull_up",
-                name: "Weighted Pull-up / Lat Pulldown",
+                name: "Pull-up",
                 category: "Upper",
                 equipment: "Bodyweight",
                 primaryMuscles: ["Lats"],
                 secondaryMuscles: ["Biceps"],
-                targetRequirement: "2 sets × 6–8 reps @ RIR 1",
-                optionNote: "Đeo tạ thêm nếu kéo được > 8 reps.",
+                targetRequirement: "2 × 5-8 | Set cuối RIR 0-1; 2-3'",
+                optionNote: "Đổi weighted/neutral grip/lat pulldown.",
+                formCues: "Treo người thẳng tay, kéo bả vai xuống trước khi gập cùi chỏ. Cằm vượt xà.",
                 defaultSets: [
-                  { setNum: 1, reps: "6-8", rir: "RIR 1", restSec: 120, note: "Tạ nặng" },
-                  { setNum: 2, reps: "6-8", rir: "RIR 1", restSec: 120, note: "RIR 1" }
+                  { setNum: 1, reps: "5-8", rir: "RIR 1", restSec: 150, note: "Set 1" },
+                  { setNum: 2, reps: "5-8", rir: "RIR 0-1", restSec: 150, note: "Set 2 hard effort" }
                 ]
               },
               {
-                id: "dips",
-                name: "Chest Dips",
+                id: "machine_shoulder_press",
+                name: "Machine Shoulder Press",
                 category: "Upper",
-                equipment: "Bodyweight",
-                primaryMuscles: ["Chest", "Triceps"],
-                secondaryMuscles: [],
-                targetRequirement: "2 sets × 8–10 reps @ RIR 1",
-                optionNote: "Nghiêng 20 độ vào ngực.",
+                equipment: "Machine",
+                primaryMuscles: ["Shoulders"],
+                secondaryMuscles: ["Triceps"],
+                isRestPause: true,
+                targetRequirement: "1 × 6-10 + 1 RP optional | RIR 0-1; 15-20s RP",
+                optionNote: "Nếu mỏi vai: bỏ RP.",
+                formCues: "Tay cầm ngang tai. Đẩy thẳng đứng kiểm soát, hạ sâu đến cằm.",
                 defaultSets: [
-                  { setNum: 1, reps: "8-10", rir: "RIR 1", restSec: 90, note: "Form chuẩn" },
-                  { setNum: 2, reps: "8-10", rir: "RIR 0", restSec: 90, note: "Tới ngưỡng" }
+                  { setNum: 1, reps: "6-10", rir: "RIR 0-1", restSec: 120, note: "Set 1" },
+                  { setNum: 2, reps: "3-5+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "RP optional" }
                 ]
               },
               {
-                id: "triceps_pushdown",
-                name: "Triceps Pushdown (Rope)",
+                id: "seated_row",
+                name: "Seated Row",
                 category: "Upper",
                 equipment: "Cable",
-                primaryMuscles: ["Triceps"],
-                secondaryMuscles: [],
-                targetRequirement: "2 sets × 10–12 reps @ RIR 0",
-                optionNote: "Tách dây ở đáy.",
+                primaryMuscles: ["Upper Back", "Lats"],
+                secondaryMuscles: ["Biceps"],
+                targetRequirement: "2 × 6-10 | Set cuối RIR 0; 2'",
+                optionNote: "Đổi chest-supported row.",
+                formCues: "Ngồi thẳng lưng, kéo tay cầm sát bụng dưới, ép chặt bả vai 1s.",
                 defaultSets: [
-                  { setNum: 1, reps: "10-12", rir: "RIR 0", restSec: 60, note: "Siết mạnh" },
-                  { setNum: 2, reps: "10-12", rir: "RIR 0", restSec: 60, note: "Cháy cơ" }
+                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 120, note: "Set 1" },
+                  { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 120, note: "Set cuối RIR 0" }
+                ]
+              },
+              {
+                id: "lateral_raise",
+                name: "Lateral Raise",
+                category: "Upper",
+                equipment: "Cable",
+                primaryMuscles: ["Shoulders"],
+                secondaryMuscles: [],
+                isRestPause: true,
+                targetRequirement: "1 Rest-Pause extended set | 10-20 + mini sets",
+                optionNote: "Ưu tiên vai giữa.",
+                formCues: "Nghiêng nhẹ người 10 độ, nâng tay dang ngang theo mặt phẳng bả vai.",
+                defaultSets: [
+                  { setNum: 1, reps: "10-20+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause extended set" }
+                ]
+              },
+              {
+                id: "rear_delt_fly",
+                name: "Rear Delt Fly",
+                category: "Upper",
+                equipment: "Cable",
+                primaryMuscles: ["Rear Delts", "Shoulders"],
+                secondaryMuscles: ["Upper Back"],
+                isRestPause: true,
+                targetRequirement: "1 Rest-Pause extended set | 10-20 + mini sets",
+                optionNote: "Cable/machine.",
+                formCues: "Dang tay ngang vai hơi cong cùi chỏ, siết chặt vai sau, không giật bả vai.",
+                defaultSets: [
+                  { setNum: 1, reps: "10-20+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause extended set" }
+                ]
+              },
+              {
+                id: "curl_pushdown",
+                name: "Curl / Pushdown",
+                category: "Upper",
+                equipment: "Cable",
+                primaryMuscles: ["Biceps", "Triceps"],
+                secondaryMuscles: [],
+                isRestPause: true,
+                targetRequirement: "1 RP hoặc 2 × 6-10 | RIR 0",
+                optionNote: "Optional.",
+                formCues: "Superset tay trước và tay sau luân phiên, tối đa hóa bơm máu cơ bắp.",
+                defaultSets: [
+                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 90, note: "Set 1" },
+                  { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 90, note: "Set 2" }
                 ]
               }
             ]
@@ -592,55 +629,16 @@ const DEFAULT_PROGRAMS = [
             id: "wB_t6",
             dayKey: "T6",
             dayName: "Thứ Sáu (T6)",
-            title: "Lower Hypertrophy & Calves",
-            type: "strength",
-            focus: "Đùi trước & Chuỗi sau",
-            badge: "Lower Focus",
-            exercises: [
-              {
-                id: "pin_squat",
-                name: "Pin Back Squat / Leg Press",
-                category: "Lower",
-                equipment: "Barbell",
-                primaryMuscles: ["Quads", "Glutes"],
-                secondaryMuscles: [],
-                targetRequirement: "2 sets × 6–8 reps @ RIR 1",
-                optionNote: "Đổi Leg Press nếu lưng mỏi.",
-                defaultSets: [
-                  { setNum: 1, reps: "6-8", rir: "RIR 1", restSec: 150, note: "Top set" },
-                  { setNum: 2, reps: "6-8", rir: "RIR 1", restSec: 150, note: "Back-off" }
-                ]
-              },
-              {
-                id: "leg_extension",
-                name: "Leg Extension",
-                category: "Lower",
-                equipment: "Machine",
-                primaryMuscles: ["Quads"],
-                secondaryMuscles: [],
-                isRestPause: true,
-                targetRequirement: "2 sets × 10–15 reps (RP)",
-                optionNote: "Khóa thẳng đùi 1s.",
-                defaultSets: [
-                  { setNum: 1, reps: "10-15", rir: "RIR 0", restSec: 60, note: "Set 1" },
-                  { setNum: 2, reps: "4-6+RP", rir: "RIR 0", restSec: 15, isRestPause: true, note: "Rest-Pause" }
-                ]
-              },
-              {
-                id: "calf_raise",
-                name: "Standing Calf Raise",
-                category: "Lower",
-                equipment: "Machine",
-                primaryMuscles: ["Calves"],
-                secondaryMuscles: [],
-                targetRequirement: "2 sets × 10–15 reps",
-                optionNote: "Nhón cao giữ 1s.",
-                defaultSets: [
-                  { setNum: 1, reps: "10-15", rir: "RIR 0", restSec: 60, note: "Giữ 1s đáy" },
-                  { setNum: 2, reps: "10-15", rir: "RIR 0", restSec: 60, note: "Set cuối" }
-                ]
-              }
-            ]
+            title: "Active Recovery / Rest",
+            type: "run",
+            focus: "Phục hồi chủ động, giãn cơ hoặc nghỉ ngơi trước thứ 7",
+            badge: "Recovery",
+            targetKm: 0,
+            checklist: [
+              { id: "wB_t6_mob", label: "Mobility & Dynamic Foam Rolling 15 phút", note: "Phục hồi" },
+              { id: "wB_t6_hyd", label: "Bổ sung đủ nước, điện giải và giấc ngủ sâu 8 tiếng", note: "Recovery" }
+            ],
+            exercises: []
           },
           {
             id: "wB_t7",
@@ -748,6 +746,10 @@ const EXERCISE_LIBRARY = [
   { id: "preacher_curl", name: "Preacher Curl (EZ-Bar / Machine)", category: "Strength", equipment: "Barbell", primaryMuscles: ["Biceps"], secondaryMuscles: ["Forearms"], targetRequirement: "2 sets × 8–12 reps @ RIR 0", formCues: "Áp nách sát đệm ghế, cuộn tạ siết bắp tay ở đỉnh, hạ kiểm soát không thả rơi khớp.", defaultSets: [{ setNum: 1, reps: "8-12", rir: "RIR 0", restSec: 90 }] },
   { id: "romanian_deadlift_bb", name: "Barbell Romanian Deadlift (RDL)", category: "Strength", equipment: "Barbell", primaryMuscles: ["Hamstrings", "Glutes"], secondaryMuscles: ["Lower Back"], targetRequirement: "3 sets × 6–8 reps @ RIR 1–2", formCues: "Cố định đầu gối hơi chùng, gập hông đẩy mông ra sau cho tới khi gân kheo căng tối đa.", defaultSets: [{ setNum: 1, reps: "6-8", rir: "RIR 1", restSec: 150 }] },
   { id: "walking_lunges_db", name: "Dumbbell Walking Lunges", category: "Strength", equipment: "Dumbbell", primaryMuscles: ["Quads", "Glutes"], secondaryMuscles: ["Hamstrings", "Calves"], targetRequirement: "2 sets × 10–12 bước/chân", formCues: "Bước dài, gối sau hạ gần chạm sàn, giữ thân thẳng đứng siết cơ đùi và mông.", defaultSets: [{ setNum: 1, reps: "10-12", rir: "RIR 1", restSec: 90 }] },
+  { id: "hip_adduction", name: "Hip Adduction Machine", category: "Strength", equipment: "Machine", primaryMuscles: ["Adductors"], secondaryMuscles: ["Glutes"], targetRequirement: "1 RP hoặc 2 × 8–12 reps @ RIR 0", formCues: "Khép đùi dứt khoát, siết chặt cơ khép 1s đỉnh co thắt, mở chậm 2-3s.", defaultSets: [{ setNum: 1, reps: "8-12", rir: "RIR 1", restSec: 90 }, { setNum: 2, reps: "8-12", rir: "RIR 0", restSec: 90 }] },
+  { id: "leg_ext_hold", name: "Leg Extension Hold (Isometric)", category: "Strength", equipment: "Machine", primaryMuscles: ["Quads"], secondaryMuscles: [], targetRequirement: "1-2 × 20-40s @ RPE 7-8", formCues: "Đá thẳng chân và giữ chặt đùi trước ở vị trí khóa gối 20-40 giây tạo áp lực isometric.", defaultSets: [{ setNum: 1, reps: "30s", rir: "RPE 7-8", restSec: 60 }] },
+  { id: "rear_delt_fly", name: "Rear Delt Fly (Cable / Machine)", category: "Strength", equipment: "Cable", primaryMuscles: ["Rear Delts", "Shoulders"], secondaryMuscles: ["Upper Back"], targetRequirement: "1 Rest-Pause Extended Set (10-20 + mini sets)", formCues: "Dang tay ngang vai hơi cong cùi chỏ, siết chặt vai sau, không giật bả vai.", defaultSets: [{ setNum: 1, reps: "10-20+RP", rir: "RIR 0", restSec: 15 }] },
+  { id: "curl_pushdown", name: "Curl & Pushdown Superset", category: "Strength", equipment: "Cable", primaryMuscles: ["Biceps", "Triceps"], secondaryMuscles: [], targetRequirement: "1 RP hoặc 2 × 6-10 @ RIR 0", formCues: "Superset tay trước và tay sau luân phiên, tối đa hóa bơm máu cơ bắp.", defaultSets: [{ setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 90 }, { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 90 }] },
   { id: "cable_lateral_raise_uni", name: "Unilateral Cable Lateral Raise", category: "Strength", equipment: "Cable", primaryMuscles: ["Shoulders"], secondaryMuscles: ["Traps"], targetRequirement: "2 sets × 12–15 reps @ RIR 0", formCues: "Kéo dây cáp qua hông dang tay theo góc 30 độ mặt phẳng bả vai, giữ đỉnh 1 giây.", defaultSets: [{ setNum: 1, reps: "12-15", rir: "RIR 0", restSec: 60 }] },
   { id: "assault_bike_intervals", name: "Assault / Echo Bike Lactic Sprints", category: "Cardio", equipment: "Machine", primaryMuscles: ["Cardio", "Quads"], secondaryMuscles: ["Shoulders", "Glutes"], targetRequirement: "10 Rounds (20s Max Wattage / 40s Recovery)", formCues: "Đạp chân và đẩy kéo tay đồng thời, bùng nổ hết công suất 20 giây.", defaultSets: [{ setNum: 1, reps: "20s/40s x10", rir: "RPE 9.5", restSec: 40 }] }
 ];

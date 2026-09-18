@@ -1,7 +1,7 @@
 /**
  * Dino Tracking - True AI Coach & Sports Science Copilot
  * Features:
- * 1. Direct integration with Google Gemini REST API using exact model "gemini-1.5-flash".
+ * 1. Direct integration with Google Gemini REST API using exact model "gemini-2.5-flash".
  * 2. Deep Context Injection (Active Program, Workout Logs, Volume, Km, Prehab Deviations, Muscle Strain).
  * 3. Robust Error Handling: Detailed console logs and distinct user-facing UI toasts for API key vs network errors.
  * 4. Graceful Offline Sports Science Rule Fallback when API key is not yet set.
@@ -43,7 +43,7 @@ class DinoAICoachEngine {
     return `${localResponse}\n\n---\n*💡 **Mẹo:** Bạn có thể nhập **Google Gemini API Key** trong Cài đặt (⚙️) để kích hoạt mô hình AI thế hệ mới nhất phân tích chuyên sâu.*`;
   }
 
-  // Real Google Gemini API Call strictly targeting "gemini-1.5-flash"
+  // Real Google Gemini API Call strictly targeting "gemini-2.5-flash"
   async callGeminiAPI(apiKey, userQuery, athlete) {
     const systemPrompt = `Bạn là Dino AI Coach — Huấn luyện viên Thể thao & Khoa học Vận động cao cấp cho Vận động viên Hybrid (Hybrid Athlete: tập gym tăng cơ, cử tạ sức mạnh, chạy bền Zone 2/Threshold/Half-Marathon và Hyrox/CrossFit).
 
@@ -60,7 +60,7 @@ NGUYÊN TẮC TRẢ LỜI CỦA BẠN:
 2. Luôn liên hệ trực tiếp với dữ liệu buổi tập, mức tạ và km chạy thực tế của VĐV để đưa ra lời khuyên cá nhân hóa, không trả lời chung chung sáo rỗng.
 3. Trình bày rõ ràng với Markdown: dùng in đậm, gạch đầu dòng, bảng biểu hoặc checklist khi phù hợp.`;
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const requestBody = {
       contents: [
@@ -79,7 +79,7 @@ NGUYÊN TẮC TRẢ LỜI CỦA BẠN:
       }
     };
 
-    console.log(`[Gemini API] Đang gửi yêu cầu tới: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`);
+    console.log(`[Gemini API] Đang gửi yêu cầu tới: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`);
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -101,7 +101,7 @@ NGUYÊN TẮC TRẢ LỜI CỦA BẠN:
         throw new Error(`API Key bị từ chối quyền truy cập (403 Forbidden - ${errMsg})`);
       }
       if (errStatus === 404) {
-        throw new Error(`Mô hình gemini-1.5-flash không tìm thấy (404 - ${errMsg})`);
+        throw new Error(`Mô hình gemini-2.5-flash không tìm thấy (404 - ${errMsg})`);
       }
       if (errStatus === 429) {
         throw new Error(`Đã vượt quá giới hạn lượt gọi API Key (429 Rate Limit - ${errMsg})`);
@@ -113,11 +113,11 @@ NGUYÊN TẮC TRẢ LỜI CỦA BẠN:
     const data = await response.json();
     const candidate = data.candidates?.[0];
     if (candidate && candidate.content?.parts?.[0]?.text) {
-      console.log(`[Gemini API] Phản hồi thành công từ mô hình gemini-1.5-flash`);
+      console.log(`[Gemini API] Phản hồi thành công từ mô hình gemini-2.5-flash`);
       return candidate.content.parts[0].text;
     }
 
-    throw new Error("Mô hình gemini-1.5-flash không trả về phản hồi văn bản hợp lệ.");
+    throw new Error("Mô hình gemini-2.5-flash không trả về phản hồi văn bản hợp lệ.");
   }
 
   // Offline Sports Science Rule Engine

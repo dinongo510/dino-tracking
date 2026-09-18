@@ -3,7 +3,7 @@
  * Robust PWA offline caching with iOS Safari Redirection fix
  */
 
-const CACHE_NAME = 'dino-tracking-v7';
+const CACHE_NAME = 'dino-tracking-v8';
 
 const STATIC_ASSETS = [
   '/',
