@@ -11,9 +11,10 @@
 | :--- | :--- |
 | **Active Change Set** | `DINO-000` |
 | **Change Set Title** | Establish DINO Development Governance |
-| **Current State** | `COMMITTED` |
+| **Current State** | `GITHUB_AUDITED` (`COMMITTED` → `PUSHED` → `GITHUB_AUDITED`) |
 | **Active Branch** | `main` |
-| **Baseline Commit SHA** | `7ff9cbb3517646487d4440d17ea4faa25fe9a954` |
+| **Pre-Change Baseline SHA** | `7ff9cbb3517646487d4440d17ea4faa25fe9a954` |
+| **Current / Locked Baseline SHA** | `f0283f7ad5b9a603260996cb672b74b5be3d9c0e` |
 | **Last Updated** | `2026-09-23` |
 | **Active Blockers** | None |
 
@@ -48,7 +49,7 @@
 
 | Change Set ID | Title | State | Authorized Scope | Completed Date |
 | :--- | :--- | :--- | :--- | :--- |
-| `DINO-000` | Establish DINO Development Governance | `COMMITTED` | Permanent governance docs creation (`AGENTS.md`, `00_SYSTEM/*`) | 2026-09-23 |
+| `DINO-000` | Establish DINO Development Governance | `GITHUB_AUDITED` (`COMMITTED` → `PUSHED` → `GITHUB_AUDITED`) | Permanent governance docs creation (`AGENTS.md`, `00_SYSTEM/*`) | 2026-09-23 |
 
 ---
 
