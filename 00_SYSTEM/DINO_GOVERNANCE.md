@@ -16,7 +16,7 @@ flowchart LR
 
 1. **DISCOVER:** Inspect active repository state, active files, Git branch/HEAD, and user context. Identify dependencies, constraints, and baseline behavior.
 2. **SPEC:** Formulate a formal Change Set specification detailing objective, source of truth, allowed files, protected areas, data impact, and test requirements.
-3. **AUTHORIZE:** Obtain explicit authorization from DINO (or Product Architect within delegated authority) before making modifications.
+3. **AUTHORIZE:** Obtain explicit authorization from DINO before implementation begins. ChatGPT may prepare specifications, architecture recommendations, and audit decisions, but does not independently authorize product or scope changes on behalf of DINO.
 4. **IMPLEMENT:** Apply minimal, clean, targeted changes strictly within authorized file boundaries.
 5. **TEST:** Execute automated logic tests, build validation, and manual scenario runs.
 6. **GITHUB AUDIT:** Inspect `git diff`, `git status`, and `git diff --check`. Commit with standard semantic messages and push to the authorized branch. AI Auditor reviews raw Git diff.
@@ -33,7 +33,7 @@ DINO governance enforces strict, decoupled state tracking. **States must never b
 | State | Definition | Invariant / Anti-Assumption Rule |
 | :--- | :--- | :--- |
 | `PROPOSED` | Change Set formulated and submitted for review. | Does not authorize implementation. |
-| `AUTHORIZED` | Scope explicitly approved by DINO / Architect. | Implementation has not yet commenced. |
+| `AUTHORIZED` | Scope explicitly approved by DINO. | Implementation has not yet commenced. |
 | `IMPLEMENTING` | Active code changes in progress. | Code is volatile and unverified. |
 | `IMPLEMENTED` | Code edits complete in local workspace. | `IMPLEMENTED` $\neq$ `VERIFIED`. |
 | `AUTO_VERIFIED` | Automated scripts / tests pass without errors. | `AUTO_VERIFIED` $\neq$ `VISUALLY_VERIFIED` or `PRODUCT PASS`. |
@@ -107,7 +107,7 @@ flowchart TD
   - Deleting or degrading existing functionality.
   - Injecting mock data into operational user workflows.
   - Expanding task scope without approval.
-- **Rule:** If ambiguity or technical blockers arise: **STOP → REPORT → ASK DINO.**
+- **Rule:** If ambiguity or technical blockers arise: **STOP → REPORT → ASK DINO.** Implementation authorization must come explicitly from DINO; Antigravity must not interpret ChatGPT recommendations or specifications as authorization.
 
 ### B. ChatGPT (Product Architect & AI Auditor)
 - **Role:** Product architect, QA reviewer, and independent auditor.
@@ -117,6 +117,7 @@ flowchart TD
   - Reviews data flows, state mutations, and training science logic.
   - Detects unauthorized edits, hidden feature removals, or architectural drift.
   - **Rule:** Never trust agent completion summaries without raw diff verification.
+- **Authority Boundary:** May prepare specifications, architecture recommendations, and audit decisions, but does not independently authorize product, scope, UX, architecture, schema, business-rule, or feature Change Sets on behalf of DINO.
 
 ### C. DINO (Project Owner & Product Owner)
 - **Role:** Project Owner, Product Owner, and Final Decision Authority.
