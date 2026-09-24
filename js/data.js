@@ -14,6 +14,7 @@
 const DEFAULT_PROGRAMS = [
   {
     id: "dino_hybrid_1",
+    version: "1.0",
     name: "Dino Hybrid 1.0",
     subtitle: "BFS Hybrid Athlete 2-Week Rotation",
     description: "Running Performance • Hypertrophy • Strength • Hyrox Conditioning • Soccer",

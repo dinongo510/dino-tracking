@@ -39,8 +39,9 @@ class DinoStorage {
         const builtInIdx = stored.findIndex(p => p.id === "dino_hybrid_1");
         if (builtInIdx !== -1 && defaultProgs.length > 0) {
           stored[builtInIdx] = defaultProgs[0];
-          localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(stored));
         }
+        stored.forEach(p => { if (!p.version) p.version = "1.0"; });
+        localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(stored));
       } catch (e) {
         localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(defaultProgs));
       }
@@ -148,6 +149,7 @@ class DinoStorage {
     const progs = this.getPrograms();
     const newProg = {
       id: "prog_" + Date.now(),
+      version: "1.0",
       name: name.trim(),
       subtitle: subtitle.trim(),
       philosophy: (philosophy || "").trim(),
@@ -356,6 +358,8 @@ class DinoStorage {
   // =========================================================================
   // 3. WORKOUT STATE MANAGEMENT (LOCK STATE & CANCEL / FINISH)
   // =========================================================================
+  // 3. WORKOUT STATE MANAGEMENT (LIFECYCLE, ACTUAL SETS & SNAPSHOTS)
+  // =========================================================================
   getActiveWorkoutState() {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVE_WORKOUT_STATE) || "null");
@@ -366,22 +370,93 @@ class DinoStorage {
 
   isWorkoutActive() {
     const state = this.getActiveWorkoutState();
-    return !!(state && state.isActive);
+    return !!(state && (state.isActive || state.status === "IN_PROGRESS"));
   }
 
   startWorkoutSession(progId, weekId, dayId, dayTitle, exercises) {
+    const prog = this.getProgramById(progId) || this.getActiveProgram();
+    const startTime = Date.now();
+
+    // 1. Immutable Prescription Snapshot captured at workout start
+    const prescriptionSnapshot = (exercises || []).map(ex => ({
+      id: ex.id,
+      name: ex.name,
+      category: ex.category || "General",
+      equipment: ex.equipment || "Barbell",
+      primaryMuscles: [...(ex.primaryMuscles || [])],
+      secondaryMuscles: [...(ex.secondaryMuscles || [])],
+      targetRequirement: ex.targetRequirement || "",
+      optionNote: ex.optionNote || "",
+      formCues: ex.formCues || "",
+      defaultSets: (ex.defaultSets || []).map(s => ({
+        setNum: s.setNum,
+        reps: s.reps,
+        rir: s.rir,
+        rpe: s.rpe || null,
+        weightKg: s.weightKg || null,
+        restSec: s.restSec || 120,
+        note: s.note || "",
+        isRestPause: !!s.isRestPause
+      }))
+    }));
+
+    // 2. Pre-populate Actual Sets structure (Prescription ≠ Actual)
+    const loggedSets = {};
+    (exercises || []).forEach(ex => {
+      loggedSets[ex.id] = (ex.defaultSets || []).map((s, idx) => {
+        const plannedReps = s.reps || "8-10";
+        const parsedReps = parseInt(plannedReps, 10) || 8;
+        const parsedRir = s.rir ? String(s.rir).replace(/[^0-9.]/g, "") || "1" : "1";
+
+        return {
+          setId: `set_${ex.id}_${idx + 1}_${startTime}`,
+          exerciseId: ex.id,
+          exerciseName: ex.name,
+          setNumber: s.setNum || (idx + 1),
+          modality: "strength",
+          planned: {
+            reps: plannedReps,
+            load: s.weightKg || null,
+            rir: s.rir || "RIR 1-2",
+            rpe: s.rpe || null,
+            restSec: s.restSec || 120,
+            duration: null,
+            distance: null
+          },
+          actual: {
+            reps: parsedReps,
+            load: s.weightKg || 50,
+            rir: parsedRir,
+            rpe: null,
+            duration: null,
+            distance: null
+          },
+          completed: false,
+          timestamp: null,
+          notes: ""
+        };
+      });
+    });
+
     const state = {
+      sessionId: "session_act_" + startTime,
+      status: "IN_PROGRESS", // PLANNED -> IN_PROGRESS -> COMPLETED / ABANDONED
       isActive: true,
-      startTime: Date.now(),
-      progId,
-      weekId,
-      dayId,
-      dayTitle,
+      startTime: startTime,
+      athleteId: "dino_athlete_default",
+      progId: progId,
+      progVersion: prog ? (prog.version || "1.0") : "1.0",
+      progName: prog ? prog.name : "Dino Program",
+      weekId: weekId,
+      dayId: dayId,
+      dayTitle: dayTitle,
       elapsedSeconds: 0,
       isPaused: false,
-      loggedSets: {}, // { exerciseId: [ { weightKg, reps, rpe, completed } ] }
+      prescriptionSnapshot: prescriptionSnapshot,
+      loggedSets: loggedSets,
       notes: ""
     };
+
     localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKOUT_STATE, JSON.stringify(state));
     return state;
   }
@@ -396,32 +471,72 @@ class DinoStorage {
   }
 
   cancelActiveWorkout() {
+    // Abandon active session cleanly
     localStorage.removeItem(STORAGE_KEYS.ACTIVE_WORKOUT_STATE);
   }
 
   finishWorkoutSession(summaryData) {
     const history = this.getWorkoutHistory();
-    const newSession = {
-      id: "session_" + Date.now(),
-      date: new Date().toISOString().split("T")[0],
-      timestamp: Date.now(),
-      progId: summaryData.progId || this.getActiveProgramId(),
-      weekId: summaryData.weekId || this.getActiveWeekId(),
-      dayId: summaryData.dayId || this.getActiveDayId(),
-      dayTitle: summaryData.dayTitle || "Workout Session",
-      durationSec: summaryData.durationSec || 0,
+    const activeState = this.getActiveWorkoutState();
+    const prog = this.getProgramById(summaryData.progId || (activeState ? activeState.progId : this.getActiveProgramId()));
+
+    // 1. Authoritative Actual Performance Sets
+    const actualPerformance = summaryData.actualPerformance || [];
+
+    // 2. Derived Summary calculation (authoritative performance -> derived summary)
+    const derivedSummary = {
       totalVolumeKg: summaryData.totalVolumeKg || 0,
       totalSets: summaryData.totalSets || 0,
       totalDistanceKm: summaryData.totalDistanceKm || 0,
       avgPace: summaryData.avgPace || "—",
       prsCount: summaryData.prsCount || 0,
-      exercises: summaryData.exercises || [],
-      notes: summaryData.notes || ""
+      durationSec: summaryData.durationSec || (activeState ? Math.max(0, Math.floor((Date.now() - activeState.startTime) / 1000)) : 0)
     };
+
+    // 3. Immutable Completed Session Snapshot
+    const newSession = {
+      id: "session_" + Date.now(),
+      status: "COMPLETED", // Primary source for history & analytics
+      athleteId: "dino_athlete_default",
+      date: new Date().toISOString().split("T")[0],
+      startTime: activeState ? activeState.startTime : (Date.now() - derivedSummary.durationSec * 1000),
+      endTime: Date.now(),
+      timestamp: Date.now(),
+      durationSec: derivedSummary.durationSec,
+      progId: summaryData.progId || (activeState ? activeState.progId : this.getActiveProgramId()),
+      progVersion: (activeState && activeState.progVersion) ? activeState.progVersion : (prog ? prog.version || "1.0" : "1.0"),
+      progName: (activeState && activeState.progName) ? activeState.progName : (prog ? prog.name : "Dino Program"),
+      weekId: summaryData.weekId || (activeState ? activeState.weekId : this.getActiveWeekId()),
+      dayId: summaryData.dayId || (activeState ? activeState.dayId : this.getActiveDayId()),
+      dayTitle: summaryData.dayTitle || (activeState ? activeState.dayTitle : "Workout Session"),
+
+      // Prescription snapshot at completion time (stable, immutable across future program updates)
+      prescriptionSnapshot: (activeState && activeState.prescriptionSnapshot) ? activeState.prescriptionSnapshot : (summaryData.prescriptionSnapshot || []),
+
+      // Authoritative actual performance
+      actualPerformance: actualPerformance,
+
+      // Derived summary
+      derivedSummary: derivedSummary,
+
+      // Root-level fields for 100% backward compatibility with existing stats, calendar & AI Coach
+      totalVolumeKg: derivedSummary.totalVolumeKg,
+      totalSets: derivedSummary.totalSets,
+      totalDistanceKm: derivedSummary.totalDistanceKm,
+      avgPace: derivedSummary.avgPace,
+      prsCount: derivedSummary.prsCount,
+      exercises: summaryData.exercises || actualPerformance.map(ap => ({
+        name: ap.exerciseName,
+        sets: ap.sets ? ap.sets.filter(s => s.completed).length : 0,
+        volume: ap.sets ? ap.sets.filter(s => s.completed).reduce((sum, s) => sum + ((s.actual?.load || 0) * (s.actual?.reps || 0)), 0) : 0
+      })),
+      notes: summaryData.notes || (activeState ? activeState.notes : "")
+    };
+
     history.unshift(newSession);
     localStorage.setItem(STORAGE_KEYS.WORKOUT_HISTORY, JSON.stringify(history));
 
-    // Clear the active lock state
+    // Clear active workout state
     this.cancelActiveWorkout();
     return newSession;
   }
@@ -438,6 +553,133 @@ class DinoStorage {
     let history = this.getWorkoutHistory();
     history = history.filter(s => s.id !== sessionId);
     localStorage.setItem(STORAGE_KEYS.WORKOUT_HISTORY, JSON.stringify(history));
+  }
+
+  getLastCompletedExercisePerformance(exerciseId, exerciseName) {
+    const history = this.getWorkoutHistory();
+    for (const session of history) {
+      if (session.status && session.status !== "COMPLETED") continue;
+
+      // 1. Search in actualPerformance
+      if (session.actualPerformance && Array.isArray(session.actualPerformance)) {
+        const match = session.actualPerformance.find(p =>
+          (exerciseId && p.exerciseId === exerciseId) ||
+          (exerciseName && p.exerciseName && p.exerciseName.toLowerCase() === exerciseName.toLowerCase())
+        );
+        if (match && match.sets && match.sets.length > 0) {
+          const completedSets = match.sets.filter(s => s.completed);
+          if (completedSets.length > 0) {
+            return {
+              date: session.date,
+              dayTitle: session.dayTitle,
+              sets: completedSets
+            };
+          }
+        }
+      }
+
+      // 2. Fallback to legacy exercises format
+      if (session.exercises && Array.isArray(session.exercises)) {
+        const match = session.exercises.find(e =>
+          (exerciseId && e.id === exerciseId) ||
+          (exerciseName && e.name && e.name.toLowerCase() === exerciseName.toLowerCase())
+        );
+        if (match) {
+          if (match.sets && Array.isArray(match.sets) && match.sets.length > 0) {
+            return {
+              date: session.date,
+              dayTitle: session.dayTitle,
+              sets: match.sets.map((s, i) => ({
+                setNumber: i + 1,
+                actual: {
+                  load: s.weightKg || s.weight || 0,
+                  reps: s.reps || 0,
+                  rir: s.rir || ""
+                },
+                completed: true
+              }))
+            };
+          } else if (typeof match.sets === "number" && match.sets > 0) {
+            return {
+              date: session.date,
+              dayTitle: session.dayTitle,
+              legacySummary: `${match.sets} sets • ${(match.volume || 0).toLocaleString()} kg`
+            };
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  getExercisePerformanceHistory(exerciseId, exerciseName) {
+    const history = this.getWorkoutHistory();
+    const entries = [];
+
+    for (const session of history) {
+      if (session.status && session.status !== "COMPLETED") continue;
+
+      // 1. Search in actualPerformance
+      if (session.actualPerformance && Array.isArray(session.actualPerformance)) {
+        const match = session.actualPerformance.find(p =>
+          (exerciseId && p.exerciseId === exerciseId) ||
+          (exerciseName && p.exerciseName && p.exerciseName.toLowerCase() === exerciseName.toLowerCase())
+        );
+        if (match && match.sets && match.sets.length > 0) {
+          const completedSets = match.sets.filter(s => s.completed);
+          if (completedSets.length > 0) {
+            entries.push({
+              sessionId: session.id,
+              date: session.date || (session.completedAt ? new Date(session.completedAt).toLocaleDateString("vi-VN") : "Gần đây"),
+              dayTitle: session.dayTitle || session.workoutTitle || "Buổi tập",
+              sets: completedSets.map(s => ({
+                setNumber: s.setNumber,
+                load: s.actual?.load ?? s.weightKg ?? 0,
+                reps: s.actual?.reps ?? s.reps ?? 0,
+                rir: s.actual?.rir ?? s.rir ?? "",
+                rpe: s.actual?.rpe ?? s.rpe ?? "",
+                completed: s.completed,
+                timestamp: s.timestamp
+              }))
+            });
+            continue;
+          }
+        }
+      }
+
+      // 2. Fallback to legacy exercises format
+      if (session.exercises && Array.isArray(session.exercises)) {
+        const match = session.exercises.find(e =>
+          (exerciseId && e.id === exerciseId) ||
+          (exerciseName && e.name && e.name.toLowerCase() === exerciseName.toLowerCase())
+        );
+        if (match) {
+          if (match.sets && Array.isArray(match.sets) && match.sets.length > 0) {
+            entries.push({
+              sessionId: session.id,
+              date: session.date || (session.completedAt ? new Date(session.completedAt).toLocaleDateString("vi-VN") : "Gần đây"),
+              dayTitle: session.dayTitle || session.workoutTitle || "Buổi tập",
+              sets: match.sets.map((s, idx) => ({
+                setNumber: idx + 1,
+                load: s.weightKg || s.weight || 0,
+                reps: s.reps || 0,
+                rir: s.rir || "",
+                completed: true
+              }))
+            });
+          } else if (typeof match.sets === "number" && match.sets > 0) {
+            entries.push({
+              sessionId: session.id,
+              date: session.date || "Gần đây",
+              dayTitle: session.dayTitle || "Buổi tập",
+              legacySummary: `${match.sets} sets • ${(match.volume || 0).toLocaleString()} kg`
+            });
+          }
+        }
+      }
+    }
+
+    return entries;
   }
 
   // =========================================================================

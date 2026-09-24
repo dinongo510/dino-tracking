@@ -318,31 +318,68 @@ class DinoApp {
       return;
     }
 
+    const activeState = this.storage.getActiveWorkoutState();
+    const isSessionActive = this.storage.isWorkoutActive();
+    const loggedSets = (activeState && activeState.loggedSets) ? activeState.loggedSets : {};
+
     exercises.forEach((ex, exIdx) => {
       const card = document.createElement("div");
       card.className = "hevy-exercise-card";
 
-      const setsHtml = (ex.defaultSets || []).map((s, sIdx) => `
-        <tr data-ex-idx="${exIdx}" data-set-idx="${sIdx}">
+      // Query previous completed performance for this exercise
+      const lastPerf = this.storage.getLastCompletedExercisePerformance(ex.id, ex.name);
+      let prevSummaryText = "";
+      if (lastPerf && lastPerf.sets && lastPerf.sets.length > 0) {
+        prevSummaryText = lastPerf.sets.map(s => {
+          const rirPart = (s.actual?.rir !== undefined && s.actual?.rir !== "" && s.actual?.rir !== null) ? ` @ RIR ${s.actual.rir}` : "";
+          return `S${s.setNumber}: ${s.actual?.load ?? 0}kg × ${s.actual?.reps ?? 0}${rirPart}`;
+        }).join(" | ");
+      } else if (lastPerf && lastPerf.legacySummary) {
+        prevSummaryText = lastPerf.legacySummary;
+      }
+
+      const setsHtml = (ex.defaultSets || []).map((s, sIdx) => {
+        const savedSet = (loggedSets[ex.id] && loggedSets[ex.id][sIdx]) ? loggedSets[ex.id][sIdx] : null;
+        const isChecked = savedSet ? !!savedSet.completed : false;
+        const actualWeight = savedSet ? (savedSet.actual?.load ?? 50) : (s.weightKg || 50);
+        const actualReps = savedSet ? (savedSet.actual?.reps ?? 8) : (parseInt(s.reps, 10) || 8);
+        const actualRir = savedSet ? (savedSet.actual?.rir ?? "1") : (s.rir ? String(s.rir).replace(/[^0-9.]/g, "") || "1" : "1");
+
+        let prevSetDisplay = "";
+        if (lastPerf && lastPerf.sets && lastPerf.sets[sIdx]) {
+          const ps = lastPerf.sets[sIdx];
+          const rirStr = (ps.actual?.rir !== undefined && ps.actual?.rir !== "" && ps.actual?.rir !== null) ? ` @ RIR ${ps.actual.rir}` : "";
+          prevSetDisplay = `${ps.actual?.load ?? 0}kg × ${ps.actual?.reps ?? 0}${rirStr}`;
+        }
+
+        return `
+        <tr data-ex-idx="${exIdx}" data-set-idx="${sIdx}" data-ex-id="${ex.id}">
           <td>
             <span class="set-num-badge ${s.isRestPause ? 'rest-pause' : ''}">
               ${s.setNum || (sIdx + 1)}
             </span>
           </td>
-          <td style="font-size: 11px; color: var(--text-muted);">${s.note || s.rir || "RIR 1"}</td>
-          <td>
-            <input type="number" class="set-input-num input-weight" value="${s.weightKg || 50}" step="2.5" min="0">
+          <td style="text-align: left; padding: 4px 6px;">
+            <div style="font-size: 11px; color: var(--text-muted);">${s.note || s.rir || "RIR 1-2"}</div>
+            ${prevSetDisplay ? `<div style="font-size: 9.5px; color: var(--color-gold); font-weight: 600;">Trước: ${prevSetDisplay}</div>` : ''}
           </td>
           <td>
-            <input type="number" class="set-input-num input-reps" value="${parseInt(s.reps, 10) || 8}" min="1" max="100">
+            <input type="number" class="set-input-num input-weight" value="${actualWeight}" step="2.5" min="0">
           </td>
           <td>
-            <button type="button" class="btn-check-set" data-rest-sec="${s.restSec || 120}" data-is-rp="${s.isRestPause ? 'true' : 'false'}">
+            <input type="number" class="set-input-num input-reps" value="${actualReps}" min="1" max="100">
+          </td>
+          <td>
+            <input type="text" class="set-input-num input-rir" placeholder="RIR" value="${actualRir}">
+          </td>
+          <td>
+            <button type="button" class="btn-check-set ${isChecked ? 'checked' : ''}" data-rest-sec="${s.restSec || 120}" data-is-rp="${s.isRestPause ? 'true' : 'false'}">
               ✓
             </button>
           </td>
         </tr>
-      `).join("");
+      `;
+      }).join("");
 
       card.innerHTML = `
         <div class="hevy-card-top-row">
@@ -352,6 +389,7 @@ class DinoApp {
               <span class="info-dot">ℹ️</span>
             </div>
             <div class="hevy-ex-meta">${ex.category || 'Compound'} • ${ex.equipment || 'Barbell'} • ${(ex.primaryMuscles || []).join(', ')}</div>
+            ${prevSummaryText ? `<div class="hevy-ex-prev-perf"><span class="prev-tag">Lần trước:</span> <span>${prevSummaryText}</span></div>` : ''}
             ${ex.targetRequirement ? `<div class="hevy-ex-target-note">${ex.targetRequirement}</div>` : ''}
             ${ex.optionNote ? `<div class="hevy-ex-option-line"><span class="opt-tag-red">Option:</span> ${ex.optionNote.replace(/^Option:\s*/i, '')}</div>` : ''}
           </div>
@@ -365,9 +403,10 @@ class DinoApp {
           <thead>
             <tr>
               <th>SET</th>
-              <th>TARGET / RIR</th>
+              <th>MỤC TIÊU</th>
               <th>KG</th>
               <th>REPS</th>
+              <th>RIR</th>
               <th>XONG</th>
             </tr>
           </thead>
@@ -380,6 +419,55 @@ class DinoApp {
           <button class="btn-add-set-mini" data-ex-idx="${exIdx}">+ Thêm Set</button>
         </div>
       `;
+
+      // Helper to update actual set data and persist to storage
+      const persistSetRow = (row) => {
+        if (!this.storage.isWorkoutActive()) return;
+        const currentActive = this.storage.getActiveWorkoutState();
+        if (!currentActive) return;
+        if (!currentActive.loggedSets) currentActive.loggedSets = {};
+        if (!currentActive.loggedSets[ex.id]) currentActive.loggedSets[ex.id] = [];
+
+        const sIdx = parseInt(row.getAttribute("data-set-idx"), 10);
+        const w = parseFloat(row.querySelector(".input-weight")?.value) || 0;
+        const r = parseInt(row.querySelector(".input-reps")?.value, 10) || 0;
+        const rir = (row.querySelector(".input-rir")?.value || "").trim();
+        const isChecked = row.querySelector(".btn-check-set")?.classList.contains("checked");
+
+        const existing = currentActive.loggedSets[ex.id][sIdx] || {};
+        currentActive.loggedSets[ex.id][sIdx] = {
+          setId: existing.setId || `set_${ex.id}_${sIdx + 1}_${Date.now()}`,
+          exerciseId: ex.id,
+          exerciseName: ex.name,
+          setNumber: sIdx + 1,
+          modality: "strength",
+          planned: existing.planned || {
+            reps: ex.defaultSets?.[sIdx]?.reps || "8-10",
+            load: ex.defaultSets?.[sIdx]?.weightKg || null,
+            rir: ex.defaultSets?.[sIdx]?.rir || "RIR 1-2"
+          },
+          actual: {
+            load: w,
+            reps: r,
+            rir: rir,
+            duration: null,
+            distance: null
+          },
+          completed: !!isChecked,
+          timestamp: isChecked ? (existing.timestamp || Date.now()) : null,
+          notes: ""
+        };
+
+        this.storage.updateActiveWorkoutLogs(currentActive.loggedSets);
+      };
+
+      // Input change listeners for immediate data persistence (survives reload)
+      card.querySelectorAll(".input-weight, .input-reps, .input-rir").forEach(input => {
+        input.addEventListener("input", (e) => {
+          const row = e.target.closest("tr");
+          if (row) persistSetRow(row);
+        });
+      });
 
       // Interactive Exercise Detail Modal Shortcut
       const titleClickEl = card.querySelector(".hevy-ex-title");
@@ -395,8 +483,15 @@ class DinoApp {
       // Set Completion Checkmark
       card.querySelectorAll(".btn-check-set").forEach(btn => {
         btn.addEventListener("click", () => {
+          const row = btn.closest("tr");
           btn.classList.toggle("checked");
-          if (btn.classList.contains("checked")) {
+          const isChecked = btn.classList.contains("checked");
+
+          if (row) {
+            persistSetRow(row);
+          }
+
+          if (isChecked) {
             // Trigger audio & Rest Timer HUD
             if (window.DinoAudio) window.DinoAudio.playSuccessBeep();
             const restSec = parseInt(btn.getAttribute("data-rest-sec"), 10) || 120;
@@ -413,6 +508,28 @@ class DinoApp {
           if (!ex.defaultSets) ex.defaultSets = [];
           const nextSetNum = ex.defaultSets.length + 1;
           ex.defaultSets.push({ setNum: nextSetNum, reps: "8-10", rir: "RIR 1", restSec: 120 });
+
+          // Also register in activeState.loggedSets if active
+          if (this.storage.isWorkoutActive()) {
+            const currentActive = this.storage.getActiveWorkoutState();
+            if (currentActive && currentActive.loggedSets) {
+              if (!currentActive.loggedSets[ex.id]) currentActive.loggedSets[ex.id] = [];
+              currentActive.loggedSets[ex.id].push({
+                setId: `set_${ex.id}_${nextSetNum}_${Date.now()}`,
+                exerciseId: ex.id,
+                exerciseName: ex.name,
+                setNumber: nextSetNum,
+                modality: "strength",
+                planned: { reps: "8-10", load: null, rir: "RIR 1" },
+                actual: { reps: 8, load: 50, rir: "1" },
+                completed: false,
+                timestamp: null,
+                notes: ""
+              });
+              this.storage.updateActiveWorkoutLogs(currentActive.loggedSets);
+            }
+          }
+
           this.renderExerciseCards(exercises);
         });
       }
@@ -465,33 +582,26 @@ class DinoApp {
     // Render Mini 3D Heatmap
     this.renderMini3DHeatmap(ex.primaryMuscles || []);
 
-    // Render Overload History
+    // Render Overload History from Actual Completed Sessions
     const historyContainer = document.getElementById("detailExHistoryContainer");
     if (historyContainer) {
-      const history = this.storage.getWorkoutHistory() || [];
-      const matchingEntries = [];
+      const perfEntries = this.storage.getExercisePerformanceHistory(ex.id, ex.name);
 
-      history.forEach(session => {
-        if (session.exercises) {
-          session.exercises.forEach(sessionEx => {
-            if (sessionEx.name === ex.name || (sessionEx.id && sessionEx.id === ex.id)) {
-              matchingEntries.push({
-                date: session.completedAt ? new Date(session.completedAt).toLocaleDateString("vi-VN") : "Gần đây",
-                title: session.workoutTitle || "Buổi tập",
-                sets: sessionEx.sets || []
-              });
-            }
-          });
-        }
-      });
-
-      if (matchingEntries.length > 0) {
-        historyContainer.innerHTML = matchingEntries.slice(-5).reverse().map(entry => {
-          const setsSummary = entry.sets.map((s, idx) => `S${idx + 1}: ${s.weightKg || s.weight || 0}kg × ${s.reps || 0}`).join(" | ");
+      if (perfEntries.length > 0) {
+        historyContainer.innerHTML = perfEntries.slice(0, 5).map(entry => {
+          let setsSummary = "";
+          if (entry.sets && entry.sets.length > 0) {
+            setsSummary = entry.sets.map(s => {
+              const rirStr = (s.rir !== undefined && s.rir !== "" && s.rir !== null) ? ` @ RIR ${s.rir}` : "";
+              return `S${s.setNumber}: ${s.load}kg × ${s.reps}${rirStr}`;
+            }).join(" | ");
+          } else if (entry.legacySummary) {
+            setsSummary = entry.legacySummary;
+          }
           return `
             <div class="history-log-row">
               <div>
-                <div style="font-weight: 700; color: #fff;">${entry.title}</div>
+                <div style="font-weight: 700; color: #fff;">${entry.dayTitle}</div>
                 <div class="history-log-date">📅 ${entry.date}</div>
               </div>
               <div class="history-log-sets">${setsSummary || "Hoàn thành"}</div>
@@ -606,35 +716,71 @@ class DinoApp {
 
   openWorkoutSummaryModal() {
     const activeState = this.storage.getActiveWorkoutState();
-    const duration = this.timer ? this.timer.getSessionElapsedSeconds() : 0;
+    const duration = this.timer ? this.timer.getSessionElapsedSeconds() : (activeState ? Math.max(0, Math.floor((Date.now() - activeState.startTime) / 1000)) : 0);
     const mins = Math.floor(duration / 60);
     const secs = duration % 60;
     const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
-    // Calculate metrics
+    // Calculate metrics and collect authoritative actual performance
     let totalVolume = 0;
     let totalSets = 0;
+    const actualPerformance = [];
     const exercisesCompleted = [];
 
-    document.querySelectorAll(".hevy-exercise-card").forEach(card => {
-      const title = card.querySelector(".hevy-ex-title")?.textContent || "Exercise";
-      let exSets = 0;
-      let exVol = 0;
+    const loggedSets = (activeState && activeState.loggedSets) ? activeState.loggedSets : {};
 
-      card.querySelectorAll("tbody tr").forEach(row => {
+    document.querySelectorAll(".hevy-exercise-card").forEach((card, exIdx) => {
+      const titleSpan = card.querySelector(".hevy-ex-title span");
+      const title = titleSpan ? titleSpan.textContent.trim() : "Exercise";
+      const firstRow = card.querySelector("tbody tr");
+      const exId = firstRow ? firstRow.getAttribute("data-ex-id") : `ex_${exIdx}`;
+
+      let exSetsVol = 0;
+      let exCompletedSets = 0;
+      const exActualSets = [];
+
+      card.querySelectorAll("tbody tr").forEach((row, sIdx) => {
         const isChecked = row.querySelector(".btn-check-set")?.classList.contains("checked");
+        const w = parseFloat(row.querySelector(".input-weight")?.value) || 0;
+        const r = parseInt(row.querySelector(".input-reps")?.value, 10) || 0;
+        const rir = (row.querySelector(".input-rir")?.value || "").trim();
+
+        const savedRecord = (loggedSets[exId] && loggedSets[exId][sIdx]) ? loggedSets[exId][sIdx] : null;
+
+        const setRecord = {
+          setId: savedRecord ? savedRecord.setId : `set_${exId}_${sIdx + 1}_${Date.now()}`,
+          exerciseId: exId,
+          exerciseName: title,
+          setNumber: sIdx + 1,
+          modality: "strength",
+          planned: savedRecord ? savedRecord.planned : { reps: r, load: w, rir: rir },
+          actual: { load: w, reps: r, rir: rir, duration: null, distance: null },
+          completed: !!isChecked,
+          timestamp: isChecked ? (savedRecord?.timestamp || Date.now()) : null,
+          notes: ""
+        };
+
+        exActualSets.push(setRecord);
+
         if (isChecked) {
-          const w = parseFloat(row.querySelector(".input-weight")?.value) || 0;
-          const r = parseInt(row.querySelector(".input-reps")?.value, 10) || 0;
           totalVolume += (w * r);
-          exVol += (w * r);
+          exSetsVol += (w * r);
           totalSets++;
-          exSets++;
+          exCompletedSets++;
         }
       });
 
-      if (exSets > 0) {
-        exercisesCompleted.push({ name: title, sets: exSets, volume: exVol });
+      if (exCompletedSets > 0) {
+        actualPerformance.push({
+          exerciseId: exId,
+          exerciseName: title,
+          sets: exActualSets
+        });
+        exercisesCompleted.push({
+          name: title,
+          sets: exCompletedSets,
+          volume: exSetsVol
+        });
       }
     });
 
@@ -667,9 +813,14 @@ class DinoApp {
     }
 
     this.pendingWorkoutSummary = {
+      progId: activeState ? activeState.progId : this.storage.getActiveProgramId(),
+      weekId: activeState ? activeState.weekId : this.storage.getActiveWeekId(),
+      dayId: activeState ? activeState.dayId : this.storage.getActiveDayId(),
+      dayTitle: activeState ? activeState.dayTitle : "Workout Session",
       durationSec: duration,
       totalVolumeKg: totalVolume,
       totalSets: totalSets,
+      actualPerformance: actualPerformance,
       exercises: exercisesCompleted,
       notes: notesInput ? notesInput.value : ""
     };
@@ -1923,15 +2074,28 @@ class DinoApp {
       return;
     }
 
-    container.innerHTML = history.map(s => `
+    container.innerHTML = history.map(s => {
+      let exDetailLine = "";
+      if (s.actualPerformance && Array.isArray(s.actualPerformance) && s.actualPerformance.length > 0) {
+        exDetailLine = s.actualPerformance.map(ap => {
+          const completedCount = ap.sets ? ap.sets.filter(st => st.completed).length : 0;
+          return `${ap.exerciseName} (${completedCount} sets)`;
+        }).join(" • ");
+      } else if (s.exercises && Array.isArray(s.exercises) && s.exercises.length > 0) {
+        exDetailLine = s.exercises.map(e => `${e.name} (${e.sets || 0} sets)`).join(" • ");
+      }
+
+      return `
       <div class="history-session-card">
-        <div>
+        <div style="flex: 1; min-width: 0;">
           <div class="history-session-title">${s.dayTitle || 'Workout Session'}</div>
-          <div class="history-session-meta">📅 ${s.date} • ⏱️ ${Math.round((s.durationSec || 0) / 60)} phút • 🏋️ ${(s.totalVolumeKg || 0).toLocaleString()} kg</div>
+          <div class="history-session-meta">📅 ${s.date} • ⏱️ ${Math.round((s.durationSec || 0) / 60)} phút • 🏋️ ${(s.totalVolumeKg || 0).toLocaleString()} kg • ${s.totalSets || 0} sets</div>
+          ${exDetailLine ? `<div style="font-size: 11px; color: var(--text-dim); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${exDetailLine}</div>` : ''}
         </div>
         <button class="btn-ex-delete-mini btn-delete-history-item" data-id="${s.id}">✕</button>
       </div>
-    `).join("");
+      `;
+    }).join("");
 
     container.querySelectorAll(".btn-delete-history-item").forEach(btn => {
       btn.addEventListener("click", () => {
