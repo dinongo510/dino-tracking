@@ -33,9 +33,9 @@ For the full constitutional foundation, see [`00_SYSTEM/DINO_PRODUCT_CONSTITUTIO
 - **Role:** Product Architect, Source-of-Truth Reviewer, QA/Code Reviewer, Training Science Reviewer, and Unauthorized-Change Detector.
 - **Responsibility:** Must audit actual repository diffs and GitHub commits. Must **never** accept agent claims of completion without inspecting raw diffs and verification evidence.
 
-### C. Founder
-- **Role:** The **Final Authority** on product direction, business rules, UX decisions, scope changes, architecture changes, major data-model changes, final UAT, and production releases.
-- **Rule:** Silence is **never** consent. Founder approval must be explicit.
+### C. DINO (Project Owner & Product Owner)
+- **Role:** Project Owner, Product Owner, and **Final Authority** on product direction, business rules, UX decisions, scope changes, architecture changes, major data-model changes, hands-on product acceptance testing (DINO AUT), and production releases.
+- **Rule:** Silence is **never** consent. DINO approval must be explicit.
 
 For complete role definitions and workflows, see [`00_SYSTEM/DINO_GOVERNANCE.md`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/00_SYSTEM/DINO_GOVERNANCE.md).
 
@@ -45,11 +45,11 @@ For complete role definitions and workflows, see [`00_SYSTEM/DINO_GOVERNANCE.md`
 
 When resolving conflicts or making implementation proposals, consult the hierarchy in strict order:
 
-1. **P0 — Founder Decisions** (Explicitly approved for DINO)
+1. **P0 — DINO Project Owner Decisions**
 2. **P1 — DINO Product Constitution** ([`00_SYSTEM/DINO_PRODUCT_CONSTITUTION.md`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/00_SYSTEM/DINO_PRODUCT_CONSTITUTION.md))
 3. **P2 — Current Repository Implementation** (Active codebase)
 4. **P3 — Original DINO Product Specification**
-5. **P4 — BFS Hybrid 2-Week Rotation** (Preset program source)
+5. **P4 — BFS Hybrid 2-Week Rotation Source** (Preset program source)
 6. **P5 — Training Science References**
 7. **P6 — Technical Documentation**
 
@@ -74,13 +74,14 @@ flowchart LR
 - `AUTO_VERIFIED`
 - `GITHUB_AUDITED`
 - `VISUALLY_VERIFIED`
-- `FOUNDER_UAT`
+- `DINO_AUT_PENDING`
+- `DINO_AUT_APPROVED`
 - `COMMITTED`
 - `PUSHED`
 - `DEPLOYED`
 - `LOCKED`
 
-> **Note:** States must never be inferred. `IMPLEMENTED` $\neq$ `VERIFIED`. `AUTO_VERIFIED` $\neq$ `VISUALLY_VERIFIED`. `PUSHED` $\neq$ `DEPLOYED`. `DEPLOYED` $\neq$ `FOUNDER_UAT`. `TEST PASS` $\neq$ `PRODUCT PASS`.
+> **Note:** States must never be inferred. `IMPLEMENTED` $\neq$ `VERIFIED`. `AUTO_VERIFIED` $\neq$ `VISUALLY_VERIFIED`. `PUSHED` $\neq$ `DEPLOYED`. `DEPLOYED` $\neq$ `DINO_AUT_APPROVED`. `TEST PASS` $\neq$ `PRODUCT PASS`.
 
 ---
 
@@ -125,7 +126,7 @@ Current active state is tracked in [`00_SYSTEM/DINO_SESSION_STATE.md`](file:///c
 BLOCKED: [Brief reason]
 REASON: [Detailed technical explanation]
 EVIDENCE: [File, line number, or command output]
-DECISION REQUIRED: [Options or specific question for Founder/Architect]
+DECISION REQUIRED: [Options or specific question for DINO / Product Architect]
 ```
 
 ---

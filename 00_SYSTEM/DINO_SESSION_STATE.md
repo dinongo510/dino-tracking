@@ -1,7 +1,7 @@
 # DINO SESSION STATE
 
 > **Purpose:** Real-time tracking of active development session, current Change Set, system state, and historical change logs.  
-> **Maintained by:** Antigravity (Implementation Agent), ChatGPT (AI Auditor), and Product Authority.
+> **Maintained by:** Antigravity (Implementation Agent), ChatGPT (AI Auditor), and DINO (Project Owner).
 
 ---
 

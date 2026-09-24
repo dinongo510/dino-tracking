@@ -16,13 +16,13 @@ flowchart LR
 
 1. **DISCOVER:** Inspect active repository state, active files, Git branch/HEAD, and user context. Identify dependencies, constraints, and baseline behavior.
 2. **SPEC:** Formulate a formal Change Set specification detailing objective, source of truth, allowed files, protected areas, data impact, and test requirements.
-3. **AUTHORIZE:** Obtain explicit authorization from the Founder (or Product Architect within delegated authority) before making modifications.
+3. **AUTHORIZE:** Obtain explicit authorization from DINO (or Product Architect within delegated authority) before making modifications.
 4. **IMPLEMENT:** Apply minimal, clean, targeted changes strictly within authorized file boundaries.
 5. **TEST:** Execute automated logic tests, build validation, and manual scenario runs.
 6. **GITHUB AUDIT:** Inspect `git diff`, `git status`, and `git diff --check`. Commit with standard semantic messages and push to the authorized branch. AI Auditor reviews raw Git diff.
 7. **VERIFY:** Perform browser, mobile viewport, and PWA behavior checks. Mark items `BLOCKED` or `NOT VERIFIED` if live environment testing is unavailable.
 8. **DEPLOY:** Verify production or preview deployment on Vercel, confirming asset caching, service worker cache busting, and deployment SHA.
-9. **LOCK:** Present the final Change Set Report for Founder UAT. Upon approval, record completion in session state and lock the baseline.
+9. **LOCK:** Present the final Change Set Report for DINO AUT. Upon approval, record completion in session state and lock the baseline.
 
 ---
 
@@ -33,17 +33,21 @@ DINO governance enforces strict, decoupled state tracking. **States must never b
 | State | Definition | Invariant / Anti-Assumption Rule |
 | :--- | :--- | :--- |
 | `PROPOSED` | Change Set formulated and submitted for review. | Does not authorize implementation. |
-| `AUTHORIZED` | Scope explicitly approved by Founder / Architect. | Implementation has not yet commenced. |
+| `AUTHORIZED` | Scope explicitly approved by DINO / Architect. | Implementation has not yet commenced. |
 | `IMPLEMENTING` | Active code changes in progress. | Code is volatile and unverified. |
 | `IMPLEMENTED` | Code edits complete in local workspace. | `IMPLEMENTED` $\neq$ `VERIFIED`. |
 | `AUTO_VERIFIED` | Automated scripts / tests pass without errors. | `AUTO_VERIFIED` $\neq$ `VISUALLY_VERIFIED` or `PRODUCT PASS`. |
 | `GITHUB_AUDITED` | Git diff independently inspected; no unauthorized edits. | Diff approved, but deployment unverified. |
 | `VISUALLY_VERIFIED` | Rendered UI, layout, and animations verified in browser. | Visual correctness $\neq$ Real-device Safari/PWA correctness. |
-| `FOUNDER_UAT` | Founder has performed hands-on acceptance testing. | Requires explicit Founder sign-off. |
+| `DINO_AUT_PENDING` | The implementation is ready for hands-on acceptance testing by DINO. | DINO AUT has not yet occurred. |
+| `DINO_AUT_APPROVED` | DINO has explicitly accepted the product result through hands-on testing. | DINO AUT approval does not mean GitHub Audit is complete. |
 | `COMMITTED` | Changes recorded to local Git history. | Local commit $\neq$ Remote synchronization. |
 | `PUSHED` | Commits transferred to remote GitHub repository. | `PUSHED` $\neq$ `DEPLOYED`. |
-| `DEPLOYED` | Live build generated and served on Vercel. | `DEPLOYED` $\neq$ `FOUNDER_UAT` or Cache-Invalidated. |
+| `DEPLOYED` | Live build generated and served on Vercel. | `DEPLOYED` $\neq$ `DINO_AUT_APPROVED` or Cache-Invalidated. |
 | `LOCKED` | Task closed, baseline updated, session state finalized. | Invariant baseline for subsequent tasks. |
+
+> **Note on DINO AUT & GitHub Audit:**
+> DINO AUT approval does NOT mean GitHub Audit is complete. GitHub Audit and DINO AUT remain independent gates. DINO is the final authority for product direction and scope.
 
 ---
 
@@ -77,15 +81,15 @@ Every discrete unit of work must operate within a structured **Change Set**.
 
 ```mermaid
 flowchart TD
-    Founder["Founder (Final Authority)"]
+    DINO["DINO (Project Owner & Final Authority)"]
     ChatGPT["ChatGPT (Product Architect & Auditor)"]
     Antigravity["Antigravity (Implementation Agent)"]
     
-    Founder -->|Authorizes Scope & Direction| ChatGPT
-    Founder -->|Final UAT & Business Decisions| Antigravity
+    DINO -->|Authorizes Scope & Direction| ChatGPT
+    DINO -->|DINO AUT & Final Decisions| Antigravity
     ChatGPT -->|Audits Diffs & Architecture| Antigravity
     Antigravity -->|Submits Diffs & Reports| ChatGPT
-    Antigravity -->|Presents Final Delivery| Founder
+    Antigravity -->|Presents Delivery for DINO AUT| DINO
 ```
 
 ### A. Antigravity (Implementation Agent)
@@ -103,26 +107,27 @@ flowchart TD
   - Deleting or degrading existing functionality.
   - Injecting mock data into operational user workflows.
   - Expanding task scope without approval.
-- **Rule:** If ambiguity or technical blockers arise: **STOP → REPORT → WAIT.**
+- **Rule:** If ambiguity or technical blockers arise: **STOP → REPORT → ASK DINO.**
 
 ### B. ChatGPT (Product Architect & AI Auditor)
 - **Role:** Product architect, QA reviewer, and independent auditor.
 - **Responsibilities:**
-  - Validates requirements against P0 Founder decisions and P1 Constitution.
+  - Validates requirements against P0 DINO Project Owner decisions and P1 Constitution.
   - Audits raw Git diffs and file trees directly from repository history.
   - Reviews data flows, state mutations, and training science logic.
   - Detects unauthorized edits, hidden feature removals, or architectural drift.
   - **Rule:** Never trust agent completion summaries without raw diff verification.
 
-### C. Founder
-- **Role:** Ultimate product owner and final authority.
+### C. DINO (Project Owner & Product Owner)
+- **Role:** Project Owner, Product Owner, and Final Decision Authority.
 - **Exclusive Authority:**
+  - Approves scope, product direction, UX decisions, architecture decisions, and Change Sets.
   - Directional product pivot or expansion.
   - UX paradigm changes.
   - Scope modifications.
   - Architectural or dependency alterations.
-  - Final UAT approval and production release authorization.
-- **Rule:** Silence is **never** consent.
+  - Hands-on product acceptance testing (DINO AUT) and production release authorization.
+- **Rule:** Silence is **never** consent. DINO approval must be explicit.
 
 ---
 
@@ -194,7 +199,7 @@ flowchart TD
     Mobile --> Device[6. Real Device & Safari/WebKit]
     Device --> GitAudit[7. GitHub Diff Audit]
     GitAudit --> Deploy[8. Deployment & Cache]
-    Deploy --> UAT[9. Founder UAT]
+    Deploy --> AUT[9. DINO AUT]
 ```
 
 - If a specific tier cannot be executed (e.g., physical device testing), explicitly document it as `BLOCKED` or `NOT VERIFIED`.
@@ -233,7 +238,7 @@ STATUS: BLOCKED
 CHANGE SET: [ID]
 REASON: [Clear, unambiguous explanation of why work is stopped]
 EVIDENCE: [Relevant command output, code snippet, or conflicting requirement]
-DECISION REQUIRED: [Specific questions or proposals submitted to Founder/Architect]
+DECISION REQUIRED: [Specific questions or proposals submitted to DINO / Product Architect]
 ==================================================
 ```
 

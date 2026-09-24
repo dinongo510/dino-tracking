@@ -1,7 +1,7 @@
 # DINO PRODUCT CONSTITUTION
 
 > **Status:** PERMANENT & LOCKED  
-> **Authority:** P1 Source of Truth (Directly subordinate only to P0 Founder explicit decisions)  
+> **Authority:** P1 Source of Truth (Directly subordinate only to P0 DINO Project Owner explicit decisions)
 > **Scope:** Defines the fundamental identity, principles, boundaries, and long-term vision of DINO.
 
 ---
@@ -44,7 +44,7 @@ DINO's long-term product vision includes:
 
 > **CRITICAL BOUNDARY:**  
 > The long-term direction above represents **PRODUCT VISION ONLY**.  
-> It does **NOT** authorize building or scaffolding those future systems now. Any implementation of future roadmap items requires explicit Founder authorization and a dedicated Change Set.
+> It does **NOT** authorize building or scaffolding those future systems now. Any implementation of future roadmap items requires explicit DINO Project Owner authorization and a dedicated Change Set.
 
 ---
 
@@ -65,8 +65,8 @@ Agents and developers are strictly forbidden from making silent, unilateral deci
 - Technical architecture and dependencies.
 - Business rules, exercise algorithms, and scoring logic.
 
-**Protocol:** If an implementation requires a meaningful product or architectural decision:  
-**STOP → REPORT THE DECISION REQUIRED → WAIT FOR AUTHORIZATION.**
+**Protocol:** If an implementation requires a meaningful product, UX, architecture, schema, business-rule or scope decision:
+**STOP → REPORT → ASK DINO**
 
 ---
 
@@ -74,7 +74,7 @@ Agents and developers are strictly forbidden from making silent, unilateral deci
 
 - **Absolute Prohibition:** Never rebuild, rewrite, replace, or construct a parallel version of DINO (such as "DINO V2", duplicate storage engines, or parallel state managers).
 - **Refactoring Boundary:** Code difficulty or legacy patterns do not justify architectural rewrites.
-- **Architectural Changes:** Any migration, framework introduction, or architectural change requires explicit, written Founder authorization.
+- **Architectural Changes:** Any migration, framework introduction, or architectural change requires explicit, written DINO Project Owner authorization.
 
 ---
 
@@ -93,7 +93,7 @@ When resolving design conflicts, data requirements, or architectural ambiguity, 
 
 | Level | Authority Source | Description |
 | :--- | :--- | :--- |
-| **P0** | **Founder Decisions** | Explicitly approved decisions and directives from the Founder. |
+| **P0** | **DINO Project Owner Decisions** | Explicitly approved decisions and directives from DINO (Project Owner). |
 | **P1** | **DINO Product Constitution** | This document ([`00_SYSTEM/DINO_PRODUCT_CONSTITUTION.md`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/00_SYSTEM/DINO_PRODUCT_CONSTITUTION.md)). |
 | **P2** | **Current Repository Implementation** | The active, working implementation and codebase in the repository. |
 | **P3** | **Original DINO Product Specification** | Baseline requirements and functional specs established for DINO. |
@@ -105,5 +105,5 @@ When resolving design conflicts, data requirements, or architectural ambiguity, 
 - If two sources of truth conflict:
   1. Identify both sources and the exact nature of the contradiction.
   2. Document the trade-offs and options.
-  3. Report the conflict to the Founder / Product Architect.
+  3. Report the conflict to DINO / Product Architect.
   4. **Do not silently choose or invent a rule.**
