@@ -9,12 +9,12 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-004` IMPLEMENTED & AUTO_VERIFIED. Awaiting GitHub Audit & DINO AUT. |
-| **Active Change Set** | `DINO-004` |
-| **Current State** | `AUTO_VERIFIED` |
-| **Dino AUT** | `PENDING` |
+| **Session State** | `DINO-004` Dino AUT APPROVED & LOCKED. |
+| **Active Change Set** | `DINO-004` (LOCKED) |
+| **Current State** | `LOCKED` |
+| **Dino AUT** | `APPROVED` |
 | **Active Branch** | `main` |
-| **Pre-Change Baseline SHA** | `e8691ed57101fc6f600d5eb1bc9a9349a7d43484` |
+| **Current Baseline HEAD** | `a30ab56b5fd2c314e6ff5a6dac6d277a3e4028c5` |
 | **Last Updated** | `2026-09-25` |
 | **Active Blockers** | None |
 
@@ -25,8 +25,8 @@
 ### `DINO-004`
 
 - **Objective:** Restore 2-week Hybrid Athlete schedule exactly according to BFS source DOCX, implement interactive mutually-exclusive prescribed-option selection and persistence, and fix production caching/version update architecture (Network-First static assets, CACHE_NAME v12, deterministic update lifecycle, no-cache headers for sw.js/HTML, remove ignoreSearch on assets, version query strings v=2.3).
-- **Dino AUT:** `PENDING`
-- **State:** `AUTO_VERIFIED` (`AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `CACHE_RE_AUDITED` → `CACHE_CORRECTED` → `AUTO_VERIFIED`)
+- **Dino AUT:** `APPROVED`
+- **State:** `LOCKED` (`AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `CACHE_RE_AUDITED` → `CACHE_CORRECTED` → `AUTO_VERIFIED` → `DINO_AUT_APPROVED` → `LOCKED`)
 - **Authorized Files Changed:**
   - [`js/data.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/data.js) (corrected Week A and Week B schedule, Friday Long Run ≤12km, Sunday OFF, Week B T2 Hybrid Game Chipper/Accumulation, core options)
   - [`js/storage.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/storage.js) (selectedOption storage in active session and completed history, updateActiveSelectedOption, cardio durationSec fix)
