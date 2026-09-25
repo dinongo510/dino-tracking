@@ -300,7 +300,171 @@ class DinoApp {
         if (lockedWarning) lockedWarning.style.display = "none";
       }
 
-      this.renderExerciseCards(activeDay.exercises || []);
+      const isCardioDay = activeDay.type === 'run' || activeDay.type === 'hybrid' || (activeDay.targetKm && activeDay.targetKm > 0) || (!activeDay.exercises || activeDay.exercises.length === 0);
+      if (isCardioDay) {
+        this.renderCardioSessionView(activeDay);
+      } else {
+        this.renderExerciseCards(activeDay.exercises || []);
+      }
+    }
+  }
+
+  renderCardioSessionView(activeDay) {
+    const container = document.getElementById("workoutExercisesContainer");
+    if (!container) return;
+
+    const activeState = this.storage.getActiveWorkoutState();
+    const isSessionActive = this.storage.isWorkoutActive() && activeState && (activeState.dayId === activeDay.id);
+    const savedCardio = (activeState && activeState.actualCardio) ? activeState.actualCardio : {};
+
+    const plannedDist = activeDay.targetKm || (activeDay.cardio ? activeDay.cardio.targetKm : "") || "";
+    const distVal = savedCardio.distanceKm !== undefined ? savedCardio.distanceKm : (isSessionActive ? (plannedDist || "") : "");
+    const durVal = savedCardio.durationMin !== undefined ? savedCardio.durationMin : "";
+    const notesVal = savedCardio.notes !== undefined ? savedCardio.notes : "";
+    const paceVal = savedCardio.pace || "--:--";
+
+    // Options HTML if defined
+    let optionsHtml = "";
+    if (activeDay.options && Array.isArray(activeDay.options) && activeDay.options.length > 0) {
+      optionsHtml = `
+        <div class="cardio-options-box">
+          <div style="font-size: 11px; font-weight: 800; color: var(--color-blue); text-transform: uppercase; margin-bottom: 6px;">
+            📋 Lựa Chọn Phương Án (Prescribed Options)
+          </div>
+          ${activeDay.options.map(opt => `
+            <div style="margin-bottom: 8px; font-size: 12px; line-height: 1.4; padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+              <div style="font-weight: 700; color: #fff;">${opt.title} <span style="color: var(--color-gold); font-size: 11px;">(${opt.rpe || ''})</span></div>
+              <div style="color: var(--text-muted); font-size: 11.5px; margin-top: 2px;">${opt.details}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    // Checklist HTML if defined
+    let checklistHtml = "";
+    if (activeDay.checklist && Array.isArray(activeDay.checklist) && activeDay.checklist.length > 0) {
+      checklistHtml = `
+        <div style="margin-top: 10px; padding: 8px 10px; background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">Checklist Buổi Chạy</div>
+          ${activeDay.checklist.map(chk => `
+            <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--text-white); margin-bottom: 6px; cursor: pointer;">
+              <input type="checkbox" style="margin-top: 2px; accent-color: var(--color-blue);">
+              <span>${chk.label} <span style="color: var(--text-dim); font-size: 10.5px;">(${chk.note || ''})</span></span>
+            </label>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    container.innerHTML = `
+      <div class="cardio-session-card">
+        <div class="cardio-plan-header">
+          <div>
+            <div style="font-size: 11px; font-weight: 800; color: var(--color-blue); text-transform: uppercase;">
+              ${activeDay.badge || 'Cardio / Running'}
+            </div>
+            <div style="font-size: 15px; font-weight: 800; color: #fff; margin-top: 2px;">
+              ${activeDay.title}
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              ${activeDay.focus || 'Buổi tập cardio / chạy bộ'}
+            </div>
+          </div>
+          ${plannedDist ? `<span class="cardio-target-badge">Mục tiêu: ${plannedDist} km</span>` : ''}
+        </div>
+
+        ${optionsHtml}
+        ${checklistHtml}
+
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+          <div style="font-size: 12px; font-weight: 800; color: #fff; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+            <span>🏃 Ghi Nhận Thực Tế (Actual Cardio)</span>
+            <span id="cardioPaceDisplay" class="cardio-pace-display-badge">Pace: ${paceVal}</span>
+          </div>
+
+          <div class="cardio-inputs-grid">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; display: block;">QUÃNG ĐƯỜNG (KM) *</label>
+              <input type="number" id="inputCardioDistance" class="form-input" placeholder="VD: 9.5" step="0.1" min="0" value="${distVal}">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; display: block;">THỜI GIAN (PHÚT) *</label>
+              <input type="number" id="inputCardioDuration" class="form-input" placeholder="VD: 55" step="1" min="0" value="${durVal}">
+            </div>
+          </div>
+
+          <div style="margin-top: 8px; display: flex; justify-content: flex-end;">
+            <button type="button" id="btnSyncCardioTimer" class="btn-timer-mini" style="font-size: 11px; padding: 4px 8px; border-radius: 4px;">
+              ⏱️ Lấy từ đồng hồ (${this.timer ? Math.round(this.timer.getSessionElapsedSeconds() / 60) : 0} ph)
+            </button>
+          </div>
+
+          <div class="form-group" style="margin-top: 10px; margin-bottom: 0;">
+            <label style="font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; display: block;">GHI CHÚ BUỔI CHẠY (RPE, THỜI TIẾT, CẢM GIÁC)</label>
+            <input type="text" id="inputCardioNotes" class="form-input" placeholder="VD: RPE 8, chân khỏe, chạy Option A..." value="${notesVal}">
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Calculate pace and auto-persist
+    const distInput = container.querySelector("#inputCardioDistance");
+    const durInput = container.querySelector("#inputCardioDuration");
+    const notesInput = container.querySelector("#inputCardioNotes");
+    const paceBadge = container.querySelector("#cardioPaceDisplay");
+    const btnSync = container.querySelector("#btnSyncCardioTimer");
+
+    const updateCardioState = () => {
+      const rawDist = distInput ? distInput.value.trim() : "";
+      const rawDur = durInput ? durInput.value.trim() : "";
+      const d = parseFloat(rawDist);
+      const m = parseFloat(rawDur);
+
+      const isDistInvalid = rawDist !== "" && (isNaN(d) || d < 0);
+      const isDurInvalid = rawDur !== "" && (isNaN(m) || m < 0);
+
+      distInput?.classList.toggle("input-invalid", isDistInvalid);
+      durInput?.classList.toggle("input-invalid", isDurInvalid);
+
+      let paceStr = "--:--";
+      if (!isNaN(d) && d > 0 && !isNaN(m) && m > 0) {
+        const paceDec = m / d;
+        const mins = Math.floor(paceDec);
+        const secs = Math.round((paceDec - mins) * 60);
+        const adjMins = secs === 60 ? mins + 1 : mins;
+        const adjSecs = secs === 60 ? 0 : secs;
+        paceStr = `${adjMins}:${String(adjSecs).padStart(2, '0')} /km`;
+      }
+      if (paceBadge) paceBadge.textContent = `Pace: ${paceStr}`;
+
+      if (this.storage.isWorkoutActive()) {
+        const cardioData = {
+          sessionType: activeDay.badge || activeDay.title || "Cardio",
+          distanceKm: isNaN(d) || d < 0 ? 0 : d,
+          durationMin: isNaN(m) || m < 0 ? 0 : m,
+          pace: paceStr,
+          notes: notesInput ? notesInput.value : "",
+          completedTimestamp: Date.now()
+        };
+        this.storage.updateActiveWorkoutLogs(null, null, cardioData);
+      }
+    };
+
+    if (distInput) distInput.addEventListener("input", updateCardioState);
+    if (durInput) durInput.addEventListener("input", updateCardioState);
+    if (notesInput) notesInput.addEventListener("input", updateCardioState);
+
+    if (btnSync) {
+      btnSync.addEventListener("click", () => {
+        const elapsedSec = this.timer ? this.timer.getSessionElapsedSeconds() : 0;
+        const mins = Math.max(1, Math.round(elapsedSec / 60));
+        if (durInput) {
+          durInput.value = mins;
+          updateCardioState();
+        }
+      });
     }
   }
 
@@ -420,8 +584,39 @@ class DinoApp {
         </div>
       `;
 
+      // Helper to validate and persist row data
+      const validateRow = (row) => {
+        const wInput = row.querySelector(".input-weight");
+        const rInput = row.querySelector(".input-reps");
+        const rirInput = row.querySelector(".input-rir");
+
+        const rawW = wInput?.value?.trim() ?? "";
+        const rawR = rInput?.value?.trim() ?? "";
+        const rawRir = rirInput?.value?.trim() ?? "";
+
+        const w = parseFloat(rawW);
+        const r = parseInt(rawR, 10);
+        const parsedRir = parseFloat(rawRir);
+
+        const isWeightInvalid = rawW !== "" && (isNaN(w) || w < 0);
+        const isRepsInvalid = rawR !== "" && (isNaN(r) || r < 1);
+        const isRirInvalid = rawRir !== "" && !isNaN(parsedRir) && parsedRir < 0;
+
+        wInput?.classList.toggle("input-invalid", !!isWeightInvalid);
+        rInput?.classList.toggle("input-invalid", !!isRepsInvalid);
+        rirInput?.classList.toggle("input-invalid", !!isRirInvalid);
+
+        return {
+          isValid: !isWeightInvalid && !isRepsInvalid && !isRirInvalid && !isNaN(w) && w >= 0 && !isNaN(r) && r >= 1,
+          w: isNaN(w) ? 0 : w,
+          r: isNaN(r) ? 0 : r,
+          rir: rawRir
+        };
+      };
+
       // Helper to update actual set data and persist to storage
       const persistSetRow = (row) => {
+        const valRes = validateRow(row);
         if (!this.storage.isWorkoutActive()) return;
         const currentActive = this.storage.getActiveWorkoutState();
         if (!currentActive) return;
@@ -429,9 +624,6 @@ class DinoApp {
         if (!currentActive.loggedSets[ex.id]) currentActive.loggedSets[ex.id] = [];
 
         const sIdx = parseInt(row.getAttribute("data-set-idx"), 10);
-        const w = parseFloat(row.querySelector(".input-weight")?.value) || 0;
-        const r = parseInt(row.querySelector(".input-reps")?.value, 10) || 0;
-        const rir = (row.querySelector(".input-rir")?.value || "").trim();
         const isChecked = row.querySelector(".btn-check-set")?.classList.contains("checked");
 
         const existing = currentActive.loggedSets[ex.id][sIdx] || {};
@@ -447,9 +639,9 @@ class DinoApp {
             rir: ex.defaultSets?.[sIdx]?.rir || "RIR 1-2"
           },
           actual: {
-            load: w,
-            reps: r,
-            rir: rir,
+            load: valRes.w,
+            reps: valRes.r,
+            rir: valRes.rir,
             duration: null,
             distance: null
           },
@@ -461,11 +653,14 @@ class DinoApp {
         this.storage.updateActiveWorkoutLogs(currentActive.loggedSets);
       };
 
-      // Input change listeners for immediate data persistence (survives reload)
+      // Input change listeners for immediate data validation and persistence
       card.querySelectorAll(".input-weight, .input-reps, .input-rir").forEach(input => {
         input.addEventListener("input", (e) => {
           const row = e.target.closest("tr");
-          if (row) persistSetRow(row);
+          if (row) {
+            validateRow(row);
+            persistSetRow(row);
+          }
         });
       });
 
@@ -480,16 +675,34 @@ class DinoApp {
         btnDetail.addEventListener("click", () => this.openExerciseDetailModal(ex));
       }
 
-      // Set Completion Checkmark
+      // Set Completion Checkmark with Strict Input Validation
       card.querySelectorAll(".btn-check-set").forEach(btn => {
         btn.addEventListener("click", () => {
           const row = btn.closest("tr");
+          if (!row) return;
+
+          const isCurrentlyChecked = btn.classList.contains("checked");
+
+          // If checking set (not unchecking), enforce input validation
+          if (!isCurrentlyChecked) {
+            const valRes = validateRow(row);
+            const wVal = parseFloat(row.querySelector(".input-weight")?.value);
+            const rVal = parseInt(row.querySelector(".input-reps")?.value, 10);
+            const rirVal = parseFloat(row.querySelector(".input-rir")?.value);
+
+            if (isNaN(wVal) || wVal < 0 || isNaN(rVal) || rVal < 1 || (!isNaN(rirVal) && rirVal < 0)) {
+              if (isNaN(wVal) || wVal < 0) row.querySelector(".input-weight")?.classList.add("input-invalid");
+              if (isNaN(rVal) || rVal < 1) row.querySelector(".input-reps")?.classList.add("input-invalid");
+              if (!isNaN(rirVal) && rirVal < 0) row.querySelector(".input-rir")?.classList.add("input-invalid");
+              this.showToast("⚠️ Vui lòng nhập mức tạ hợp lệ (≥ 0 kg) và số reps (≥ 1).");
+              return;
+            }
+          }
+
           btn.classList.toggle("checked");
           const isChecked = btn.classList.contains("checked");
 
-          if (row) {
-            persistSetRow(row);
-          }
+          persistSetRow(row);
 
           if (isChecked) {
             // Trigger audio & Rest Timer HUD
@@ -697,7 +910,7 @@ class DinoApp {
 
     if (!prog || !activeWeek || !activeDay) return;
 
-    this.storage.startWorkoutSession(prog.id, activeWeek.id, activeDay.id, activeDay.title, activeDay.exercises);
+    this.storage.startWorkoutSession(prog.id, activeWeek.id, activeDay.id, activeDay.title, activeDay.exercises, activeDay);
     if (this.timer) this.timer.startSession(0);
     this.showToast("🚀 Buổi tập đã bắt đầu! Chúc bạn tập luyện sung mãn.");
     this.renderWorkoutView();
@@ -784,32 +997,97 @@ class DinoApp {
       }
     });
 
+    // Capture cardio data if present
+    const activeCardioDist = parseFloat(document.getElementById("inputCardioDistance")?.value);
+    const activeCardioDur = parseFloat(document.getElementById("inputCardioDuration")?.value);
+    const activeCardioNotes = document.getElementById("inputCardioNotes")?.value || "";
+
+    const hasCardioData = (!isNaN(activeCardioDist) && activeCardioDist > 0) ||
+                          (!isNaN(activeCardioDur) && activeCardioDur > 0) ||
+                          (activeState && activeState.actualCardio && (activeState.actualCardio.distanceKm > 0 || activeState.actualCardio.durationMin > 0)) ||
+                          (activeState && activeState.plannedCardio);
+
+    let actualCardio = null;
+    if (hasCardioData) {
+      const dist = !isNaN(activeCardioDist) ? activeCardioDist : (activeState?.actualCardio?.distanceKm || 0);
+      const durMin = !isNaN(activeCardioDur) ? activeCardioDur : (activeState?.actualCardio?.durationMin || Math.round(duration / 60));
+      let paceStr = "--:--";
+      if (dist > 0 && durMin > 0) {
+        const paceDec = durMin / dist;
+        const pMins = Math.floor(paceDec);
+        const pSecs = Math.round((paceDec - pMins) * 60);
+        const adjMins = pSecs === 60 ? pMins + 1 : pMins;
+        const adjSecs = pSecs === 60 ? 0 : pSecs;
+        paceStr = `${adjMins}:${String(adjSecs).padStart(2, '0')} /km`;
+      }
+      actualCardio = {
+        sessionType: activeState?.actualCardio?.sessionType || activeState?.dayTitle || "Cardio / Running",
+        distanceKm: dist,
+        durationMin: durMin,
+        pace: paceStr,
+        notes: activeCardioNotes || activeState?.actualCardio?.notes || "",
+        completedTimestamp: Date.now()
+      };
+    }
+
     const summaryTitle = document.getElementById("summaryWorkoutTitleSubtitle");
-    if (summaryTitle) summaryTitle.textContent = activeState ? activeState.dayTitle : "Full Body Strength";
+    if (summaryTitle) summaryTitle.textContent = activeState ? activeState.dayTitle : "Workout Session";
 
     const volEl = document.getElementById("summaryTotalVolume");
-    if (volEl) volEl.textContent = `${totalVolume.toLocaleString()} kg`;
+    if (volEl) {
+      if (actualCardio && actualCardio.distanceKm > 0) {
+        volEl.textContent = `${actualCardio.distanceKm} km`;
+      } else {
+        volEl.textContent = `${totalVolume.toLocaleString()} kg`;
+      }
+    }
 
     const setsEl = document.getElementById("summaryTotalSets");
-    if (setsEl) setsEl.textContent = `${totalSets} sets`;
+    if (setsEl) {
+      if (actualCardio && actualCardio.pace && actualCardio.pace !== "--:--") {
+        setsEl.textContent = `Pace ${actualCardio.pace}`;
+      } else {
+        setsEl.textContent = `${totalSets} sets`;
+      }
+    }
 
     const durEl = document.getElementById("summaryDuration");
     if (durEl) durEl.textContent = timeStr;
 
+    // Real PRs calculated from historical performance
+    const sessionPRs = this.storage.calculateSessionPRs(actualPerformance, this.storage.getWorkoutHistory());
+    const prCountEl = document.getElementById("summaryPrCount");
+    if (prCountEl) {
+      prCountEl.textContent = `${sessionPRs} PRs`;
+    }
+
     const listEl = document.getElementById("summaryExercisesList");
     if (listEl) {
-      listEl.innerHTML = exercisesCompleted.map(e => `
-        <div style="display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-          <span style="font-weight: 700; color: #fff;">${e.name}</span>
-          <span style="color: var(--color-gold);">${e.sets} sets • ${e.volume.toLocaleString()} kg</span>
-        </div>
-      `).join("") || `<div style="color: var(--text-dim); font-size: 12px;">Chưa check hoàn thành set nào.</div>`;
+      let listHtml = "";
+      if (exercisesCompleted.length > 0) {
+        listHtml = exercisesCompleted.map(e => `
+          <div style="display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <span style="font-weight: 700; color: #fff;">${e.name}</span>
+            <span style="color: var(--color-gold);">${e.sets} sets • ${e.volume.toLocaleString()} kg</span>
+          </div>
+        `).join("");
+      } else if (actualCardio) {
+        listHtml = `
+          <div style="padding: 6px 0; font-size: 13px; color: #fff;">
+            🏃 <strong>${actualCardio.sessionType || 'Cardio'}</strong>: ${actualCardio.distanceKm || 0} km • ${actualCardio.durationMin || mins} phút • Pace: ${actualCardio.pace || '--:--'}
+          </div>
+        `;
+      } else {
+        listHtml = `<div style="color: var(--text-dim); font-size: 12px;">Chưa check hoàn thành set nào.</div>`;
+      }
+      listEl.innerHTML = listHtml;
     }
 
     const notesEl = document.getElementById("summaryNotesDisplay");
     const notesInput = document.getElementById("inputWorkoutNotes");
-    if (notesEl && notesInput) {
-      notesEl.textContent = notesInput.value || "Không có ghi chú.";
+    if (notesEl) {
+      const displayNote = (notesInput ? notesInput.value : "") || (actualCardio ? actualCardio.notes : "") || "Không có ghi chú.";
+      notesEl.textContent = displayNote;
     }
 
     this.pendingWorkoutSummary = {
@@ -822,7 +1100,10 @@ class DinoApp {
       totalSets: totalSets,
       actualPerformance: actualPerformance,
       exercises: exercisesCompleted,
-      notes: notesInput ? notesInput.value : ""
+      notes: notesInput ? notesInput.value : "",
+      actualCardio: actualCardio,
+      sessionType: actualCardio ? (exercisesCompleted.length > 0 ? "hybrid" : "cardio") : "strength",
+      totalDistanceKm: actualCardio ? (actualCardio.distanceKm || 0) : 0
     };
 
     this.openModal("modalWorkoutSummary");
@@ -1994,7 +2275,7 @@ class DinoApp {
 
     history.forEach(h => {
       vol += (h.totalVolumeKg || 0);
-      km += (h.totalDistanceKm || 0);
+      km += (h.totalDistanceKm || (h.actualCardio && h.actualCardio.distanceKm) || 0);
     });
 
     const volEl = document.getElementById("statSummaryVolume");
@@ -2007,37 +2288,67 @@ class DinoApp {
     if (wkEl) wkEl.textContent = history.length;
 
     const prEl = document.getElementById("statSummaryPRs");
-    if (prEl) prEl.textContent = Math.min(12, history.length * 2);
+    if (prEl) {
+      const prCount = this.storage.calculatePersonalRecords(history);
+      prEl.textContent = prCount;
+    }
   }
 
   renderProgressCharts() {
     if (!window.DinoCharts) return;
 
-    // Chart 1: Overload
     const history = this.storage.getWorkoutHistory();
     const selectEx = document.getElementById("selectChartExercise");
     const exId = selectEx ? selectEx.value : "pin_squat";
+    const selectedOption = selectEx ? selectEx.options[selectEx.selectedIndex] : null;
+    const exName = selectedOption ? selectedOption.textContent.trim() : "Squat";
 
-    const mockPoints = [
-      { date: "2026-08-15", weightKg: 80, reps: 8 },
-      { date: "2026-08-22", weightKg: 85, reps: 8 },
-      { date: "2026-08-29", weightKg: 90, reps: 7 },
-      { date: "2026-09-05", weightKg: 95, reps: 6 },
-      { date: "2026-09-12", weightKg: 100, reps: 6 }
-    ];
+    // Chart 1: Overload - Real performance points from actual completed sessions
+    const perfHistory = this.storage.getExercisePerformanceHistory(exId, exName);
+    const overloadPoints = [];
 
-    window.DinoCharts.renderOverloadChart("canvasStatsOverload", mockPoints, "Squat");
+    perfHistory.forEach(entry => {
+      let maxLoad = 0;
+      let bestReps = 0;
+      if (entry.sets && Array.isArray(entry.sets)) {
+        entry.sets.forEach(s => {
+          if (s.completed || (s.actual && s.actual.load > 0)) {
+            const load = s.actual?.load ?? s.load ?? 0;
+            const reps = s.actual?.reps ?? s.reps ?? 0;
+            if (load > maxLoad || (load === maxLoad && reps > bestReps)) {
+              maxLoad = load;
+              bestReps = reps;
+            }
+          }
+        });
+      }
+      if (maxLoad > 0) {
+        overloadPoints.push({
+          date: entry.date,
+          weightKg: maxLoad,
+          reps: bestReps
+        });
+      }
+    });
 
-    // Chart 2: Mileage
-    const mockRuns = [
-      { date: "Tuần 1", km: 18 },
-      { date: "Tuần 2", km: 22 },
-      { date: "Tuần 3", km: 24 },
-      { date: "Tuần 4", km: 26 }
-    ];
-    window.DinoCharts.renderMileageChart("canvasStatsMileage", mockRuns);
+    window.DinoCharts.renderOverloadChart("canvasStatsOverload", overloadPoints, exName);
 
-    if (selectEx) {
+    // Chart 2: Mileage - Real cardio sessions from actual history
+    const mileageRuns = [];
+    history.forEach(h => {
+      const dist = (h.actualCardio && h.actualCardio.distanceKm) ? h.actualCardio.distanceKm : (h.totalDistanceKm || 0);
+      if (dist > 0) {
+        mileageRuns.push({
+          date: h.date,
+          km: dist
+        });
+      }
+    });
+
+    window.DinoCharts.renderMileageChart("canvasStatsMileage", mileageRuns);
+
+    if (selectEx && !this._chartSelectBound) {
+      this._chartSelectBound = true;
       selectEx.addEventListener("change", () => this.renderProgressCharts());
     }
   }
@@ -2048,12 +2359,12 @@ class DinoApp {
 
     const daysInMonth = 30;
     const history = this.storage.getWorkoutHistory();
-    const activeDates = new Set(history.map(h => parseInt(h.date?.split("-")[2], 10)));
+    const activeDates = new Set(history.map(h => parseInt(h.date?.split("-")[2], 10)).filter(d => !isNaN(d)));
 
     grid.innerHTML = "";
     for (let day = 1; day <= daysInMonth; day++) {
       const cell = document.createElement("div");
-      const hasWorkout = activeDates.has(day) || (day % 3 === 0);
+      const hasWorkout = activeDates.has(day);
       cell.className = `cal-day-cell ${hasWorkout ? 'has-workout' : ''}`;
       cell.innerHTML = `<span>${day}</span>`;
       grid.appendChild(cell);
@@ -2075,21 +2386,33 @@ class DinoApp {
     }
 
     container.innerHTML = history.map(s => {
+      const isCardio = s.sessionType === "cardio" || (s.actualCardio && (s.actualCardio.distanceKm > 0 || s.totalDistanceKm > 0));
+      let metaLine = "";
       let exDetailLine = "";
-      if (s.actualPerformance && Array.isArray(s.actualPerformance) && s.actualPerformance.length > 0) {
-        exDetailLine = s.actualPerformance.map(ap => {
-          const completedCount = ap.sets ? ap.sets.filter(st => st.completed).length : 0;
-          return `${ap.exerciseName} (${completedCount} sets)`;
-        }).join(" • ");
-      } else if (s.exercises && Array.isArray(s.exercises) && s.exercises.length > 0) {
-        exDetailLine = s.exercises.map(e => `${e.name} (${e.sets || 0} sets)`).join(" • ");
+
+      if (isCardio) {
+        const dist = s.actualCardio?.distanceKm || s.totalDistanceKm || 0;
+        const pace = s.actualCardio?.pace || s.avgPace || (s.actualCardio?.durationMin && dist > 0 ? `${(s.actualCardio.durationMin / dist).toFixed(2)} /km` : "--:--");
+        const dur = Math.round((s.durationSec || (s.actualCardio?.durationMin ? s.actualCardio.durationMin * 60 : 0)) / 60);
+        metaLine = `📅 ${s.date} • 🏃 ${dist} km • ⚡ Pace: ${pace} • ⏱️ ${dur} phút`;
+        exDetailLine = `Cardio: ${s.actualCardio?.sessionType || s.dayTitle || 'Chạy bộ'}${s.actualCardio?.notes ? ` • Ghi chú: ${s.actualCardio.notes}` : ''}`;
+      } else {
+        metaLine = `📅 ${s.date} • ⏱️ ${Math.round((s.durationSec || 0) / 60)} phút • 🏋️ ${(s.totalVolumeKg || 0).toLocaleString()} kg • ${s.totalSets || 0} sets`;
+        if (s.actualPerformance && Array.isArray(s.actualPerformance) && s.actualPerformance.length > 0) {
+          exDetailLine = s.actualPerformance.map(ap => {
+            const completedCount = ap.sets ? ap.sets.filter(st => st.completed).length : 0;
+            return `${ap.exerciseName} (${completedCount} sets)`;
+          }).join(" • ");
+        } else if (s.exercises && Array.isArray(s.exercises) && s.exercises.length > 0) {
+          exDetailLine = s.exercises.map(e => `${e.name} (${e.sets || 0} sets)`).join(" • ");
+        }
       }
 
       return `
       <div class="history-session-card">
         <div style="flex: 1; min-width: 0;">
           <div class="history-session-title">${s.dayTitle || 'Workout Session'}</div>
-          <div class="history-session-meta">📅 ${s.date} • ⏱️ ${Math.round((s.durationSec || 0) / 60)} phút • 🏋️ ${(s.totalVolumeKg || 0).toLocaleString()} kg • ${s.totalSets || 0} sets</div>
+          <div class="history-session-meta">${metaLine}</div>
           ${exDetailLine ? `<div style="font-size: 11px; color: var(--text-dim); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${exDetailLine}</div>` : ''}
         </div>
         <button class="btn-ex-delete-mini btn-delete-history-item" data-id="${s.id}">✕</button>

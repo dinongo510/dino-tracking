@@ -373,9 +373,13 @@ class DinoStorage {
     return !!(state && (state.isActive || state.status === "IN_PROGRESS"));
   }
 
-  startWorkoutSession(progId, weekId, dayId, dayTitle, exercises) {
+  startWorkoutSession(progId, weekId, dayId, dayTitle, exercises, dayData = null) {
     const prog = this.getProgramById(progId) || this.getActiveProgram();
     const startTime = Date.now();
+
+    // Determine session type & cardio planning
+    const sessionType = dayData?.type || (exercises && exercises.length > 0 ? "strength" : "run");
+    const isCardio = sessionType === "run" || sessionType === "cardio" || (sessionType === "hybrid" && (!exercises || exercises.length === 0)) || (!exercises || exercises.length === 0);
 
     // 1. Immutable Prescription Snapshot captured at workout start
     const prescriptionSnapshot = (exercises || []).map(ex => ({
@@ -399,6 +403,24 @@ class DinoStorage {
         isRestPause: !!s.isRestPause
       }))
     }));
+
+    // Planned cardio snapshot if applicable
+    const plannedCardio = isCardio ? {
+      sessionType: sessionType,
+      targetKm: dayData ? (dayData.targetKm || 0) : 0,
+      focus: dayData ? (dayData.focus || "") : "",
+      options: dayData && dayData.options ? [...dayData.options] : [],
+      checklist: dayData && dayData.checklist ? [...dayData.checklist] : []
+    } : null;
+
+    // Actual cardio initial record
+    const actualCardio = isCardio ? {
+      distanceKm: plannedCardio.targetKm || 0,
+      durationSec: 0,
+      avgPace: "—",
+      sessionType: sessionType,
+      completed: false
+    } : null;
 
     // 2. Pre-populate Actual Sets structure (Prescription ≠ Actual)
     const loggedSets = {};
@@ -450,6 +472,9 @@ class DinoStorage {
       weekId: weekId,
       dayId: dayId,
       dayTitle: dayTitle,
+      sessionType: sessionType,
+      plannedCardio: plannedCardio,
+      actualCardio: actualCardio,
       elapsedSeconds: 0,
       isPaused: false,
       prescriptionSnapshot: prescriptionSnapshot,
@@ -461,11 +486,12 @@ class DinoStorage {
     return state;
   }
 
-  updateActiveWorkoutLogs(loggedSets, notes = null) {
+  updateActiveWorkoutLogs(loggedSets, notes = null, actualCardio = null) {
     const state = this.getActiveWorkoutState();
     if (state) {
       if (loggedSets) state.loggedSets = loggedSets;
       if (notes !== null) state.notes = notes;
+      if (actualCardio) state.actualCardio = { ...(state.actualCardio || {}), ...actualCardio };
       localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKOUT_STATE, JSON.stringify(state));
     }
   }
@@ -480,17 +506,19 @@ class DinoStorage {
     const activeState = this.getActiveWorkoutState();
     const prog = this.getProgramById(summaryData.progId || (activeState ? activeState.progId : this.getActiveProgramId()));
 
-    // 1. Authoritative Actual Performance Sets
+    // 1. Authoritative Actual Performance Sets & Actual Cardio
     const actualPerformance = summaryData.actualPerformance || [];
+    const actualCardio = summaryData.actualCardio || (activeState ? activeState.actualCardio : null) || null;
+    const sessionType = summaryData.sessionType || (activeState ? activeState.sessionType : (actualCardio ? actualCardio.sessionType : "strength")) || "strength";
 
     // 2. Derived Summary calculation (authoritative performance -> derived summary)
     const derivedSummary = {
       totalVolumeKg: summaryData.totalVolumeKg || 0,
       totalSets: summaryData.totalSets || 0,
-      totalDistanceKm: summaryData.totalDistanceKm || 0,
-      avgPace: summaryData.avgPace || "—",
+      totalDistanceKm: summaryData.totalDistanceKm || (actualCardio ? (parseFloat(actualCardio.distanceKm) || 0) : 0) || 0,
+      avgPace: summaryData.avgPace || (actualCardio ? actualCardio.avgPace : "—") || "—",
       prsCount: summaryData.prsCount || 0,
-      durationSec: summaryData.durationSec || (activeState ? Math.max(0, Math.floor((Date.now() - activeState.startTime) / 1000)) : 0)
+      durationSec: summaryData.durationSec || (actualCardio ? actualCardio.durationSec : 0) || (activeState ? Math.max(0, Math.floor((Date.now() - activeState.startTime) / 1000)) : 0)
     };
 
     // 3. Immutable Completed Session Snapshot
@@ -503,6 +531,7 @@ class DinoStorage {
       endTime: Date.now(),
       timestamp: Date.now(),
       durationSec: derivedSummary.durationSec,
+      sessionType: sessionType,
       progId: summaryData.progId || (activeState ? activeState.progId : this.getActiveProgramId()),
       progVersion: (activeState && activeState.progVersion) ? activeState.progVersion : (prog ? prog.version || "1.0" : "1.0"),
       progName: (activeState && activeState.progName) ? activeState.progName : (prog ? prog.name : "Dino Program"),
@@ -512,9 +541,11 @@ class DinoStorage {
 
       // Prescription snapshot at completion time (stable, immutable across future program updates)
       prescriptionSnapshot: (activeState && activeState.prescriptionSnapshot) ? activeState.prescriptionSnapshot : (summaryData.prescriptionSnapshot || []),
+      plannedCardio: (activeState && activeState.plannedCardio) ? activeState.plannedCardio : (summaryData.plannedCardio || null),
 
       // Authoritative actual performance
       actualPerformance: actualPerformance,
+      actualCardio: actualCardio,
 
       // Derived summary
       derivedSummary: derivedSummary,
@@ -525,11 +556,17 @@ class DinoStorage {
       totalDistanceKm: derivedSummary.totalDistanceKm,
       avgPace: derivedSummary.avgPace,
       prsCount: derivedSummary.prsCount,
-      exercises: summaryData.exercises || actualPerformance.map(ap => ({
+      exercises: summaryData.exercises || (actualCardio ? [{
+        name: summaryData.dayTitle || "Cardio Session",
+        sets: 1,
+        volume: 0,
+        distanceKm: derivedSummary.totalDistanceKm,
+        pace: derivedSummary.avgPace
+      }] : actualPerformance.map(ap => ({
         name: ap.exerciseName,
         sets: ap.sets ? ap.sets.filter(s => s.completed).length : 0,
         volume: ap.sets ? ap.sets.filter(s => s.completed).reduce((sum, s) => sum + ((s.actual?.load || 0) * (s.actual?.reps || 0)), 0) : 0
-      })),
+      }))),
       notes: summaryData.notes || (activeState ? activeState.notes : "")
     };
 
@@ -539,6 +576,112 @@ class DinoStorage {
     // Clear active workout state
     this.cancelActiveWorkout();
     return newSession;
+  }
+
+  // Real Personal Records (PR) Calculation Engine based on authentic performance records
+  calculatePersonalRecords(history = null) {
+    const hist = history || this.getWorkoutHistory();
+    if (!hist || !Array.isArray(hist) || hist.length === 0) return 0;
+
+    // Chronological order (oldest to newest)
+    const sorted = [...hist].sort((a, b) => {
+      const timeA = a.startTime || a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+      const timeB = b.startTime || b.timestamp || (b.date ? new Date(b.date).getTime() : 0);
+      return timeA - timeB;
+    });
+
+    const bestLoads = {};
+    let prCount = 0;
+
+    sorted.forEach(session => {
+      if (session.actualPerformance && Array.isArray(session.actualPerformance)) {
+        session.actualPerformance.forEach(ap => {
+          const exKey = (ap.exerciseId || ap.exerciseName || "").trim().toLowerCase();
+          if (!exKey) return;
+          const completedSets = (ap.sets || []).filter(s => s.completed && (parseFloat(s.actual?.load) || 0) > 0);
+          if (completedSets.length > 0) {
+            const maxL = Math.max(...completedSets.map(s => parseFloat(s.actual.load) || 0));
+            if (maxL > 0) {
+              if (bestLoads[exKey] === undefined) {
+                bestLoads[exKey] = maxL;
+                prCount++;
+              } else if (maxL > bestLoads[exKey]) {
+                bestLoads[exKey] = maxL;
+                prCount++;
+              }
+            }
+          }
+        });
+      } else if (session.exercises && Array.isArray(session.exercises)) {
+        session.exercises.forEach(e => {
+          const exKey = (e.id || e.name || "").trim().toLowerCase();
+          if (!exKey) return;
+          if (e.sets && Array.isArray(e.sets)) {
+            const valid = e.sets.filter(s => (parseFloat(s.weightKg || s.weight || s.actual?.load) || 0) > 0);
+            if (valid.length > 0) {
+              const maxL = Math.max(...valid.map(s => parseFloat(s.weightKg || s.weight || s.actual?.load) || 0));
+              if (maxL > 0) {
+                if (bestLoads[exKey] === undefined || maxL > bestLoads[exKey]) {
+                  bestLoads[exKey] = maxL;
+                  prCount++;
+                }
+              }
+            }
+          }
+        });
+      }
+    });
+
+    return prCount;
+  }
+
+  // Calculate PRs achieved in a specific session compared to prior history
+  calculateSessionPRs(actualPerformance, priorHistory = null) {
+    if (!actualPerformance || !Array.isArray(actualPerformance) || actualPerformance.length === 0) return 0;
+    const hist = priorHistory !== null ? priorHistory : this.getWorkoutHistory();
+
+    const priorBests = {};
+    (hist || []).forEach(session => {
+      if (session.actualPerformance && Array.isArray(session.actualPerformance)) {
+        session.actualPerformance.forEach(ap => {
+          const exKey = (ap.exerciseId || ap.exerciseName || "").trim().toLowerCase();
+          if (!exKey) return;
+          (ap.sets || []).forEach(s => {
+            if (s.completed) {
+              const l = parseFloat(s.actual?.load) || 0;
+              if (l > (priorBests[exKey] || 0)) priorBests[exKey] = l;
+            }
+          });
+        });
+      } else if (session.exercises && Array.isArray(session.exercises)) {
+        session.exercises.forEach(e => {
+          const exKey = (e.id || e.name || "").trim().toLowerCase();
+          if (!exKey) return;
+          if (Array.isArray(e.sets)) {
+            e.sets.forEach(s => {
+              const l = parseFloat(s.weightKg || s.weight || s.actual?.load) || 0;
+              if (l > (priorBests[exKey] || 0)) priorBests[exKey] = l;
+            });
+          }
+        });
+      }
+    });
+
+    let sessionPRs = 0;
+    actualPerformance.forEach(ap => {
+      const exKey = (ap.exerciseId || ap.exerciseName || "").trim().toLowerCase();
+      if (!exKey) return;
+      const completedSets = (ap.sets || []).filter(s => s.completed && (parseFloat(s.actual?.load) || 0) > 0);
+      if (completedSets.length > 0) {
+        const sessionMax = Math.max(...completedSets.map(s => parseFloat(s.actual.load) || 0));
+        const prior = priorBests[exKey] || 0;
+        if (sessionMax > prior) {
+          sessionPRs++;
+        }
+      }
+    });
+
+    return sessionPRs;
   }
 
   getWorkoutHistory() {

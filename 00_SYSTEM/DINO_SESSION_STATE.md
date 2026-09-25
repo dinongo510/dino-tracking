@@ -9,18 +9,45 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-001` is LOCKED. No active Change Set. Ready for next explicitly authorized Change Set. |
-| **Active Change Set** | `None` |
-| **Current State** | `LOCKED` |
-| **Dino AUT** | `APPROVED` |
+| **Session State** | `DINO-003` IMPLEMENTED & AUTO_VERIFIED. Awaiting GitHub Audit & DINO AUT. |
+| **Active Change Set** | `DINO-003` |
+| **Current State** | `AUTO_VERIFIED` |
+| **Dino AUT** | `PENDING` |
 | **Active Branch** | `main` |
-| **Pre-Change Baseline SHA** | `b9c9be12425946cc3aef8eca143f0b863a85bc98` |
-| **Last Updated** | `2026-09-24` |
+| **Pre-Change Baseline SHA** | `97d628fc9378ce4fd06fa8dad5e6afb4cefd93bc` |
+| **Last Updated** | `2026-09-25` |
 | **Active Blockers** | None |
 
 ---
 
-## 2. Completed Change Set Details
+## 2. Completed / Active Change Set Details
+
+### `DINO-003`
+
+- **Objective:** Core Tracking Integrity: replace fake analytics with real historical metrics (PRs, Overload chart, Running Mileage chart); minimal actual cardio-session tracking (type, distance, duration, pace); input validation on resistance training sets (weight >= 0, reps >= 1, non-negative RIR); strict preservation of `PRESCRIPTION ≠ ACTUAL`.
+- **Dino AUT:** `PENDING`
+- **State:** `AUTO_VERIFIED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED`)
+- **Authorized Files Changed:**
+  - [`js/storage.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/storage.js) (cardio support, session PRs calculation, personal records engine, derivedSummary mileage & pace)
+  - [`js/charts.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/charts.js) (hardened date parsing for mileage chart)
+  - [`js/app.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/app.js) (real stats wiring, removed mock data, minimal cardio session view & logging, set input validation, cardio history rendering)
+  - [`css/style.css`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/css/style.css) (inline input invalid styling, cardio tracking UI styles)
+  - [`00_SYSTEM/DINO_SESSION_STATE.md`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/00_SYSTEM/DINO_SESSION_STATE.md) (session state tracking)
+- **Protected Areas (Untouched):**
+  - `index.html`
+  - `js/data.js`
+  - `js/ai_coach.js`
+  - `js/audio.js`
+  - `js/supabase_sync.js`
+  - `js/timer.js`
+  - `server.js`
+  - `sw.js`
+  - `manifest.json`
+  - `package.json`
+  - `vercel.json`
+  - `.vercelignore`
+- **Data-Model Impact:** Separation of resistance actuals and cardio actuals (`actualCardio`), cardio distance/duration/pace persistence, real PR computation; completed session snapshot preserves historical prescription snapshot independently.
+- **UX Impact:** Minimal inline input validation (`.input-invalid`), honest empty states when no history exists, dedicated cardio session view for run/hybrid days, clear cardio history badges.
 
 ### `DINO-001`
 
@@ -107,12 +134,13 @@
 | `DINO-000` | Establish DINO Development Governance | `LOCKED` (`COMMITTED` → `PUSHED` → `GITHUB_AUDITED` → `DINO_AUT_APPROVED` → `LOCKED`) | Permanent governance docs creation (`AGENTS.md`, `00_SYSTEM/*`) | 2026-09-23 |
 | `DINO-GOV-001` | Governance Authority Correction & Lock | `LOCKED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `GITHUB_AUDITED` → `DINO_AUT_APPROVED` → `LOCKED`) | Align governance with DINO authority model; remove Founder/delegated authorization | 2026-09-24 |
 | `DINO-001` | Establish Training Data Foundation | `LOCKED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `GITHUB_AUDITED` → `DINO_AUT_APPROVED` → `LOCKED`) | Core data foundation: prescription vs actual, session snapshotting, history retrieval | 2026-09-24 |
+| `DINO-003` | Core Tracking Integrity | `AUTO_VERIFIED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED`) | Real stats (PR/Overload/Mileage), minimal cardio tracking, input validation, historical safety | In Progress (2026-09-25) |
 
 ---
 
 ## 4. Active Blockers & Decisions Required
 
-*No active blockers. DINO-001 is LOCKED. No active Change Set. Ready for next explicitly authorized Change Set.*
+*No active blockers. DINO-003 implementation is completed, tested, and AUTO_VERIFIED. Awaiting commit, push, GitHub audit, and DINO AUT.*
 
 ---
 

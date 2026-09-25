@@ -202,8 +202,9 @@ class DinoCharts {
       ctx.fillText(`${km}k`, x + barWidth / 2, y - 6);
 
       // Date label on bottom
-      const dateParts = p.date.split("-");
-      const shortDate = `${dateParts[1]}/${dateParts[2]}`;
+      const shortDate = (p.date && p.date.includes("-") && p.date.split("-").length >= 3)
+        ? `${p.date.split("-")[1]}/${p.date.split("-")[2]}`
+        : (p.date || "");
       ctx.fillStyle = "#a1a1aa";
       ctx.font = "9px monospace";
       ctx.fillText(shortDate, x + barWidth / 2, padding.top + chartH + 16);
