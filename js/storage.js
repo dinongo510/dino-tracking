@@ -373,7 +373,7 @@ class DinoStorage {
     return !!(state && (state.isActive || state.status === "IN_PROGRESS"));
   }
 
-  startWorkoutSession(progId, weekId, dayId, dayTitle, exercises, dayData = null) {
+  startWorkoutSession(progId, weekId, dayId, dayTitle, exercises, dayData = null, initialSelectedOption = null) {
     const prog = this.getProgramById(progId) || this.getActiveProgram();
     const startTime = Date.now();
 
@@ -476,6 +476,8 @@ class DinoStorage {
       sessionType: sessionType,
       plannedCardio: plannedCardio,
       actualCardio: actualCardio,
+      selectedOption: initialSelectedOption || null,
+      dayOptionsSnapshot: dayData && dayData.options ? [...dayData.options] : [],
       elapsedSeconds: 0,
       isPaused: false,
       prescriptionSnapshot: prescriptionSnapshot,
@@ -497,6 +499,14 @@ class DinoStorage {
     }
   }
 
+  updateActiveSelectedOption(selectedOption) {
+    const state = this.getActiveWorkoutState();
+    if (state) {
+      state.selectedOption = selectedOption;
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKOUT_STATE, JSON.stringify(state));
+    }
+  }
+
   cancelActiveWorkout() {
     // Abandon active session cleanly
     localStorage.removeItem(STORAGE_KEYS.ACTIVE_WORKOUT_STATE);
@@ -511,10 +521,17 @@ class DinoStorage {
     const actualPerformance = summaryData.actualPerformance || [];
     const actualCardio = summaryData.actualCardio || (activeState ? activeState.actualCardio : null) || null;
     const sessionType = summaryData.sessionType || (activeState ? activeState.sessionType : (actualCardio ? actualCardio.sessionType : "strength")) || "strength";
+    const selectedOption = summaryData.selectedOption || (activeState ? activeState.selectedOption : null) || null;
 
     const actualCardioDist = (actualCardio && actualCardio.distanceKm !== null && actualCardio.distanceKm !== undefined && !isNaN(parseFloat(actualCardio.distanceKm)))
       ? parseFloat(actualCardio.distanceKm)
       : null;
+
+    // Determine authoritative duration: if cardio duration was explicitly recorded, use it
+    const authoritativeDurationSec = (summaryData.durationSec && summaryData.durationSec > 0)
+      ? summaryData.durationSec
+      : (actualCardio && actualCardio.durationMin ? actualCardio.durationMin * 60 : 0)
+        || (activeState ? Math.max(0, Math.floor((Date.now() - activeState.startTime) / 1000)) : 0);
 
     // 2. Derived Summary calculation (authoritative performance -> derived summary)
     const derivedSummary = {
@@ -523,7 +540,7 @@ class DinoStorage {
       totalDistanceKm: summaryData.totalDistanceKm !== undefined ? summaryData.totalDistanceKm : (actualCardioDist !== null ? actualCardioDist : 0),
       avgPace: summaryData.avgPace || (actualCardio ? (actualCardio.pace || actualCardio.avgPace || "—") : "—"),
       prsCount: summaryData.prsCount || 0,
-      durationSec: summaryData.durationSec || (actualCardio ? actualCardio.durationSec : 0) || (activeState ? Math.max(0, Math.floor((Date.now() - activeState.startTime) / 1000)) : 0)
+      durationSec: authoritativeDurationSec
     };
 
     // 3. Immutable Completed Session Snapshot
@@ -547,6 +564,8 @@ class DinoStorage {
       // Prescription snapshot at completion time (stable, immutable across future program updates)
       prescriptionSnapshot: (activeState && activeState.prescriptionSnapshot) ? activeState.prescriptionSnapshot : (summaryData.prescriptionSnapshot || []),
       plannedCardio: (activeState && activeState.plannedCardio) ? activeState.plannedCardio : (summaryData.plannedCardio || null),
+      selectedOption: selectedOption,
+      dayOptionsSnapshot: (activeState && activeState.dayOptionsSnapshot) ? activeState.dayOptionsSnapshot : (summaryData.dayOptionsSnapshot || []),
 
       // Authoritative actual performance
       actualPerformance: actualPerformance,

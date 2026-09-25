@@ -9,12 +9,12 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-003` IMPLEMENTED & AUTO_VERIFIED. Awaiting GitHub Audit & DINO AUT. |
-| **Active Change Set** | `DINO-003` |
+| **Session State** | `DINO-004` IMPLEMENTED & AUTO_VERIFIED. Awaiting GitHub Audit & DINO AUT. |
+| **Active Change Set** | `DINO-004` |
 | **Current State** | `AUTO_VERIFIED` |
 | **Dino AUT** | `PENDING` |
 | **Active Branch** | `main` |
-| **Pre-Change Baseline SHA** | `97d628fc9378ce4fd06fa8dad5e6afb4cefd93bc` |
+| **Pre-Change Baseline SHA** | `e8691ed57101fc6f600d5eb1bc9a9349a7d43484` |
 | **Last Updated** | `2026-09-25` |
 | **Active Blockers** | None |
 
@@ -22,7 +22,21 @@
 
 ## 2. Completed / Active Change Set Details
 
-### `DINO-003`
+### `DINO-004`
+
+- **Objective:** Restore 2-week Hybrid Athlete schedule exactly according to BFS source DOCX, implement interactive mutually-exclusive prescribed-option selection and persistence, and fix production caching/version update architecture (Network-First static assets, CACHE_NAME v11, max-age=0 must-revalidate, version query strings).
+- **Dino AUT:** `PENDING`
+- **State:** `AUTO_VERIFIED` (`AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED`)
+- **Authorized Files Changed:**
+  - [`js/data.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/data.js) (corrected Week A and Week B schedule, Friday Long Run ≤12km, Sunday OFF, Week B T2 Hybrid Game Chipper/Accumulation, core options)
+  - [`js/storage.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/storage.js) (selectedOption storage in active session and completed history, updateActiveSelectedOption, cardio durationSec fix)
+  - [`js/app.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/app.js) (interactive prescribed options selection UI and event handling, summary modal option display, history option display, cardio duration display fix, RIR placeholder fix)
+  - [`sw.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/sw.js) (bump CACHE_NAME to dino-tracking-v11, Network-First with Cache Fallback for static same-origin assets)
+  - [`index.html`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/index.html) (version query strings ?v=2.2, active reg.update() on load)
+  - [`vercel.json`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/vercel.json) (Cache-Control max-age=0, must-revalidate for JS/CSS)
+  - [`00_SYSTEM/DINO_SESSION_STATE.md`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/00_SYSTEM/DINO_SESSION_STATE.md) (session state tracking)
+- **Data-Model Impact:** `selectedOption` recorded in active state and historical completed session snapshot; preserves `PRESCRIPTION ≠ ACTUAL`.
+- **UX Impact:** Prescribed options can be clicked and selected with visual radio-indicator feedback; history displays selected option; cardio duration displays real entered minutes.
 
 - **Objective:** Core Tracking Integrity: replace fake analytics with real historical metrics (PRs, Overload chart, Running Mileage chart); minimal actual cardio-session tracking (type, distance, duration, pace); input validation on resistance training sets (weight >= 0, reps >= 1, non-negative RIR); strict preservation of `PRESCRIPTION ≠ ACTUAL`.
 - **Dino AUT:** `PENDING`

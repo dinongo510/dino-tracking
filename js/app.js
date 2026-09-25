@@ -27,6 +27,7 @@ class DinoApp {
     this.pickerSearchQuery = "";
     this.pickerCategory = "all";
     this.builderPendingTarget = null;
+    this._transientSelectedOption = null;
     
     this.init();
   }
@@ -335,17 +336,33 @@ class DinoApp {
     // Options HTML if defined
     let optionsHtml = "";
     if (activeDay.options && Array.isArray(activeDay.options) && activeDay.options.length > 0) {
+      const activeState = this.storage.getActiveWorkoutState();
+      const currentSelectedOpt = (activeState && activeState.selectedOption) ? activeState.selectedOption : this._transientSelectedOption;
+      const currentOptId = currentSelectedOpt ? currentSelectedOpt.id : null;
+
       optionsHtml = `
-        <div class="cardio-options-box">
-          <div style="font-size: 11px; font-weight: 800; color: var(--color-blue); text-transform: uppercase; margin-bottom: 6px;">
-            📋 Lựa Chọn Phương Án (Prescribed Options)
+        <div class="cardio-options-box" style="margin-top: 10px;">
+          <div style="font-size: 11px; font-weight: 800; color: var(--color-blue); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+            <span>📋 Lựa Chọn Phương Án (Prescribed Options)</span>
+            <span style="font-size: 10.5px; color: var(--color-gold); font-weight: 700;">(Chạm để chọn 1 phương án)</span>
           </div>
-          ${activeDay.options.map(opt => `
-            <div style="margin-bottom: 8px; font-size: 12px; line-height: 1.4; padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 4px;">
-              <div style="font-weight: 700; color: #fff;">${opt.title} <span style="color: var(--color-gold); font-size: 11px;">(${opt.rpe || ''})</span></div>
-              <div style="color: var(--text-muted); font-size: 11.5px; margin-top: 2px;">${opt.details}</div>
-            </div>
-          `).join("")}
+          <div class="options-selectable-list" style="display: flex; flex-direction: column; gap: 8px;">
+            ${activeDay.options.map(opt => {
+              const isSelected = currentOptId === opt.id;
+              return `
+                <div class="prescribed-option-card ${isSelected ? 'selected' : ''}" data-opt-id="${opt.id}" style="cursor: pointer; padding: 10px 12px; background: ${isSelected ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.02)'}; border: 1.5px solid ${isSelected ? 'var(--color-blue, #3b82f6)' : 'rgba(255,255,255,0.08)'}; border-radius: 6px; transition: all 0.2s ease;">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="option-radio-dot" style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid ${isSelected ? 'var(--color-blue, #3b82f6)' : 'var(--text-dim)'}; background: ${isSelected ? 'var(--color-blue, #3b82f6)' : 'transparent'};"></span>
+                      <span style="font-weight: 700; color: #fff; font-size: 13px;">${opt.title}</span>
+                    </div>
+                    ${opt.rpe ? `<span style="color: var(--color-gold); font-size: 11px; font-weight: 700;">${opt.rpe}</span>` : ''}
+                  </div>
+                  <div style="color: var(--text-muted); font-size: 11.5px; line-height: 1.45; margin-top: 6px; margin-left: 22px;">${opt.details}</div>
+                </div>
+              `;
+            }).join("")}
+          </div>
         </div>
       `;
     }
@@ -476,6 +493,59 @@ class DinoApp {
     if (durInput) durInput.addEventListener("input", updateCardioState);
     if (notesInput) notesInput.addEventListener("input", updateCardioState);
 
+    // Interactive Option Selection Listener
+    if (activeDay.options && activeDay.options.length > 0) {
+      cardElement.querySelectorAll(".prescribed-option-card").forEach(optCard => {
+        optCard.addEventListener("click", () => {
+          const optId = optCard.getAttribute("data-opt-id");
+          const targetOpt = activeDay.options.find(o => o.id === optId);
+          if (!targetOpt) return;
+
+          // Mutually exclusive UI toggling
+          cardElement.querySelectorAll(".prescribed-option-card").forEach(c => {
+            c.classList.remove("selected");
+            c.style.background = "rgba(255,255,255,0.02)";
+            c.style.borderColor = "rgba(255,255,255,0.08)";
+            const dot = c.querySelector(".option-radio-dot");
+            if (dot) {
+              dot.style.borderColor = "var(--text-dim)";
+              dot.style.background = "transparent";
+            }
+          });
+
+          optCard.classList.add("selected");
+          optCard.style.background = "rgba(59, 130, 246, 0.15)";
+          optCard.style.borderColor = "var(--color-blue, #3b82f6)";
+          const activeDot = optCard.querySelector(".option-radio-dot");
+          if (activeDot) {
+            activeDot.style.borderColor = "var(--color-blue, #3b82f6)";
+            activeDot.style.background = "var(--color-blue, #3b82f6)";
+          }
+
+          const selectedOption = {
+            id: targetOpt.id,
+            title: targetOpt.title,
+            details: targetOpt.details,
+            rpe: targetOpt.rpe || null,
+            targetKm: targetOpt.targetKm || null
+          };
+
+          // If option has target distance, update placeholder (without mutating actual input value)
+          if (targetOpt.targetKm && distInput) {
+            distInput.placeholder = `VD: ${targetOpt.targetKm}`;
+          }
+
+          if (this.storage.isWorkoutActive()) {
+            this.storage.updateActiveSelectedOption(selectedOption);
+          } else {
+            this._transientSelectedOption = selectedOption;
+          }
+
+          this.showToast(`🎯 Đã chọn: ${targetOpt.title}`);
+        });
+      });
+    }
+
     if (btnSync) {
       btnSync.addEventListener("click", () => {
         const elapsedSec = this.timer ? this.timer.getSessionElapsedSeconds() : 0;
@@ -559,7 +629,7 @@ class DinoApp {
             <input type="number" class="set-input-num input-reps" value="${actualReps}" placeholder="${s.reps || 'reps'}" min="1" max="100">
           </td>
           <td>
-            <input type="text" class="set-input-num input-rir" placeholder="${s.rir ? String(s.rir).replace(/[^0-9.]/g, '') || 'RIR' : 'RIR'}" value="${actualRir}">
+            <input type="text" class="set-input-num input-rir" placeholder="${s.rir ? String(s.rir).replace(/^RIR\s*/i, '') || 'RIR' : 'RIR'}" value="${actualRir}">
           </td>
           <td>
             <button type="button" class="btn-check-set ${isChecked ? 'checked' : ''}" data-rest-sec="${s.restSec || 120}" data-is-rp="${s.isRestPause ? 'true' : 'false'}">
@@ -939,7 +1009,8 @@ class DinoApp {
 
     if (!prog || !activeWeek || !activeDay) return;
 
-    this.storage.startWorkoutSession(prog.id, activeWeek.id, activeDay.id, activeDay.title, activeDay.exercises, activeDay);
+    this.storage.startWorkoutSession(prog.id, activeWeek.id, activeDay.id, activeDay.title, activeDay.exercises, activeDay, this._transientSelectedOption);
+    this._transientSelectedOption = null;
     if (this.timer) this.timer.startSession(0);
     this.showToast("🚀 Buổi tập đã bắt đầu! Chúc bạn tập luyện sung mãn.");
     this.renderWorkoutView();
@@ -1124,13 +1195,27 @@ class DinoApp {
 
     const hasExercisesCompleted = exercisesCompleted.length > 0;
     const sessionType = (hasExercisesCompleted && actualCardio) ? "hybrid" : (actualCardio ? "cardio" : "strength");
+    const selectedOption = activeState?.selectedOption || this._transientSelectedOption || null;
+
+    // Authoritative duration in seconds: if cardio duration was explicitly entered, reflect it
+    const finalDurationSec = (actualCardio && actualCardio.durationMin && actualCardio.durationMin > 0)
+      ? (actualCardio.durationMin * 60)
+      : duration;
+
+    if (selectedOption && listEl) {
+      listEl.innerHTML = `
+        <div style="padding: 6px 0; font-size: 12.5px; color: var(--color-blue); font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05);">
+          🎯 Phương án đã chọn: <span>${selectedOption.title}</span>
+        </div>
+      ` + listEl.innerHTML;
+    }
 
     this.pendingWorkoutSummary = {
       progId: activeState ? activeState.progId : this.storage.getActiveProgramId(),
       weekId: activeState ? activeState.weekId : this.storage.getActiveWeekId(),
       dayId: activeState ? activeState.dayId : this.storage.getActiveDayId(),
       dayTitle: activeState ? activeState.dayTitle : "Workout Session",
-      durationSec: duration,
+      durationSec: finalDurationSec,
       totalVolumeKg: totalVolume,
       totalSets: totalSets,
       actualPerformance: actualPerformance,
@@ -1138,6 +1223,7 @@ class DinoApp {
       notes: notesInput ? notesInput.value : "",
       actualCardio: actualCardio,
       sessionType: sessionType,
+      selectedOption: selectedOption,
       totalDistanceKm: actualCardio ? (actualCardio.distanceKm || 0) : 0
     };
 
@@ -2424,23 +2510,28 @@ class DinoApp {
       const isCardio = s.sessionType === "cardio" || (s.actualCardio && (s.actualCardio.distanceKm > 0 || s.totalDistanceKm > 0));
       let metaLine = "";
       let exDetailLine = "";
+      const optTag = s.selectedOption ? ` • 🎯 ${s.selectedOption.title}` : "";
 
       if (isCardio) {
         const dist = s.actualCardio?.distanceKm || s.totalDistanceKm || 0;
-        const pace = s.actualCardio?.pace || s.avgPace || (s.actualCardio?.durationMin && dist > 0 ? `${(s.actualCardio.durationMin / dist).toFixed(2)} /km` : "--:--");
-        const dur = Math.round((s.durationSec || (s.actualCardio?.durationMin ? s.actualCardio.durationMin * 60 : 0)) / 60);
+        const dur = (s.actualCardio?.durationMin && s.actualCardio.durationMin > 0)
+          ? s.actualCardio.durationMin
+          : Math.round((s.durationSec || 0) / 60);
+        const pace = s.actualCardio?.pace || s.avgPace || (dur > 0 && dist > 0 ? `${(dur / dist).toFixed(2)} /km` : "--:--");
         metaLine = `📅 ${s.date} • 🏃 ${dist} km • ⚡ Pace: ${pace} • ⏱️ ${dur} phút`;
-        exDetailLine = `Cardio: ${s.actualCardio?.sessionType || s.dayTitle || 'Chạy bộ'}${s.actualCardio?.notes ? ` • Ghi chú: ${s.actualCardio.notes}` : ''}`;
+        exDetailLine = `Cardio: ${s.actualCardio?.sessionType || s.dayTitle || 'Chạy bộ'}${optTag}${s.actualCardio?.notes ? ` • Ghi chú: ${s.actualCardio.notes}` : ''}`;
       } else {
         metaLine = `📅 ${s.date} • ⏱️ ${Math.round((s.durationSec || 0) / 60)} phút • 🏋️ ${(s.totalVolumeKg || 0).toLocaleString()} kg • ${s.totalSets || 0} sets`;
+        let exSummary = "";
         if (s.actualPerformance && Array.isArray(s.actualPerformance) && s.actualPerformance.length > 0) {
-          exDetailLine = s.actualPerformance.map(ap => {
+          exSummary = s.actualPerformance.map(ap => {
             const completedCount = ap.sets ? ap.sets.filter(st => st.completed).length : 0;
             return `${ap.exerciseName} (${completedCount} sets)`;
           }).join(" • ");
         } else if (s.exercises && Array.isArray(s.exercises) && s.exercises.length > 0) {
-          exDetailLine = s.exercises.map(e => `${e.name} (${e.sets || 0} sets)`).join(" • ");
+          exSummary = s.exercises.map(e => `${e.name} (${e.sets || 0} sets)`).join(" • ");
         }
+        exDetailLine = exSummary ? `${exSummary}${optTag}` : (optTag ? optTag.replace(/^ • /, '') : '');
       }
 
       return `

@@ -14,10 +14,10 @@
 const DEFAULT_PROGRAMS = [
   {
     id: "dino_hybrid_1",
-    version: "1.0",
-    name: "Dino Hybrid 1.0",
+    version: "2.0",
+    name: "Dino Hybrid 2.0",
     subtitle: "BFS Hybrid Athlete 2-Week Rotation",
-    description: "Running Performance • Hypertrophy • Strength • Hyrox Conditioning • Soccer",
+    description: "Running Performance • Hypertrophy • Strength • Hybrid Conditioning • Soccer",
     philosophy: "Ít work sets, intensity cao, ưu tiên 4–10 reps ở resistance, có Rest-Pause, duy trì chạy và đá bóng thứ 7.",
     target: "HM Sub-2 Readiness + Thigh & Shoulder Hypertrophy",
     rotationWeeks: 2,
@@ -26,7 +26,7 @@ const DEFAULT_PROGRAMS = [
       {
         id: "A",
         name: "Week A — Running Performance + Strength",
-        focus: "Threshold / Speed Run (9.5km), Heavy Compound Lifts, Long Run 12km, Soccer",
+        focus: "Threshold / Speed Run, Full Body Compound Lifts, Core/Carry, Upper Focus, Long Run ≤12km, Soccer",
         targetKm: 23,
         days: [
           {
@@ -39,10 +39,10 @@ const DEFAULT_PROGRAMS = [
             badge: "Quality Run",
             targetKm: 9.5,
             options: [
-              { id: "opt_a", title: "Option A: Threshold Cruise (Ưu tiên HM)", details: "Warm-up 1.5–2 km → 3 × 2 km @ ~5:45–5:55/km (nghỉ 2' jog giữa set) → Cool-down 1–2 km.", rpe: "RPE 7.5–8.5", targetKm: 9.5 },
-              { id: "opt_b", title: "Option B: 1 km Repeats (Võ đài tốc độ)", details: "Warm-up 2 km → 4–5 × 1 km @ ~5:25–5:40/km (nghỉ 2' jog) → Cool-down 1.5 km.", rpe: "RPE rep cuối ~8.5", targetKm: 8.5 },
-              { id: "opt_c", title: "Option C: Progression 8 km", details: "2 km easy → 2 km steady → 2 km ~6:00/km → 2 km ~5:45–5:35/km nếu chân tốt.", rpe: "RPE 5 → 8", targetKm: 8.0 },
-              { id: "opt_d", title: "Option D: Khi Mệt / Phục hồi", details: "4–6 km easy nhẹ nhàng, hoàn toàn bỏ interval/quality.", rpe: "RPE 5–6", targetKm: 5.0 }
+              { id: "opt_a", title: "Option A: Threshold Cruise (Ưu tiên HM)", details: "Warm-up 1.5–2 km → 3 × 2 km @ khoảng 5:45–5:55/km (nghỉ 2' jog giữa set) → Cool-down 1–2 km.", rpe: "RPE 7.5–8.5", targetKm: 9.5 },
+              { id: "opt_b", title: "Option B: 1 km Repeats", details: "Warm-up 2 km → 4–5 × 1 km @ khoảng 5:25–5:40/km (nghỉ 2' jog) → Cool-down.", rpe: "RPE rep cuối tối đa ~8.5", targetKm: 8.5 },
+              { id: "opt_c", title: "Option C: Progression 8 km", details: "2 km easy → 2 km steady → 2 km ~6:00 → 2 km ~5:45–5:35 nếu tốt. Không biến thành race.", rpe: "RPE tăng dần 5→8", targetKm: 8.0 },
+              { id: "opt_d", title: "Option D: Khi Mệt", details: "4–6 km easy, bỏ quality. Không cố 'bù' ngày khác.", rpe: "RPE 5–6", targetKm: 5.0 }
             ],
             checklist: [
               { id: "wA_t2_wu", label: "Khởi động kỹ & Dynamic Stretches (10'): Bắp chân, đùi sau, khớp háng", note: "10 mins" },
@@ -57,7 +57,7 @@ const DEFAULT_PROGRAMS = [
             dayName: "Thứ Ba (T3)",
             title: "Full Body Strength",
             type: "strength",
-            focus: "Strength + Tension toàn thân, ít sets, chất lượng cao",
+            focus: "Strength + Tension toàn thân, ít sets",
             badge: "Full Body",
             exercises: [
               {
@@ -69,7 +69,7 @@ const DEFAULT_PROGRAMS = [
                 secondaryMuscles: ["Lower Back", "Core"],
                 targetRequirement: "1-2 × 5-8 | RIR 1-2; 2.5-4'",
                 optionNote: "Nếu chân mệt: Leg Press 2 × 6-10 @ RIR 1.",
-                formCues: "Gánh tạ ngang vai, hạ chậm đến chốt pin, dừng 1s không nhún rồi đẩy bùng nổ lên.",
+                formCues: "Gánh tạ ngang vai, hạ chậm chạm chốt pin, dừng 1s không nhún rồi đẩy bùng nổ lên.",
                 defaultSets: [
                   { setNum: 1, reps: "5-8", rir: "RIR 1-2", restSec: 180, note: "Top hard set" },
                   { setNum: 2, reps: "5-8", rir: "RIR 1-2", restSec: 180, note: "Back-off hard set" }
@@ -157,19 +157,20 @@ const DEFAULT_PROGRAMS = [
             id: "wA_t4",
             dayKey: "T4",
             dayName: "Thứ Tư (T4)",
-            title: "Easy Run + Optional Core",
-            type: "run",
-            focus: "Tích lũy aerobic, xả axit lactic đùi, phục hồi nhẹ",
-            badge: "Easy Run",
+            title: "Easy Run + Core/Carry",
+            type: "hybrid",
+            focus: "Duy trì frequency, phục hồi chủ động",
+            badge: "Easy + Core",
             targetKm: 5.5,
             options: [
-              { id: "core_opt_1", title: "Core Option: Trunk & Pelvic Stability", details: "Hanging Leg Raise 2 × 8–15 + Russian Twist 2 × 12–20/bên + Plank 2 × 45–60s." },
-              { id: "core_opt_2", title: "Khi Mệt / DOMS nhiều", details: "Chỉ chạy 4 km easy hoặc 30–45 phút đi bộ; bỏ toàn bộ core nếu đùi mỏi." }
+              { id: "wA_t4_opt_a", title: "Option A: Farmer Carry + Copenhagen + Knee Raise", details: "Farmer Carry 2 × 40–60m + Copenhagen Plank 2 × 20–40s/bên + Hanging Knee Raise 2 × 10–15.", rpe: "RPE 6", targetKm: 5.5 },
+              { id: "wA_t4_opt_b", title: "Option B: Suitcase Carry + Plank + Russian Twist", details: "Suitcase Carry 2 × 30–40m/bên + Plank 2 × 45–60s + Russian Twist 2 × 12–20/bên.", rpe: "RPE 6", targetKm: 5.5 },
+              { id: "wA_t4_opt_c", title: "Option C: Khi Mệt", details: "Chỉ 4–5 km easy hoặc 30–45 phút đi bộ; bỏ core nếu fatigue toàn thân.", rpe: "RPE 5–6", targetKm: 4.5 }
             ],
             checklist: [
-              { id: "wA_t4_run", label: "5-6 km Easy Run @ RPE 5-6 (Zone 2)", note: "Pace 6:15 - 6:45/km" },
-              { id: "wA_t4_core", label: "Core nhẹ nhàng (nếu cơ thể sảng khoái)", note: "2 sets" },
-              { id: "wA_t4_stretch", label: "Giãn cơ bắp chuối và cơ đùi", note: "10 phút" }
+              { id: "wA_t4_run", label: "5–6 km easy, RPE 5–6. Không progression", note: "Zone 2" },
+              { id: "wA_t4_core", label: "Core/Carry theo Option đã chọn", note: "Core & Carry" },
+              { id: "wA_t4_stretch", label: "Giãn cơ & bù nước điện giải", note: "10 phút" }
             ],
             exercises: []
           },
@@ -179,7 +180,7 @@ const DEFAULT_PROGRAMS = [
             dayName: "Thứ Năm (T5)",
             title: "Upper Strength / Hypertrophy",
             type: "strength",
-            focus: "Upper Body & Ưu tiên Vai và Ngực phát triển tối đa",
+            focus: "Upper + ưu tiên vai",
             badge: "Upper Focus",
             exercises: [
               {
@@ -296,14 +297,20 @@ const DEFAULT_PROGRAMS = [
             id: "wA_t6",
             dayKey: "T6",
             dayName: "Thứ Sáu (T6)",
-            title: "Active Recovery / Rest",
+            title: "Long Run ≤12 km",
             type: "run",
-            focus: "Phục hồi chủ động, giãn cơ hoặc nghỉ ngơi hoàn toàn trước thứ 7",
-            badge: "Recovery",
-            targetKm: 0,
+            focus: "Aerobic endurance (Zone 2)",
+            badge: "Long Run",
+            targetKm: 12.0,
+            options: [
+              { id: "wA_t6_opt_a", title: "Option A: Easy Long", details: "8–12 km @ RPE 6–7. Pace tham khảo hiện tại 6:20–6:50/km, ưu tiên cảm giác.", rpe: "RPE 6–7", targetKm: 10.0 },
+              { id: "wA_t6_opt_b", title: "Option B: Fast-Finish", details: "8–12 km: phần lớn easy, 2–3 km cuối steady; không nhanh hơn mức kiểm soát được.", rpe: "RPE 6.5–7.5", targetKm: 11.0 },
+              { id: "wA_t6_opt_c", title: "Option C: Khi chân nặng", details: "6–8 km easy hoặc 45–60 phút walk. Không cố đủ 12 km.", rpe: "RPE 5–6", targetKm: 7.0 }
+            ],
             checklist: [
-              { id: "wA_t6_mob", label: "Mobility & Dynamic Foam Rolling 15 phút", note: "Phục hồi" },
-              { id: "wA_t6_hyd", label: "Bổ sung đủ nước, điện giải và giấc ngủ sâu 8 tiếng", note: "Recovery" }
+              { id: "wA_t6_prep", label: "Khởi động nhẹ & chuẩn bị nước / điện giải", note: "Chuẩn bị" },
+              { id: "wA_t6_run", label: "Chạy đúng Option đã chọn (Zone 2 thư giãn)", note: "Pace 6:20–6:50" },
+              { id: "wA_t6_post", label: "Ăn/uống, đi bộ nhẹ. Không thêm lower resistance", note: "Phục hồi" }
             ],
             exercises: []
           },
@@ -311,13 +318,13 @@ const DEFAULT_PROGRAMS = [
             id: "wA_t7",
             dayKey: "T7",
             dayName: "Thứ Bảy (T7)",
-            title: "Trận Đấu Bóng Đá (Sân 7) / Cardio",
+            title: "Soccer (Trận Đấu Bóng Đá Sân 7)",
             type: "hybrid",
-            focus: "Cardio tốc độ cao, bứt tốc, xoay chuyển và giải trí thể thao",
+            focus: "Speed/COD/conditioning tự nhiên",
             badge: "Soccer Match",
             options: [
-              { id: "soc_opt_1", title: "Option A: Thi Đấu Chính Thức", details: "Trận bóng đá sân 7 (60–90 phút). Chạy bứt tốc, tranh chấp vừa phải." },
-              { id: "soc_opt_2", title: "Option B: Nếu Không Đá Bóng", details: "Chạy 4–6 km Easy + 4–6 lần bứt tốc ngắn (Strides 80–100m) hoặc đạp xe 45'." }
+              { id: "soc_opt_1", title: "Option A: Thi Đấu Chính Thức", details: "Trận bóng đá sân 7 (60–90 phút). Chạy bứt tốc, tranh chấp vừa phải.", rpe: "RPE 8" },
+              { id: "soc_opt_2", title: "Option B: Nếu Không Đá Bóng", details: "Chạy 4–6 km Easy + 4–6 lần bứt tốc ngắn (Strides 80–100m) hoặc đạp xe 45'.", rpe: "RPE 6" }
             ],
             checklist: [
               { id: "wA_t7_pre", label: "Nạp 50-60g Carbs + 500ml nước điện giải trước trận 60-90'", note: "Năng lượng" },
@@ -330,20 +337,15 @@ const DEFAULT_PROGRAMS = [
             id: "wA_cn",
             dayKey: "CN",
             dayName: "Chủ Nhật (CN)",
-            title: "Long Run 12km (HM Specific)",
-            type: "run",
-            focus: "Sức bền hiếu khí cự ly dài (Zone 2)",
-            badge: "Long Run",
-            targetKm: 12.0,
-            options: [
-              { id: "lr_opt_1", title: "Option A: Steady 12 km (Mặc định)", details: "12 km @ ~6:00–6:20/km. Hoàn toàn thư giãn. Nạp gel tại km 7.", rpe: "RPE 5.5–6.5", targetKm: 12.0 },
-              { id: "lr_opt_2", title: "Option B: Fast Finish (Nếu chân khỏe)", details: "8 km @ 6:15/km → 4 km @ ~5:45/km (HM goal pace).", rpe: "RPE 6 → 7.5", targetKm: 12.0 },
-              { id: "lr_opt_3", title: "Option C: Khi Đùi Quá Mỏi Sau Thứ 7", details: "Giảm xuống 8–10 km easy, dừng lại đi bộ nếu cần.", rpe: "RPE 5", targetKm: 9.0 }
-            ],
+            title: "Nghỉ Ngơi / Phục Hồi (OFF)",
+            type: "rest",
+            focus: "Phục hồi toàn thân, giấc ngủ sâu & dinh dưỡng",
+            badge: "Rest Day",
+            targetKm: 0,
             checklist: [
-              { id: "wA_cn_gel", label: "Chuẩn bị 1 Energy Gel + 500ml nước điện giải", note: "Nạp tại phút 40" },
-              { id: "wA_cn_run", label: "Chạy 12km Zone 2 ổn định nhịp tim", note: "Pace 6:00 - 6:20/km" },
-              { id: "wA_cn_stretch", label: "Giãn tĩnh toàn thân & Bữa ăn giàu carb/protein", note: "Dinh dưỡng" }
+              { id: "wA_cn_rest", label: "Nghỉ ngơi hoàn toàn, phục hồi cơ bắp & hệ thần kinh", note: "Giấc ngủ sâu" },
+              { id: "wA_cn_nutr", label: "Bổ sung đủ protein, carb sạch và nước điện giải", note: "Dinh dưỡng" },
+              { id: "wA_cn_walk", label: "Đi dạo nhẹ nhàng hoặc thả lỏng cơ thể (tuỳ chọn)", note: "Thư giãn" }
             ],
             exercises: []
           }
@@ -351,27 +353,29 @@ const DEFAULT_PROGRAMS = [
       },
       {
         id: "B",
-        name: "Week B — Volume Accumulation & Speed",
-        focus: "Interval 1km Repeats, Back/Pin Squat, Incline DB Bench, Long Run 14km, Soccer",
-        targetKm: 25,
+        name: "Week B — Hypertrophy + Game Conditioning + Running Volume",
+        focus: "Hybrid Game / Hyrox, Lower Hypertrophy/Strength, Upper Hypertrophy, Long/Progression Run ≤12km, Soccer",
+        targetKm: 23,
         days: [
           {
             id: "wB_t2",
             dayKey: "T2",
             dayName: "Thứ Hai (T2)",
-            title: "Interval Speed Run (1km Repeats)",
-            type: "run",
-            focus: "Võ đài tốc độ VO2Max",
-            badge: "Speed Run",
-            targetKm: 9.0,
+            title: "Hybrid Game / Hyrox-style",
+            type: "hybrid",
+            focus: "Fun conditioning + running, format xoay sẵn",
+            badge: "Hybrid Game",
+            targetKm: 5.0,
             options: [
-              { id: "wB_opt_a", title: "Option A: 4–5 × 1 km Repeats", details: "Warm-up 2 km → 4–5 × 1 km @ ~5:25–5:40/km (nghỉ 2' jog) → Cool-down 1.5 km.", rpe: "RPE 8.5", targetKm: 9.0 },
-              { id: "wB_opt_b", title: "Option B: Threshold 8 km Steady", details: "Warm-up 1.5 km → 5 km @ 5:45/km → Cool-down 1.5 km.", rpe: "RPE 7.5", targetKm: 8.0 }
+              { id: "wB_t2_opt_a", title: "Option A: 5 km Chipper", details: "1 km run → 50 Burpee → 1 km run → 50 Med Ball Slam → 1 km run → 50 Hanging Knee Raise → 1 km run → 50 TRX Row → 1 km finish.", rpe: "RPE 8. Tự chia reps.", targetKm: 5.0 },
+              { id: "wB_t2_opt_b", title: "Option B: Accumulation Challenge", details: "100 Burpee + 100 Hanging Knee Raise + 100 Slam 10 kg + 100 TRX High Row 45° for time.", rpe: "Pacing", targetKm: 0 },
+              { id: "wB_t2_opt_c", title: "Option C: Carry Hybrid", details: "5 rounds: 600–800m run + 40–60m Farmer/Suitcase Carry + 10–15 Burpee + 10–15 Slam.", rpe: "RPE 7.5", targetKm: 3.5 },
+              { id: "wB_t2_opt_d", title: "Option D: Khi mệt", details: "20–30' easy circuit không nhảy: carry + TRX row + slam nhẹ + core.", rpe: "RPE 6–7", targetKm: 0 }
             ],
             checklist: [
-              { id: "wB_t2_wu", label: "Khởi động kỹ & Dynamic Stretches (10')", note: "10 mins" },
-              { id: "wB_t2_main", label: "4 x 1km @ Pace 5:25 - 5:35/km", note: "RPE 8.5" },
-              { id: "wB_t2_cd", label: "Cool-down 1.5km & Bù nước điện giải", note: "Phục hồi" }
+              { id: "wB_t2_wu", label: "Warm-up khớp gối, cổ chân và khớp vai 10'", note: "10 mins" },
+              { id: "wB_t2_main", label: "Hoàn thành Option đã chọn theo nhịp độ kiểm soát", note: "Không chase PR" },
+              { id: "wB_t2_post", label: "Thả lỏng tim mạch, hạ nhịp tim và bù nước", note: "Phục hồi" }
             ],
             exercises: []
           },
@@ -381,7 +385,7 @@ const DEFAULT_PROGRAMS = [
             dayName: "Thứ Ba (T3)",
             title: "Lower Hypertrophy / Strength",
             type: "strength",
-            focus: "Phát triển tối đa cơ đùi, mông, bắp chuối và sức mạnh chân",
+            focus: "Mechanical tension cho đùi, phát triển cơ bắp chân",
             badge: "Lower Strength",
             exercises: [
               {
@@ -497,14 +501,18 @@ const DEFAULT_PROGRAMS = [
             id: "wB_t4",
             dayKey: "T4",
             dayName: "Thứ Tư (T4)",
-            title: "Easy Run 6km + Core Stability",
+            title: "Easy Run + optional core",
             type: "run",
-            focus: "Phục hồi đùi & Gia cố cơ lõi",
+            focus: "Tích luỹ aerobic, phục hồi chủ động",
             badge: "Easy + Core",
-            targetKm: 6.0,
+            targetKm: 5.5,
+            options: [
+              { id: "wB_t4_opt_a", title: "Core Option: Trunk & Pelvic Stability", details: "Hanging Leg Raise 2 × 8–15 + Russian Twist 2 × 12–20/side + Plank 2 × 45–60s.", rpe: "RPE 5–6", targetKm: 5.5 },
+              { id: "wB_t4_opt_b", title: "Khi Mệt / DOMS nhiều", details: "4 km easy hoặc 30–45 phút walk; core bỏ nếu lower DOMS nhiều.", rpe: "RPE 5", targetKm: 4.0 }
+            ],
             checklist: [
-              { id: "wB_t4_run", label: "Chạy 6km Zone 2 nhẹ nhàng (Pace 6:15/km)", note: "6 km" },
-              { id: "wB_t4_core", label: "Hanging Leg Raise 3 x 12 reps + Plank 3 x 60s", note: "Core" }
+              { id: "wB_t4_run", label: "5–6 km easy @ RPE 5–6 (Zone 2)", note: "5.5 km" },
+              { id: "wB_t4_core", label: "Core option (nếu chân ổn định)", note: "Core" }
             ],
             exercises: []
           },
@@ -512,9 +520,9 @@ const DEFAULT_PROGRAMS = [
             id: "wB_t5",
             dayKey: "T5",
             dayName: "Thứ Năm (T5)",
-            title: "Upper Hypertrophy",
+            title: "Upper Hypertrophy (Low Set, High Effort)",
             type: "strength",
-            focus: "Ngực, Xô, Vai, Tay sau và Tay trước chuyên sâu",
+            focus: "Vai/upper development",
             badge: "Upper Focus",
             exercises: [
               {
@@ -609,19 +617,35 @@ const DEFAULT_PROGRAMS = [
                 ]
               },
               {
-                id: "curl_pushdown",
-                name: "Curl / Pushdown",
+                id: "curl",
+                name: "Curl",
+                category: "Upper",
+                equipment: "Dumbbell",
+                primaryMuscles: ["Biceps"],
+                secondaryMuscles: ["Forearms"],
+                isRestPause: true,
+                targetRequirement: "1 RP hoặc 2 × 6-10 | RIR 0",
+                optionNote: "Optional.",
+                formCues: "Khóa cùi chỏ, cuộn tạ siết bắp tay, hạ chậm 2s.",
+                defaultSets: [
+                  { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 90, note: "Set 1" },
+                  { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 90, note: "Set cuối RIR 0" }
+                ]
+              },
+              {
+                id: "pushdown",
+                name: "Pushdown",
                 category: "Upper",
                 equipment: "Cable",
-                primaryMuscles: ["Biceps", "Triceps"],
+                primaryMuscles: ["Triceps"],
                 secondaryMuscles: [],
                 isRestPause: true,
                 targetRequirement: "1 RP hoặc 2 × 6-10 | RIR 0",
                 optionNote: "Optional.",
-                formCues: "Superset tay trước và tay sau luân phiên, tối đa hóa bơm máu cơ bắp.",
+                formCues: "Khóa cùi chỏ sát sườn, duỗi thẳng cùi chỏ siết tay sau.",
                 defaultSets: [
                   { setNum: 1, reps: "6-10", rir: "RIR 1", restSec: 90, note: "Set 1" },
-                  { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 90, note: "Set 2" }
+                  { setNum: 2, reps: "6-10", rir: "RIR 0", restSec: 90, note: "Set cuối RIR 0" }
                 ]
               }
             ]
@@ -630,14 +654,21 @@ const DEFAULT_PROGRAMS = [
             id: "wB_t6",
             dayKey: "T6",
             dayName: "Thứ Sáu (T6)",
-            title: "Active Recovery / Rest",
+            title: "Long / Progression Run ≤12 km",
             type: "run",
-            focus: "Phục hồi chủ động, giãn cơ hoặc nghỉ ngơi trước thứ 7",
-            badge: "Recovery",
-            targetKm: 0,
+            focus: "Aerobic + race-specific",
+            badge: "Long Run",
+            targetKm: 12.0,
+            options: [
+              { id: "wB_t6_opt_a", title: "Option A: Easy Long", details: "8–12 km easy, RPE 6–7.", rpe: "RPE 6–7", targetKm: 10.0 },
+              { id: "wB_t6_opt_b", title: "Option B: Progression", details: "8–10 km: 3 km easy → 3 km steady → 2–4 km nhanh hơn nhưng không race.", rpe: "RPE 6.5–8", targetKm: 9.0 },
+              { id: "wB_t6_opt_c", title: "Option C: HM-specific nhẹ", details: "10–12 km, trong đó 2 × 2 km gần HM goal pace nếu recovery tốt; 3–4' easy giữa block. Chỉ dùng khi chân tươi, không tuần nào cũng dùng.", rpe: "HM Pace", targetKm: 11.0 },
+              { id: "wB_t6_opt_d", title: "Option D: Khi mệt", details: "6–8 km easy hoặc walk; soccer hôm sau quan trọng hơn việc ép đủ quãng đường.", rpe: "RPE 5–6", targetKm: 7.0 }
+            ],
             checklist: [
-              { id: "wB_t6_mob", label: "Mobility & Dynamic Foam Rolling 15 phút", note: "Phục hồi" },
-              { id: "wB_t6_hyd", label: "Bổ sung đủ nước, điện giải và giấc ngủ sâu 8 tiếng", note: "Recovery" }
+              { id: "wB_t6_wu", label: "Khởi động nhẹ nhàng và chuẩn bị nước", note: "Chuẩn bị" },
+              { id: "wB_t6_run", label: "Chạy theo Option đã chọn (giữ cảm giác tốt)", note: "Zone 2 / HM" },
+              { id: "wB_t6_post", label: "Bù nước, điện giải, dinh dưỡng đầy đủ", note: "Phục hồi" }
             ],
             exercises: []
           },
@@ -645,10 +676,14 @@ const DEFAULT_PROGRAMS = [
             id: "wB_t7",
             dayKey: "T7",
             dayName: "Thứ Bảy (T7)",
-            title: "Trận Đấu Bóng Đá (Sân 7) / Active Recovery",
+            title: "Soccer (Trận Đấu Bóng Đá Sân 7)",
             type: "hybrid",
-            focus: "Thi đấu bóng đá sân 7 hoặc phục hồi chủ động",
+            focus: "High intensity locomotion",
             badge: "Soccer Match",
+            options: [
+              { id: "wB_t7_opt_a", title: "Option A: Thi Đấu Chính Thức", details: "Trận bóng đá sân 7 (60–90 phút). Chạy bứt tốc, tranh chấp vừa phải.", rpe: "RPE 8" },
+              { id: "wB_t7_opt_b", title: "Option B: Active Recovery", details: "Chạy 4–6 km Easy hoặc đạp xe 45' nếu không có trận.", rpe: "RPE 6" }
+            ],
             checklist: [
               { id: "wB_t7_match", label: "Thi đấu bóng đá sân 7 (60-90')", note: "Bứt tốc & niềm vui" },
               { id: "wB_t7_rec", label: "Giãn cơ & nạp điện giải", note: "Phục hồi" }
@@ -659,17 +694,14 @@ const DEFAULT_PROGRAMS = [
             id: "wB_cn",
             dayKey: "CN",
             dayName: "Chủ Nhật (CN)",
-            title: "Long Run 14km (Endurance Capstone)",
-            type: "run",
-            focus: "Chạy cự ly dài nhất chu kỳ",
-            badge: "Long Run",
-            targetKm: 14.0,
-            options: [
-              { id: "wB_lr_1", title: "Option A: 14 km Steady Run", details: "14 km @ Pace 6:05–6:15/km. Nạp gel tại km 7 & km 11.", rpe: "RPE 6.5", targetKm: 14.0 }
-            ],
+            title: "Nghỉ Ngơi / Phục Hồi (OFF)",
+            type: "rest",
+            focus: "Phục hồi toàn diện trước khi bước vào chu kỳ tiếp theo",
+            badge: "Rest Day",
+            targetKm: 0,
             checklist: [
-              { id: "wB_cn_run", label: "Chạy 14km Zone 2 nhịp tim ổn định", note: "14 km" },
-              { id: "wB_cn_rec", label: "Phục hồi & Nạp 40g Protein + 80g Carbs", note: "Dinh dưỡng" }
+              { id: "wB_cn_rest", label: "Nghỉ ngơi hoàn toàn, tái tạo năng lượng", note: "Phục hồi" },
+              { id: "wB_cn_nutr", label: "Bữa ăn giàu dinh dưỡng và giấc ngủ sâu", note: "Dinh dưỡng" }
             ],
             exercises: []
           }

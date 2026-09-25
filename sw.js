@@ -3,7 +3,7 @@
  * Robust PWA offline caching with iOS Safari Redirection fix
  */
 
-const CACHE_NAME = 'dino-tracking-v8';
+const CACHE_NAME = 'dino-tracking-v11';
 
 const STATIC_ASSETS = [
   '/',
@@ -108,31 +108,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. Same-origin Static Assets (CSS, JS, Fonts, Images) -> Cache-First with Network Fallback
+  // 4. Same-origin Static Assets (CSS, JS, Fonts, Images) -> Network-First with Cache Fallback
   if (url.origin === location.origin) {
     event.respondWith(
-      caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        return fetch(request)
-          .then((networkResponse) => {
-            const sanitized = sanitizeResponse(networkResponse);
-            if (sanitized && sanitized.status === 200) {
-              const responseToCache = sanitized.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, responseToCache);
-              });
-            }
-            return sanitized;
-          })
-          .catch((err) => {
-            console.warn(`[SW] Asset fetch failed for ${request.url}:`, err);
-            // Return empty fallback or let browser handle it
-            return new Response('', { status: 408, statusText: 'Request Timeout' });
-          });
-      })
+      fetch(request)
+        .then((networkResponse) => {
+          const sanitized = sanitizeResponse(networkResponse);
+          if (sanitized && sanitized.status === 200) {
+            const responseToCache = sanitized.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return sanitized;
+        })
+        .catch(() => {
+          return caches.match(request, { ignoreSearch: true });
+        })
     );
     return;
   }
