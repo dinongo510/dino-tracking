@@ -300,16 +300,24 @@ class DinoApp {
         if (lockedWarning) lockedWarning.style.display = "none";
       }
 
-      const isCardioDay = activeDay.type === 'run' || activeDay.type === 'hybrid' || (activeDay.targetKm && activeDay.targetKm > 0) || (!activeDay.exercises || activeDay.exercises.length === 0);
-      if (isCardioDay) {
-        this.renderCardioSessionView(activeDay);
+      const hasExercises = activeDay.exercises && activeDay.exercises.length > 0;
+      const hasCardio = activeDay.type === 'run' || activeDay.type === 'hybrid' || (activeDay.targetKm && activeDay.targetKm > 0) || !hasExercises;
+
+      if (hasExercises && hasCardio) {
+        // Hybrid day: preserve BOTH resistance exercises AND cardio logging UI
+        this.renderExerciseCards(activeDay.exercises);
+        this.renderCardioSessionView(activeDay, true); // true = append to container
+      } else if (hasCardio) {
+        // Cardio-only day
+        this.renderCardioSessionView(activeDay, false);
       } else {
+        // Resistance-only day
         this.renderExerciseCards(activeDay.exercises || []);
       }
     }
   }
 
-  renderCardioSessionView(activeDay) {
+  renderCardioSessionView(activeDay, append = false) {
     const container = document.getElementById("workoutExercisesContainer");
     if (!container) return;
 
@@ -318,10 +326,11 @@ class DinoApp {
     const savedCardio = (activeState && activeState.actualCardio) ? activeState.actualCardio : {};
 
     const plannedDist = activeDay.targetKm || (activeDay.cardio ? activeDay.cardio.targetKm : "") || "";
-    const distVal = savedCardio.distanceKm !== undefined ? savedCardio.distanceKm : (isSessionActive ? (plannedDist || "") : "");
-    const durVal = savedCardio.durationMin !== undefined ? savedCardio.durationMin : "";
-    const notesVal = savedCardio.notes !== undefined ? savedCardio.notes : "";
-    const paceVal = savedCardio.pace || "--:--";
+    // Actual distance MUST NOT inherit planned distance. Must remain empty until recorded by user.
+    const distVal = (savedCardio && savedCardio.distanceKm !== null && savedCardio.distanceKm !== undefined) ? savedCardio.distanceKm : "";
+    const durVal = (savedCardio && savedCardio.durationMin !== null && savedCardio.durationMin !== undefined) ? savedCardio.durationMin : "";
+    const notesVal = (savedCardio && savedCardio.notes) ? savedCardio.notes : "";
+    const paceVal = (savedCardio && savedCardio.pace && savedCardio.pace !== "—") ? savedCardio.pace : "--:--";
 
     // Options HTML if defined
     let optionsHtml = "";
@@ -357,7 +366,7 @@ class DinoApp {
       `;
     }
 
-    container.innerHTML = `
+    const cardHtml = `
       <div class="cardio-session-card">
         <div class="cardio-plan-header">
           <div>
@@ -386,7 +395,7 @@ class DinoApp {
           <div class="cardio-inputs-grid">
             <div class="form-group" style="margin-bottom: 0;">
               <label style="font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; display: block;">QUÃNG ĐƯỜNG (KM) *</label>
-              <input type="number" id="inputCardioDistance" class="form-input" placeholder="VD: 9.5" step="0.1" min="0" value="${distVal}">
+              <input type="number" id="inputCardioDistance" class="form-input" placeholder="VD: ${plannedDist || '5.0'}" step="0.1" min="0" value="${distVal}">
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
@@ -409,12 +418,23 @@ class DinoApp {
       </div>
     `;
 
+    let cardElement;
+    if (append) {
+      const tempWrapper = document.createElement("div");
+      tempWrapper.innerHTML = cardHtml;
+      cardElement = tempWrapper.firstElementChild;
+      container.appendChild(cardElement);
+    } else {
+      container.innerHTML = cardHtml;
+      cardElement = container.querySelector(".cardio-session-card");
+    }
+
     // Calculate pace and auto-persist
-    const distInput = container.querySelector("#inputCardioDistance");
-    const durInput = container.querySelector("#inputCardioDuration");
-    const notesInput = container.querySelector("#inputCardioNotes");
-    const paceBadge = container.querySelector("#cardioPaceDisplay");
-    const btnSync = container.querySelector("#btnSyncCardioTimer");
+    const distInput = cardElement.querySelector("#inputCardioDistance");
+    const durInput = cardElement.querySelector("#inputCardioDuration");
+    const notesInput = cardElement.querySelector("#inputCardioNotes");
+    const paceBadge = cardElement.querySelector("#cardioPaceDisplay");
+    const btnSync = cardElement.querySelector("#btnSyncCardioTimer");
 
     const updateCardioState = () => {
       const rawDist = distInput ? distInput.value.trim() : "";
@@ -442,8 +462,8 @@ class DinoApp {
       if (this.storage.isWorkoutActive()) {
         const cardioData = {
           sessionType: activeDay.badge || activeDay.title || "Cardio",
-          distanceKm: isNaN(d) || d < 0 ? 0 : d,
-          durationMin: isNaN(m) || m < 0 ? 0 : m,
+          distanceKm: (rawDist !== "" && !isNaN(d) && d >= 0) ? d : null,
+          durationMin: (rawDur !== "" && !isNaN(m) && m >= 0) ? m : null,
           pace: paceStr,
           notes: notesInput ? notesInput.value : "",
           completedTimestamp: Date.now()
@@ -505,9 +525,14 @@ class DinoApp {
       const setsHtml = (ex.defaultSets || []).map((s, sIdx) => {
         const savedSet = (loggedSets[ex.id] && loggedSets[ex.id][sIdx]) ? loggedSets[ex.id][sIdx] : null;
         const isChecked = savedSet ? !!savedSet.completed : false;
-        const actualWeight = savedSet ? (savedSet.actual?.load ?? 50) : (s.weightKg || 50);
-        const actualReps = savedSet ? (savedSet.actual?.reps ?? 8) : (parseInt(s.reps, 10) || 8);
-        const actualRir = savedSet ? (savedSet.actual?.rir ?? "1") : (s.rir ? String(s.rir).replace(/[^0-9.]/g, "") || "1" : "1");
+        const hasSavedWeight = savedSet && savedSet.actual?.load !== null && savedSet.actual?.load !== undefined;
+        const hasSavedReps = savedSet && savedSet.actual?.reps !== null && savedSet.actual?.reps !== undefined;
+        const hasSavedRir = savedSet && savedSet.actual?.rir !== null && savedSet.actual?.rir !== undefined && savedSet.actual?.rir !== "";
+
+        // Unrecorded actual values must remain empty until user records them. No fake defaults (no 50kg, no 8 reps).
+        const actualWeight = hasSavedWeight ? savedSet.actual.load : "";
+        const actualReps = hasSavedReps ? savedSet.actual.reps : "";
+        const actualRir = hasSavedRir ? savedSet.actual.rir : "";
 
         let prevSetDisplay = "";
         if (lastPerf && lastPerf.sets && lastPerf.sets[sIdx]) {
@@ -528,13 +553,13 @@ class DinoApp {
             ${prevSetDisplay ? `<div style="font-size: 9.5px; color: var(--color-gold); font-weight: 600;">Trước: ${prevSetDisplay}</div>` : ''}
           </td>
           <td>
-            <input type="number" class="set-input-num input-weight" value="${actualWeight}" step="2.5" min="0">
+            <input type="number" class="set-input-num input-weight" value="${actualWeight}" placeholder="${s.weightKg || '—'}" step="2.5" min="0">
           </td>
           <td>
-            <input type="number" class="set-input-num input-reps" value="${actualReps}" min="1" max="100">
+            <input type="number" class="set-input-num input-reps" value="${actualReps}" placeholder="${s.reps || 'reps'}" min="1" max="100">
           </td>
           <td>
-            <input type="text" class="set-input-num input-rir" placeholder="RIR" value="${actualRir}">
+            <input type="text" class="set-input-num input-rir" placeholder="${s.rir ? String(s.rir).replace(/[^0-9.]/g, '') || 'RIR' : 'RIR'}" value="${actualRir}">
           </td>
           <td>
             <button type="button" class="btn-check-set ${isChecked ? 'checked' : ''}" data-rest-sec="${s.restSec || 120}" data-is-rp="${s.isRestPause ? 'true' : 'false'}">
@@ -594,9 +619,9 @@ class DinoApp {
         const rawR = rInput?.value?.trim() ?? "";
         const rawRir = rirInput?.value?.trim() ?? "";
 
-        const w = parseFloat(rawW);
-        const r = parseInt(rawR, 10);
-        const parsedRir = parseFloat(rawRir);
+        const w = rawW === "" ? null : parseFloat(rawW);
+        const r = rawR === "" ? null : parseInt(rawR, 10);
+        const parsedRir = rawRir === "" ? null : parseFloat(rawRir);
 
         const isWeightInvalid = rawW !== "" && (isNaN(w) || w < 0);
         const isRepsInvalid = rawR !== "" && (isNaN(r) || r < 1);
@@ -606,11 +631,13 @@ class DinoApp {
         rInput?.classList.toggle("input-invalid", !!isRepsInvalid);
         rirInput?.classList.toggle("input-invalid", !!isRirInvalid);
 
+        const hasValidRecordedData = !isWeightInvalid && !isRepsInvalid && !isRirInvalid && w !== null && !isNaN(w) && w >= 0 && r !== null && !isNaN(r) && r >= 1;
+
         return {
-          isValid: !isWeightInvalid && !isRepsInvalid && !isRirInvalid && !isNaN(w) && w >= 0 && !isNaN(r) && r >= 1,
-          w: isNaN(w) ? 0 : w,
-          r: isNaN(r) ? 0 : r,
-          rir: rawRir
+          isValid: hasValidRecordedData,
+          w: (w !== null && !isNaN(w) && w >= 0) ? w : null,
+          r: (r !== null && !isNaN(r) && r >= 1) ? r : null,
+          rir: rawRir !== "" ? rawRir : null
         };
       };
 
@@ -683,17 +710,19 @@ class DinoApp {
 
           const isCurrentlyChecked = btn.classList.contains("checked");
 
-          // If checking set (not unchecking), enforce input validation
+          // If checking set (not unchecking), enforce input validation and require actual values
           if (!isCurrentlyChecked) {
             const valRes = validateRow(row);
-            const wVal = parseFloat(row.querySelector(".input-weight")?.value);
-            const rVal = parseInt(row.querySelector(".input-reps")?.value, 10);
-            const rirVal = parseFloat(row.querySelector(".input-rir")?.value);
 
-            if (isNaN(wVal) || wVal < 0 || isNaN(rVal) || rVal < 1 || (!isNaN(rirVal) && rirVal < 0)) {
-              if (isNaN(wVal) || wVal < 0) row.querySelector(".input-weight")?.classList.add("input-invalid");
-              if (isNaN(rVal) || rVal < 1) row.querySelector(".input-reps")?.classList.add("input-invalid");
-              if (!isNaN(rirVal) && rirVal < 0) row.querySelector(".input-rir")?.classList.add("input-invalid");
+            if (!valRes.isValid) {
+              const rawW = row.querySelector(".input-weight")?.value?.trim() ?? "";
+              const rawR = row.querySelector(".input-reps")?.value?.trim() ?? "";
+              if (rawW === "" || valRes.w === null || isNaN(valRes.w) || valRes.w < 0) {
+                row.querySelector(".input-weight")?.classList.add("input-invalid");
+              }
+              if (rawR === "" || valRes.r === null || isNaN(valRes.r) || valRes.r < 1) {
+                row.querySelector(".input-reps")?.classList.add("input-invalid");
+              }
               this.showToast("⚠️ Vui lòng nhập mức tạ hợp lệ (≥ 0 kg) và số reps (≥ 1).");
               return;
             }
@@ -734,7 +763,7 @@ class DinoApp {
                 setNumber: nextSetNum,
                 modality: "strength",
                 planned: { reps: "8-10", load: null, rir: "RIR 1" },
-                actual: { reps: 8, load: 50, rir: "1" },
+                actual: { reps: null, load: null, rir: null },
                 completed: false,
                 timestamp: null,
                 notes: ""
@@ -997,20 +1026,21 @@ class DinoApp {
       }
     });
 
-    // Capture cardio data if present
-    const activeCardioDist = parseFloat(document.getElementById("inputCardioDistance")?.value);
-    const activeCardioDur = parseFloat(document.getElementById("inputCardioDuration")?.value);
+    // Capture cardio data ONLY if actual performance was recorded by user
+    const rawCardioDist = document.getElementById("inputCardioDistance")?.value?.trim();
+    const rawCardioDur = document.getElementById("inputCardioDuration")?.value?.trim();
+    const activeCardioDist = (rawCardioDist !== "" && !isNaN(parseFloat(rawCardioDist))) ? parseFloat(rawCardioDist) : null;
+    const activeCardioDur = (rawCardioDur !== "" && !isNaN(parseFloat(rawCardioDur))) ? parseFloat(rawCardioDur) : null;
     const activeCardioNotes = document.getElementById("inputCardioNotes")?.value || "";
 
-    const hasCardioData = (!isNaN(activeCardioDist) && activeCardioDist > 0) ||
-                          (!isNaN(activeCardioDur) && activeCardioDur > 0) ||
-                          (activeState && activeState.actualCardio && (activeState.actualCardio.distanceKm > 0 || activeState.actualCardio.durationMin > 0)) ||
-                          (activeState && activeState.plannedCardio);
+    const savedCardio = activeState?.actualCardio;
+    const hasRecordedCardio = (activeCardioDist !== null && activeCardioDist > 0) ||
+                             (savedCardio && savedCardio.distanceKm !== null && savedCardio.distanceKm > 0);
 
     let actualCardio = null;
-    if (hasCardioData) {
-      const dist = !isNaN(activeCardioDist) ? activeCardioDist : (activeState?.actualCardio?.distanceKm || 0);
-      const durMin = !isNaN(activeCardioDur) ? activeCardioDur : (activeState?.actualCardio?.durationMin || Math.round(duration / 60));
+    if (hasRecordedCardio) {
+      const dist = (activeCardioDist !== null && activeCardioDist > 0) ? activeCardioDist : savedCardio.distanceKm;
+      const durMin = (activeCardioDur !== null && activeCardioDur > 0) ? activeCardioDur : (savedCardio?.durationMin || Math.round(duration / 60));
       let paceStr = "--:--";
       if (dist > 0 && durMin > 0) {
         const paceDec = durMin / dist;
@@ -1021,11 +1051,11 @@ class DinoApp {
         paceStr = `${adjMins}:${String(adjSecs).padStart(2, '0')} /km`;
       }
       actualCardio = {
-        sessionType: activeState?.actualCardio?.sessionType || activeState?.dayTitle || "Cardio / Running",
+        sessionType: savedCardio?.sessionType || activeState?.dayTitle || "Cardio / Running",
         distanceKm: dist,
         durationMin: durMin,
         pace: paceStr,
-        notes: activeCardioNotes || activeState?.actualCardio?.notes || "",
+        notes: activeCardioNotes || savedCardio?.notes || "",
         completedTimestamp: Date.now()
       };
     }
@@ -1035,7 +1065,7 @@ class DinoApp {
 
     const volEl = document.getElementById("summaryTotalVolume");
     if (volEl) {
-      if (actualCardio && actualCardio.distanceKm > 0) {
+      if (actualCardio && actualCardio.distanceKm > 0 && exercisesCompleted.length === 0) {
         volEl.textContent = `${actualCardio.distanceKm} km`;
       } else {
         volEl.textContent = `${totalVolume.toLocaleString()} kg`;
@@ -1044,7 +1074,7 @@ class DinoApp {
 
     const setsEl = document.getElementById("summaryTotalSets");
     if (setsEl) {
-      if (actualCardio && actualCardio.pace && actualCardio.pace !== "--:--") {
+      if (actualCardio && actualCardio.pace && actualCardio.pace !== "--:--" && exercisesCompleted.length === 0) {
         setsEl.textContent = `Pace ${actualCardio.pace}`;
       } else {
         setsEl.textContent = `${totalSets} sets`;
@@ -1065,19 +1095,21 @@ class DinoApp {
     if (listEl) {
       let listHtml = "";
       if (exercisesCompleted.length > 0) {
-        listHtml = exercisesCompleted.map(e => `
+        listHtml += exercisesCompleted.map(e => `
           <div style="display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
             <span style="font-weight: 700; color: #fff;">${e.name}</span>
             <span style="color: var(--color-gold);">${e.sets} sets • ${e.volume.toLocaleString()} kg</span>
           </div>
         `).join("");
-      } else if (actualCardio) {
-        listHtml = `
-          <div style="padding: 6px 0; font-size: 13px; color: #fff;">
-            🏃 <strong>${actualCardio.sessionType || 'Cardio'}</strong>: ${actualCardio.distanceKm || 0} km • ${actualCardio.durationMin || mins} phút • Pace: ${actualCardio.pace || '--:--'}
+      }
+      if (actualCardio && actualCardio.distanceKm > 0) {
+        listHtml += `
+          <div style="padding: 6px 0; font-size: 13px; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            🏃 <strong>${actualCardio.sessionType || 'Cardio'}</strong>: ${actualCardio.distanceKm} km • ${actualCardio.durationMin || mins} phút • Pace: ${actualCardio.pace || '--:--'}
           </div>
         `;
-      } else {
+      }
+      if (!listHtml) {
         listHtml = `<div style="color: var(--text-dim); font-size: 12px;">Chưa check hoàn thành set nào.</div>`;
       }
       listEl.innerHTML = listHtml;
@@ -1089,6 +1121,9 @@ class DinoApp {
       const displayNote = (notesInput ? notesInput.value : "") || (actualCardio ? actualCardio.notes : "") || "Không có ghi chú.";
       notesEl.textContent = displayNote;
     }
+
+    const hasExercisesCompleted = exercisesCompleted.length > 0;
+    const sessionType = (hasExercisesCompleted && actualCardio) ? "hybrid" : (actualCardio ? "cardio" : "strength");
 
     this.pendingWorkoutSummary = {
       progId: activeState ? activeState.progId : this.storage.getActiveProgramId(),
@@ -1102,7 +1137,7 @@ class DinoApp {
       exercises: exercisesCompleted,
       notes: notesInput ? notesInput.value : "",
       actualCardio: actualCardio,
-      sessionType: actualCardio ? (exercisesCompleted.length > 0 ? "hybrid" : "cardio") : "strength",
+      sessionType: sessionType,
       totalDistanceKm: actualCardio ? (actualCardio.distanceKm || 0) : 0
     };
 

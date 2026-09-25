@@ -26,7 +26,11 @@
 
 - **Objective:** Core Tracking Integrity: replace fake analytics with real historical metrics (PRs, Overload chart, Running Mileage chart); minimal actual cardio-session tracking (type, distance, duration, pace); input validation on resistance training sets (weight >= 0, reps >= 1, non-negative RIR); strict preservation of `PRESCRIPTION ≠ ACTUAL`.
 - **Dino AUT:** `PENDING`
-- **State:** `AUTO_VERIFIED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED`)
+- **State:** `AUTO_VERIFIED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `AI_AUDIT_CORRECTED` → `AUTO_VERIFIED`)
+- **AI Audit Corrections Applied:**
+  1. `actualCardio.distanceKm` no longer inherits `plannedCardio.targetKm` (starts null/empty until recorded by user).
+  2. Hybrid sessions preserve BOTH resistance exercise cards and cardio actual logging UI without hiding either.
+  3. Actual resistance sets no longer use fake fallbacks (removed `50 kg` / fake reps / fake RIR defaults; values remain null/empty until user records them).
 - **Authorized Files Changed:**
   - [`js/storage.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/storage.js) (cardio support, session PRs calculation, personal records engine, derivedSummary mileage & pace)
   - [`js/charts.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/charts.js) (hardened date parsing for mileage chart)

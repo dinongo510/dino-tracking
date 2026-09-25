@@ -378,8 +378,9 @@ class DinoStorage {
     const startTime = Date.now();
 
     // Determine session type & cardio planning
-    const sessionType = dayData?.type || (exercises && exercises.length > 0 ? "strength" : "run");
-    const isCardio = sessionType === "run" || sessionType === "cardio" || (sessionType === "hybrid" && (!exercises || exercises.length === 0)) || (!exercises || exercises.length === 0);
+    const hasExercises = exercises && exercises.length > 0;
+    const hasCardio = dayData?.type === "run" || dayData?.type === "hybrid" || dayData?.type === "cardio" || (dayData?.targetKm && dayData.targetKm > 0) || !hasExercises;
+    const sessionType = (hasExercises && hasCardio) ? "hybrid" : (hasCardio ? "cardio" : "strength");
 
     // 1. Immutable Prescription Snapshot captured at workout start
     const prescriptionSnapshot = (exercises || []).map(ex => ({
@@ -404,32 +405,32 @@ class DinoStorage {
       }))
     }));
 
-    // Planned cardio snapshot if applicable
-    const plannedCardio = isCardio ? {
-      sessionType: sessionType,
-      targetKm: dayData ? (dayData.targetKm || 0) : 0,
+    // Planned cardio snapshot if applicable (Prescription ≠ Actual)
+    const plannedCardio = hasCardio ? {
+      sessionType: dayData?.badge || dayData?.title || (sessionType === "hybrid" ? "Hybrid Cardio" : "Cardio"),
+      targetKm: dayData ? (dayData.targetKm || null) : null,
       focus: dayData ? (dayData.focus || "") : "",
       options: dayData && dayData.options ? [...dayData.options] : [],
       checklist: dayData && dayData.checklist ? [...dayData.checklist] : []
     } : null;
 
-    // Actual cardio initial record
-    const actualCardio = isCardio ? {
-      distanceKm: plannedCardio.targetKm || 0,
+    // Actual cardio initial record - MUST NOT inherit planned targetKm (Prescription ≠ Actual)
+    const actualCardio = hasCardio ? {
+      distanceKm: null,
+      durationMin: null,
       durationSec: 0,
       avgPace: "—",
-      sessionType: sessionType,
-      completed: false
+      pace: "—",
+      sessionType: dayData?.badge || dayData?.title || (sessionType === "hybrid" ? "Hybrid Cardio" : "Cardio"),
+      completed: false,
+      notes: ""
     } : null;
 
     // 2. Pre-populate Actual Sets structure (Prescription ≠ Actual)
+    // Actual values MUST remain empty/null until user records them. No fake 50kg/reps/rir defaults.
     const loggedSets = {};
     (exercises || []).forEach(ex => {
       loggedSets[ex.id] = (ex.defaultSets || []).map((s, idx) => {
-        const plannedReps = s.reps || "8-10";
-        const parsedReps = parseInt(plannedReps, 10) || 8;
-        const parsedRir = s.rir ? String(s.rir).replace(/[^0-9.]/g, "") || "1" : "1";
-
         return {
           setId: `set_${ex.id}_${idx + 1}_${startTime}`,
           exerciseId: ex.id,
@@ -437,7 +438,7 @@ class DinoStorage {
           setNumber: s.setNum || (idx + 1),
           modality: "strength",
           planned: {
-            reps: plannedReps,
+            reps: s.reps || "8-10",
             load: s.weightKg || null,
             rir: s.rir || "RIR 1-2",
             rpe: s.rpe || null,
@@ -446,9 +447,9 @@ class DinoStorage {
             distance: null
           },
           actual: {
-            reps: parsedReps,
-            load: s.weightKg || 50,
-            rir: parsedRir,
+            reps: null,
+            load: null,
+            rir: null,
             rpe: null,
             duration: null,
             distance: null
@@ -511,12 +512,16 @@ class DinoStorage {
     const actualCardio = summaryData.actualCardio || (activeState ? activeState.actualCardio : null) || null;
     const sessionType = summaryData.sessionType || (activeState ? activeState.sessionType : (actualCardio ? actualCardio.sessionType : "strength")) || "strength";
 
+    const actualCardioDist = (actualCardio && actualCardio.distanceKm !== null && actualCardio.distanceKm !== undefined && !isNaN(parseFloat(actualCardio.distanceKm)))
+      ? parseFloat(actualCardio.distanceKm)
+      : null;
+
     // 2. Derived Summary calculation (authoritative performance -> derived summary)
     const derivedSummary = {
       totalVolumeKg: summaryData.totalVolumeKg || 0,
       totalSets: summaryData.totalSets || 0,
-      totalDistanceKm: summaryData.totalDistanceKm || (actualCardio ? (parseFloat(actualCardio.distanceKm) || 0) : 0) || 0,
-      avgPace: summaryData.avgPace || (actualCardio ? actualCardio.avgPace : "—") || "—",
+      totalDistanceKm: summaryData.totalDistanceKm !== undefined ? summaryData.totalDistanceKm : (actualCardioDist !== null ? actualCardioDist : 0),
+      avgPace: summaryData.avgPace || (actualCardio ? (actualCardio.pace || actualCardio.avgPace || "—") : "—"),
       prsCount: summaryData.prsCount || 0,
       durationSec: summaryData.durationSec || (actualCardio ? actualCardio.durationSec : 0) || (activeState ? Math.max(0, Math.floor((Date.now() - activeState.startTime) / 1000)) : 0)
     };
@@ -556,17 +561,17 @@ class DinoStorage {
       totalDistanceKm: derivedSummary.totalDistanceKm,
       avgPace: derivedSummary.avgPace,
       prsCount: derivedSummary.prsCount,
-      exercises: summaryData.exercises || (actualCardio ? [{
+      exercises: summaryData.exercises || (actualPerformance && actualPerformance.length > 0 ? actualPerformance.map(ap => ({
+        name: ap.exerciseName,
+        sets: ap.sets ? ap.sets.filter(s => s.completed).length : 0,
+        volume: ap.sets ? ap.sets.filter(s => s.completed).reduce((sum, s) => sum + ((s.actual?.load || 0) * (s.actual?.reps || 0)), 0) : 0
+      })) : (actualCardio && actualCardioDist !== null && actualCardioDist > 0 ? [{
         name: summaryData.dayTitle || "Cardio Session",
         sets: 1,
         volume: 0,
         distanceKm: derivedSummary.totalDistanceKm,
         pace: derivedSummary.avgPace
-      }] : actualPerformance.map(ap => ({
-        name: ap.exerciseName,
-        sets: ap.sets ? ap.sets.filter(s => s.completed).length : 0,
-        volume: ap.sets ? ap.sets.filter(s => s.completed).reduce((sum, s) => sum + ((s.actual?.load || 0) * (s.actual?.reps || 0)), 0) : 0
-      }))),
+      }] : [])),
       notes: summaryData.notes || (activeState ? activeState.notes : "")
     };
 
