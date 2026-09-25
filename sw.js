@@ -3,20 +3,21 @@
  * Robust PWA offline caching with iOS Safari Redirection fix
  */
 
-const CACHE_NAME = 'dino-tracking-v11';
+const APP_VERSION = '2.3';
+const CACHE_NAME = 'dino-tracking-v12';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/css/style.css',
-  '/js/data.js',
-  '/js/audio.js',
-  '/js/timer.js',
-  '/js/storage.js',
-  '/js/supabase_sync.js',
-  '/js/charts.js',
-  '/js/ai_coach.js',
-  '/js/app.js',
+  `/css/style.css?v=${APP_VERSION}`,
+  `/js/data.js?v=${APP_VERSION}`,
+  `/js/audio.js?v=${APP_VERSION}`,
+  `/js/timer.js?v=${APP_VERSION}`,
+  `/js/storage.js?v=${APP_VERSION}`,
+  `/js/supabase_sync.js?v=${APP_VERSION}`,
+  `/js/charts.js?v=${APP_VERSION}`,
+  `/js/ai_coach.js?v=${APP_VERSION}`,
+  `/js/app.js?v=${APP_VERSION}`,
   '/manifest.json'
 ];
 
@@ -38,6 +39,7 @@ function sanitizeResponse(response) {
 
 // Installation: Cache static core assets
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       // Use map with individual catches so a single failure doesn't block installation
@@ -50,7 +52,6 @@ self.addEventListener('install', (event) => {
       );
     })
   );
-  self.skipWaiting();
 });
 
 // Activation: Clear previous cache versions
@@ -59,7 +60,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
+          if (key.startsWith('dino-tracking-') && key !== CACHE_NAME) {
             console.log(`[SW] Deleting legacy cache: ${key}`);
             return caches.delete(key);
           }
@@ -108,7 +109,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. Same-origin Static Assets (CSS, JS, Fonts, Images) -> Network-First with Cache Fallback
+  // 4. Same-origin Static Assets (CSS, JS, Fonts, Images) -> Network-First with Cache Fallback (Preserve Query String)
   if (url.origin === location.origin) {
     event.respondWith(
       fetch(request)
@@ -123,7 +124,8 @@ self.addEventListener('fetch', (event) => {
           return sanitized;
         })
         .catch(() => {
-          return caches.match(request, { ignoreSearch: true });
+          // Strictly match URL including query parameters without ignoreSearch
+          return caches.match(request);
         })
     );
     return;
@@ -143,7 +145,7 @@ self.addEventListener('fetch', (event) => {
         return sanitized;
       })
       .catch(() => {
-        return caches.match(request, { ignoreSearch: true });
+        return caches.match(request);
       })
   );
 });

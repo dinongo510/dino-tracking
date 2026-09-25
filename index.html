@@ -12,7 +12,7 @@
   <title>Dino Tracking • Hybrid Athlete & Sports Science</title>
   
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="css/style.css?v=2.2">
+  <link rel="stylesheet" href="css/style.css?v=2.3">
   
   <!-- Favicon / App Icon SVG -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%230a0a0a'/><path d='M25 75 L50 25 L75 75 L58 75 L50 50 L42 75 Z' fill='%23ff2a2a'/></svg>">
@@ -1261,26 +1261,57 @@
   </div>
 
   <!-- Scripts in dependency order with version cache-busting -->
-  <script src="js/data.js?v=2.2"></script>
-  <script src="js/audio.js?v=2.2"></script>
-  <script src="js/timer.js?v=2.2"></script>
-  <script src="js/storage.js?v=2.2"></script>
-  <script src="js/charts.js?v=2.2"></script>
-  <script src="js/ai_coach.js?v=2.2"></script>
-  <script src="js/app.js?v=2.2"></script>
+  <script src="js/data.js?v=2.3"></script>
+  <script src="js/audio.js?v=2.3"></script>
+  <script src="js/timer.js?v=2.3"></script>
+  <script src="js/storage.js?v=2.3"></script>
+  <script src="js/charts.js?v=2.3"></script>
+  <script src="js/ai_coach.js?v=2.3"></script>
+  <script src="js/app.js?v=2.3"></script>
 
-  <!-- PWA Service Worker Registration -->
+  <!-- DINO Runtime Diagnostic Version (Non-invasive audit helper) -->
+  <script>
+    window.DINO_RUNTIME_VERSION = {
+      version: '2.3',
+      cacheName: 'dino-tracking-v12',
+      changeSet: 'DINO-004',
+      build: 'production-cache-fix',
+      timestamp: '2026-09-25T15:00:00Z'
+    };
+    document.documentElement.dataset.dinoVersion = window.DINO_RUNTIME_VERSION.version;
+    console.log(`[Dino Tracking] Active Runtime Version: ${window.DINO_RUNTIME_VERSION.version} (${window.DINO_RUNTIME_VERSION.changeSet})`);
+  </script>
+
+  <!-- PWA Service Worker Registration & Deterministic Update Lifecycle -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js', { scope: '/' })
-          .then((reg) => {
-            console.log('Dino SW registered');
-            // Actively check for SW updates upon page load
-            reg.update().catch(() => {});
-          })
-          .catch((err) => console.log('SW error:', err));
+      let refreshing = false;
+      // Handle controller change: when a new SW takes control, reload once to ensure fresh scripts
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          // Guard against infinite reload loop: require at least 5s since last reload
+          const lastReload = sessionStorage.getItem('dino_last_sw_reload');
+          const now = Date.now();
+          if (!lastReload || now - parseInt(lastReload, 10) > 5000) {
+            sessionStorage.setItem('dino_last_sw_reload', String(now));
+            window.location.reload();
+          }
+        }
       });
+
+      // Register immediately so update check can begin without waiting for heavy assets
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then((reg) => {
+          // Check for update immediately upon load and on page visibility
+          reg.update().catch(() => {});
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+              reg.update().catch(() => {});
+            }
+          });
+        })
+        .catch((err) => console.warn('[Dino SW] Registration error:', err));
     }
   </script>
 

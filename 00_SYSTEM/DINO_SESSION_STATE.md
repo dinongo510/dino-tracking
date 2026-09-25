@@ -24,19 +24,19 @@
 
 ### `DINO-004`
 
-- **Objective:** Restore 2-week Hybrid Athlete schedule exactly according to BFS source DOCX, implement interactive mutually-exclusive prescribed-option selection and persistence, and fix production caching/version update architecture (Network-First static assets, CACHE_NAME v11, max-age=0 must-revalidate, version query strings).
+- **Objective:** Restore 2-week Hybrid Athlete schedule exactly according to BFS source DOCX, implement interactive mutually-exclusive prescribed-option selection and persistence, and fix production caching/version update architecture (Network-First static assets, CACHE_NAME v12, deterministic update lifecycle, no-cache headers for sw.js/HTML, remove ignoreSearch on assets, version query strings v=2.3).
 - **Dino AUT:** `PENDING`
-- **State:** `AUTO_VERIFIED` (`AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED`)
+- **State:** `AUTO_VERIFIED` (`AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `CACHE_RE_AUDITED` → `CACHE_CORRECTED` → `AUTO_VERIFIED`)
 - **Authorized Files Changed:**
   - [`js/data.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/data.js) (corrected Week A and Week B schedule, Friday Long Run ≤12km, Sunday OFF, Week B T2 Hybrid Game Chipper/Accumulation, core options)
   - [`js/storage.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/storage.js) (selectedOption storage in active session and completed history, updateActiveSelectedOption, cardio durationSec fix)
   - [`js/app.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/js/app.js) (interactive prescribed options selection UI and event handling, summary modal option display, history option display, cardio duration display fix, RIR placeholder fix)
-  - [`sw.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/sw.js) (bump CACHE_NAME to dino-tracking-v11, Network-First with Cache Fallback for static same-origin assets)
-  - [`index.html`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/index.html) (version query strings ?v=2.2, active reg.update() on load)
-  - [`vercel.json`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/vercel.json) (Cache-Control max-age=0, must-revalidate for JS/CSS)
+  - [`sw.js`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/sw.js) (bump CACHE_NAME to dino-tracking-v12, aligned versioned STATIC_ASSETS v=2.3, removed ignoreSearch: true from asset caching, strict retirement of dino-tracking-* legacy caches, skipWaiting on install, clients.claim on activate)
+  - [`index.html`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/index.html) (version query strings ?v=2.3, window.DINO_RUNTIME_VERSION diagnostic object, deterministic SW controllerchange auto-reload lifecycle with loop protection)
+  - [`vercel.json`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/vercel.json) (explicit Cache-Control no-cache, no-store, must-revalidate for /sw.js, /manifest.json, /, and /index.html; public max-age=0, must-revalidate for css/js)
   - [`00_SYSTEM/DINO_SESSION_STATE.md`](file:///c:/Users/ADMIN/Desktop/DinoHybridTracking/00_SYSTEM/DINO_SESSION_STATE.md) (session state tracking)
 - **Data-Model Impact:** `selectedOption` recorded in active state and historical completed session snapshot; preserves `PRESCRIPTION ≠ ACTUAL`.
-- **UX Impact:** Prescribed options can be clicked and selected with visual radio-indicator feedback; history displays selected option; cardio duration displays real entered minutes.
+- **UX Impact:** Prescribed options can be clicked and selected with visual radio-indicator feedback; history displays selected option; cardio duration displays real entered minutes; automatic seamless reload when a new Service Worker activates without infinite reload loops.
 
 - **Objective:** Core Tracking Integrity: replace fake analytics with real historical metrics (PRs, Overload chart, Running Mileage chart); minimal actual cardio-session tracking (type, distance, duration, pace); input validation on resistance training sets (weight >= 0, reps >= 1, non-negative RIR); strict preservation of `PRESCRIPTION ≠ ACTUAL`.
 - **Dino AUT:** `PENDING`
