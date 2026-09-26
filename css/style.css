@@ -1095,6 +1095,78 @@ html, body {
   cursor: pointer;
 }
 
+.builder-ex-actions-cluster {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-builder-ex-action {
+  width: 26px;
+  height: 26px;
+  background: var(--bg-card-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-white);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-builder-ex-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.builder-ex-pattern {
+  font-size: 10px;
+  color: var(--color-gold);
+  font-weight: 700;
+  margin-left: 4px;
+  display: inline-block;
+}
+
+.picker-ex-detail-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-white);
+  padding: 5px 9px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.picker-ex-detail-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.btn-mini-tag.highlight {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: var(--color-gold);
+}
+
+.btn-mini-tag.highlight:hover {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+.empty-perf-notice {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  padding: 14px 12px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-subtle);
+  line-height: 1.5;
+}
+
 /* ==========================================================================
    TAB 3: PREHAB & RECOVERY (NASM CEX CONTINUUM)
    ========================================================================== */

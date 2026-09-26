@@ -36,9 +36,8 @@ class DinoStorage {
     } else {
       try {
         const stored = JSON.parse(storedProgsRaw);
-        const builtInIdx = stored.findIndex(p => p.id === "dino_hybrid_1");
-        if (builtInIdx !== -1 && defaultProgs.length > 0) {
-          stored[builtInIdx] = defaultProgs[0];
+        if (stored.length === 0 && defaultProgs.length > 0) {
+          stored.push(defaultProgs[0]);
         }
         stored.forEach(p => { if (!p.version) p.version = "1.0"; });
         localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(stored));
@@ -89,18 +88,191 @@ class DinoStorage {
   }
 
   // =========================================================================
-  // 1. DYNAMIC PROGRAM BUILDER (TREE PERSISTENCE)
+  // 1. DINO-005A: EXERCISE NORMALIZATION & ENTITY LOGIC
+  // =========================================================================
+  inferMovementPattern(ex) {
+    if (ex && ex.movementPattern) return ex.movementPattern;
+    const text = ((ex?.name || "") + " " + (ex?.category || "") + " " + (ex?.equipment || "") + " " + (ex?.primaryMuscles || []).join(" ")).toLowerCase();
+    if (text.includes("squat") || text.includes("leg press") || text.includes("hack") || text.includes("sissy")) return "SQUAT";
+    if (text.includes("rdl") || text.includes("deadlift") || text.includes("leg curl") || text.includes("hip thrust") || text.includes("swing")) return "HINGE";
+    if (text.includes("lunge") || text.includes("split")) return "LUNGE";
+    if (text.includes("bench") || text.includes("push") || text.includes("press") || text.includes("dips") || text.includes("raise") || text.includes("fly") || text.includes("pushdown") || text.includes("triceps")) return "PUSH";
+    if (text.includes("pull") || text.includes("row") || text.includes("chin") || text.includes("curl") || text.includes("lat") || text.includes("skierg") || text.includes("erg")) return "PULL";
+    if (text.includes("carry") || text.includes("farmer")) return "CARRY";
+    if (text.includes("woodchop") || text.includes("rotation") || text.includes("twist")) return "ROTATION";
+    if (text.includes("run") || text.includes("sprint") || text.includes("bike") || text.includes("walk") || text.includes("jump") || text.includes("burpee")) return "LOCOMOTION";
+    if (text.includes("plank") || text.includes("situp") || text.includes("core") || text.includes("leg raise") || text.includes("adduction")) return "CORE";
+    if (ex && ex.category === "Cardio") return "CARDIO";
+    return "STRENGTH";
+  }
+
+  inferTrainingType(ex) {
+    if (ex && ex.trainingType) return ex.trainingType;
+    if (ex && ex.category === "Cardio") return "CARDIO";
+    if (ex && ex.category === "Hybrid") return "HYBRID";
+    return "HYPERTROPHY";
+  }
+
+  normalizeExercise(ex) {
+    if (!ex) return null;
+    const stableId = ex.exerciseId || ex.id || ("ex_" + String(ex.name || Date.now()).toLowerCase().replace(/[^a-z0-9]+/g, "_"));
+    return {
+      exerciseId: stableId,
+      id: ex.id || stableId, // 100% backward compat
+      name: (ex.name || "").trim(),
+      status: ex.status || (ex.isCustom ? "CUSTOM" : "ACTIVE"), // ACTIVE | ARCHIVED | CUSTOM
+      category: ex.category || "Strength",
+      movementPattern: ex.movementPattern || this.inferMovementPattern(ex),
+      trainingType: ex.trainingType || this.inferTrainingType(ex),
+      equipment: ex.equipment || "Barbell",
+      primaryMuscles: Array.isArray(ex.primaryMuscles) ? [...ex.primaryMuscles] : [],
+      secondaryMuscles: Array.isArray(ex.secondaryMuscles) ? [...ex.secondaryMuscles] : [],
+      instructions: ex.instructions || null,
+      coachingCues: ex.coachingCues || ex.formCues || "",
+      formCues: ex.formCues || ex.coachingCues || "",
+      commonErrors: ex.commonErrors || null,
+      cautions: ex.cautions || null,
+      targetRequirement: ex.targetRequirement || "",
+      defaultSets: Array.isArray(ex.defaultSets) ? ex.defaultSets.map((s, idx) => ({
+        setNum: s.setNum || idx + 1,
+        reps: s.reps || "8-10",
+        rir: s.rir || "RIR 1-2",
+        restSec: s.restSec || 120,
+        weightKg: s.weightKg || null,
+        note: s.note || "",
+        isRestPause: !!s.isRestPause
+      })) : [{ setNum: 1, reps: "8-10", rir: "RIR 1", restSec: 120 }, { setNum: 2, reps: "8-10", rir: "RIR 1", restSec: 120 }],
+      version: ex.version || "1.0",
+      createdAt: ex.createdAt || "2026-01-01T00:00:00.000Z",
+      updatedAt: ex.updatedAt || new Date().toISOString(),
+      isCustom: !!(ex.isCustom || ex.status === "CUSTOM"),
+      // Reserved hooks for DINO-005B
+      correctiveRole: ex.correctiveRole || null,
+      targetDeviation: ex.targetDeviation || null,
+      CEXStage: ex.CEXStage || null
+    };
+  }
+
+  // =========================================================================
+  // 2. DINO-005A: PROGRAM NORMALIZATION & HIERARCHY
+  // =========================================================================
+  normalizeProgram(prog) {
+    if (!prog) return null;
+    const stableId = prog.programId || prog.id || ("prog_" + Date.now());
+    const version = prog.version || "1.0";
+    const currentVersionId = prog.currentVersionId || ("v" + version);
+    const versions = (Array.isArray(prog.versions) && prog.versions.length > 0)
+      ? prog.versions
+      : [{ versionId: currentVersionId, versionNumber: version, createdAt: "2026-09-25T00:00:00.000Z", notes: "Standardized Program Version" }];
+
+    const weeks = (prog.weeks || []).map((week, wIdx) => {
+      const weekId = week.weekId || week.id || ("w_" + (wIdx + 1));
+      const days = (week.days || []).map((day, dIdx) => {
+        const dayId = day.dayId || day.id || ("d_" + (dIdx + 1));
+        const exercises = (day.exercises || []).map((ex, exIdx) => {
+          const rxId = ex.prescriptionId || ("rx_" + dayId + "_" + (ex.id || ex.exerciseId || exIdx) + "_" + (exIdx + 1));
+          const exId = ex.exerciseId || ex.id || ("ex_" + exIdx);
+          return {
+            prescriptionId: rxId,
+            exerciseId: exId,
+            id: ex.id || exId, // 100% backward compat
+            order: ex.order !== undefined ? ex.order : (exIdx + 1),
+            name: ex.name || "",
+            category: ex.category || "General",
+            equipment: ex.equipment || "Barbell",
+            primaryMuscles: Array.isArray(ex.primaryMuscles) ? [...ex.primaryMuscles] : [],
+            secondaryMuscles: Array.isArray(ex.secondaryMuscles) ? [...ex.secondaryMuscles] : [],
+            targetRequirement: ex.targetRequirement || "",
+            optionNote: ex.optionNote || "",
+            formCues: ex.formCues || ex.coachingCues || "",
+            coachingCues: ex.coachingCues || ex.formCues || "",
+            sets: ex.sets !== undefined ? ex.sets : (ex.defaultSets ? ex.defaultSets.length : 2),
+            reps: ex.reps || (ex.defaultSets && ex.defaultSets[0] ? ex.defaultSets[0].reps : "8-10"),
+            repRange: ex.repRange || (ex.defaultSets && ex.defaultSets[0] ? ex.defaultSets[0].reps : "8-10"),
+            load: ex.load || null,
+            rir: ex.rir || (ex.defaultSets && ex.defaultSets[0] ? ex.defaultSets[0].rir : "RIR 1-2"),
+            rpe: ex.rpe || null,
+            tempo: ex.tempo || null,
+            restSec: ex.restSec || (ex.defaultSets && ex.defaultSets[0] ? ex.defaultSets[0].restSec : 120),
+            notes: ex.notes || "",
+            isRestPause: !!ex.isRestPause,
+            defaultSets: Array.isArray(ex.defaultSets) ? ex.defaultSets : [
+              { setNum: 1, reps: "8-10", rir: "RIR 1", restSec: 120 },
+              { setNum: 2, reps: "8-10", rir: "RIR 1", restSec: 120 }
+            ]
+          };
+        });
+
+        return {
+          dayId: dayId,
+          id: day.id || dayId,
+          dayNumber: day.dayNumber !== undefined ? day.dayNumber : (dIdx + 1),
+          dayKey: day.dayKey || `D${dIdx + 1}`,
+          dayLabel: day.dayLabel || day.dayKey || `D${dIdx + 1}`,
+          dayName: day.dayName || day.title || `Day ${dIdx + 1}`,
+          title: day.title || day.dayName || "Workout Session",
+          sessionType: day.sessionType || day.type || "strength",
+          type: day.type || day.sessionType || "strength",
+          focus: day.focus || "",
+          badge: day.badge || (day.type === "run" ? "Quality Run" : "Strength"),
+          targetKm: day.targetKm || 0,
+          runDetail: day.runDetail || null,
+          options: Array.isArray(day.options) ? [...day.options] : [],
+          checklist: Array.isArray(day.checklist) ? [...day.checklist] : [],
+          cardioPrescription: day.cardioPrescription || (day.targetKm ? { targetKm: day.targetKm, focus: day.focus || "" } : null),
+          exercises: exercises
+        };
+      });
+
+      return {
+        weekId: weekId,
+        id: week.id || weekId,
+        weekNumber: week.weekNumber !== undefined ? week.weekNumber : (wIdx + 1),
+        label: week.label || week.name || `Week ${wIdx + 1}`,
+        name: week.name || `Week ${wIdx + 1}`,
+        focus: week.focus || "",
+        targetKm: week.targetKm || 0,
+        days: days
+      };
+    });
+
+    return {
+      programId: stableId,
+      id: prog.id || stableId,
+      programName: (prog.programName || prog.name || "Untitled Program").trim(),
+      name: (prog.name || prog.programName || "Untitled Program").trim(),
+      subtitle: prog.subtitle || "Custom Program",
+      description: prog.description || "",
+      philosophy: prog.philosophy || "",
+      target: prog.target || "Hypertrophy & Conditioning",
+      status: prog.status || "active", // active | draft | archived
+      currentVersionId: currentVersionId,
+      version: version,
+      rotationWeeks: parseInt(prog.rotationWeeks, 10) || 1,
+      isBuiltIn: !!prog.isBuiltIn,
+      versions: versions,
+      weeks: weeks
+    };
+  }
+
+  // =========================================================================
+  // 3. PROGRAM BUILDER & VERSIONING ENGINE
   // =========================================================================
   getPrograms() {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEYS.PROGRAMS) || "[]");
+      const raw = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROGRAMS) || "[]");
+      if (Array.isArray(raw) && raw.length > 0) {
+        return raw.map(p => this.normalizeProgram(p));
+      }
+      return (window.DEFAULT_PROGRAMS || []).map(p => this.normalizeProgram(p));
     } catch (e) {
-      return window.DEFAULT_PROGRAMS || [];
+      return (window.DEFAULT_PROGRAMS || []).map(p => this.normalizeProgram(p));
     }
   }
 
   savePrograms(programs) {
-    localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(programs));
+    const normalized = (programs || []).map(p => this.normalizeProgram(p));
+    localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(normalized));
   }
 
   getActiveProgramId() {
@@ -111,9 +283,9 @@ class DinoStorage {
     localStorage.setItem(STORAGE_KEYS.ACTIVE_PROGRAM_ID, id);
     const prog = this.getProgramById(id);
     if (prog && prog.weeks && prog.weeks.length > 0) {
-      this.setActiveWeekId(prog.weeks[0].id);
+      this.setActiveWeekId(prog.weeks[0].id || prog.weeks[0].weekId);
       if (prog.weeks[0].days && prog.weeks[0].days.length > 0) {
-        this.setActiveDayId(prog.weeks[0].days[0].id);
+        this.setActiveDayId(prog.weeks[0].days[0].id || prog.weeks[0].days[0].dayId);
       }
     }
   }
@@ -127,7 +299,7 @@ class DinoStorage {
   }
 
   getActiveDayId() {
-    return localStorage.getItem(STORAGE_KEYS.ACTIVE_DAY_ID) || "wA_d2";
+    return localStorage.getItem(STORAGE_KEYS.ACTIVE_DAY_ID) || "wA_t3";
   }
 
   setActiveDayId(dayId) {
@@ -137,37 +309,111 @@ class DinoStorage {
   getActiveProgram() {
     const progs = this.getPrograms();
     const activeId = this.getActiveProgramId();
-    return progs.find(p => p.id === activeId) || progs[0] || (window.DEFAULT_PROGRAMS ? window.DEFAULT_PROGRAMS[0] : null);
+    return progs.find(p => p.id === activeId || p.programId === activeId) || progs[0] || (window.DEFAULT_PROGRAMS ? this.normalizeProgram(window.DEFAULT_PROGRAMS[0]) : null);
   }
 
   getProgramById(id) {
+    if (!id) return null;
     const progs = this.getPrograms();
-    return progs.find(p => p.id === id) || null;
+    return progs.find(p => p.id === id || p.programId === id) || null;
   }
 
   createProgram(name, philosophy, subtitle = "Custom Program", rotationWeeks = 1) {
     const progs = this.getPrograms();
+    const progId = "prog_" + Date.now();
     const newProg = {
-      id: "prog_" + Date.now(),
+      id: progId,
+      programId: progId,
       version: "1.0",
+      currentVersionId: "v1.0",
       name: name.trim(),
+      programName: name.trim(),
       subtitle: subtitle.trim(),
       philosophy: (philosophy || "").trim(),
       target: "Custom Hypertrophy & Performance",
+      status: "active",
       rotationWeeks: parseInt(rotationWeeks, 10) || 1,
       isBuiltIn: false,
+      versions: [
+        {
+          versionId: "v1.0",
+          versionNumber: "1.0",
+          createdAt: new Date().toISOString(),
+          notes: "Initial program creation"
+        }
+      ],
       weeks: [] // Starts completely empty as requested
     };
-    progs.push(newProg);
+    progs.push(this.normalizeProgram(newProg));
     this.savePrograms(progs);
     return newProg;
   }
 
+  duplicateProgram(progId) {
+    const orig = this.getProgramById(progId);
+    if (!orig) return null;
+    const progs = this.getPrograms();
+    const cloned = JSON.parse(JSON.stringify(orig));
+    const newProgId = "prog_" + Date.now();
+    cloned.programId = newProgId;
+    cloned.id = newProgId;
+    cloned.name = `${orig.name} (Bản sao)`;
+    cloned.programName = cloned.name;
+    cloned.isBuiltIn = false;
+    cloned.status = "draft";
+    cloned.currentVersionId = "v1.0";
+    cloned.version = "1.0";
+    cloned.versions = [{
+      versionId: "v1.0",
+      versionNumber: "1.0",
+      createdAt: new Date().toISOString(),
+      notes: `Nhân bản từ ${orig.name}`
+    }];
+    // Regenerate unique IDs for all weeks, days, and prescriptions
+    (cloned.weeks || []).forEach((w, wIdx) => {
+      const newWeekId = `w_${Date.now()}_${wIdx + 1}`;
+      w.weekId = newWeekId;
+      w.id = newWeekId;
+      (w.days || []).forEach((d, dIdx) => {
+        const newDayId = `d_${Date.now()}_${wIdx + 1}_${dIdx + 1}`;
+        d.dayId = newDayId;
+        d.id = newDayId;
+        (d.exercises || []).forEach((ex, exIdx) => {
+          ex.prescriptionId = `rx_${newDayId}_${ex.exerciseId || ex.id}_${exIdx + 1}`;
+          ex.order = exIdx + 1;
+        });
+      });
+    });
+    progs.push(cloned);
+    this.savePrograms(progs);
+    return cloned;
+  }
+
+  createProgramVersion(progId, versionNotes = "") {
+    const progs = this.getPrograms();
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
+    if (!prog) return null;
+    const currentNum = parseFloat(prog.version) || 1.0;
+    const nextNum = (currentNum + 0.1).toFixed(1);
+    const newVersionId = "v" + nextNum;
+    prog.version = nextNum;
+    prog.currentVersionId = newVersionId;
+    if (!prog.versions) prog.versions = [];
+    prog.versions.push({
+      versionId: newVersionId,
+      versionNumber: nextNum,
+      createdAt: new Date().toISOString(),
+      notes: versionNotes.trim() || `Version ${nextNum} update`
+    });
+    this.savePrograms(progs);
+    return prog;
+  }
+
   updateProgram(progId, updates) {
     const progs = this.getPrograms();
-    const idx = progs.findIndex(p => p.id === progId);
+    const idx = progs.findIndex(p => p.id === progId || p.programId === progId);
     if (idx !== -1) {
-      progs[idx] = { ...progs[idx], ...updates };
+      progs[idx] = this.normalizeProgram({ ...progs[idx], ...updates });
       this.savePrograms(progs);
       return progs[idx];
     }
@@ -176,7 +422,7 @@ class DinoStorage {
 
   deleteProgram(progId) {
     let progs = this.getPrograms();
-    progs = progs.filter(p => p.id !== progId);
+    progs = progs.filter(p => p.id !== progId && p.programId !== progId);
     this.savePrograms(progs);
     if (this.getActiveProgramId() === progId) {
       if (progs.length > 0) {
@@ -188,13 +434,17 @@ class DinoStorage {
   // Week Operations
   addWeekToProgram(progId, weekName = "Week 1") {
     const progs = this.getPrograms();
-    const prog = progs.find(p => p.id === progId);
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
     if (!prog) return null;
     if (!prog.weeks) prog.weeks = [];
 
+    const newWeekId = "w_" + Date.now();
     const newWeek = {
-      id: "w_" + Date.now(),
+      id: newWeekId,
+      weekId: newWeekId,
+      weekNumber: prog.weeks.length + 1,
       name: weekName.trim(),
+      label: weekName.trim(),
       focus: "Hypertrophy & Conditioning",
       targetKm: 0,
       days: []
@@ -204,12 +454,42 @@ class DinoStorage {
     return newWeek;
   }
 
+  duplicateWeek(progId, weekId) {
+    const progs = this.getPrograms();
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
+    if (!prog || !prog.weeks) return null;
+    const origWeek = prog.weeks.find(w => w.id === weekId || w.weekId === weekId);
+    if (!origWeek) return null;
+
+    const cloned = JSON.parse(JSON.stringify(origWeek));
+    const newWeekId = "w_" + Date.now();
+    cloned.weekId = newWeekId;
+    cloned.id = newWeekId;
+    cloned.weekNumber = prog.weeks.length + 1;
+    cloned.name = `${origWeek.name} (Bản sao)`;
+    cloned.label = `${origWeek.label || origWeek.name} (Bản sao)`;
+
+    (cloned.days || []).forEach((d, dIdx) => {
+      const newDayId = `d_${Date.now()}_${dIdx + 1}`;
+      d.dayId = newDayId;
+      d.id = newDayId;
+      (d.exercises || []).forEach((ex, exIdx) => {
+        ex.prescriptionId = `rx_${newDayId}_${ex.exerciseId || ex.id}_${exIdx + 1}`;
+        ex.order = exIdx + 1;
+      });
+    });
+
+    prog.weeks.push(cloned);
+    this.savePrograms(progs);
+    return cloned;
+  }
+
   deleteWeekFromProgram(progId, weekId) {
     const progs = this.getPrograms();
-    const prog = progs.find(p => p.id === progId);
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
     if (!prog || !prog.weeks) return false;
 
-    prog.weeks = prog.weeks.filter(w => w.id !== weekId);
+    prog.weeks = prog.weeks.filter(w => w.id !== weekId && w.weekId !== weekId);
     this.savePrograms(progs);
     return true;
   }
@@ -217,23 +497,30 @@ class DinoStorage {
   // Day Operations
   addDayToWeek(progId, weekId, dayData) {
     const progs = this.getPrograms();
-    const prog = progs.find(p => p.id === progId);
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
     if (!prog || !prog.weeks) return null;
-    const week = prog.weeks.find(w => w.id === weekId);
+    const week = prog.weeks.find(w => w.id === weekId || w.weekId === weekId);
     if (!week) return null;
     if (!week.days) week.days = [];
 
+    const newDayId = "d_" + Date.now();
     const newDay = {
-      id: "d_" + Date.now(),
+      id: newDayId,
+      dayId: newDayId,
+      dayNumber: week.days.length + 1,
       dayKey: dayData.dayKey || `D${week.days.length + 1}`,
-      dayName: dayData.dayName || `Day ${week.days.length + 1}`,
-      title: dayData.title || "Custom Workout Session",
-      type: dayData.type || "strength",
+      dayLabel: dayData.dayLabel || dayData.dayKey || `D${week.days.length + 1}`,
+      dayName: dayData.dayName || dayData.title || `Day ${week.days.length + 1}`,
+      title: dayData.title || dayData.dayName || "Custom Workout Session",
+      sessionType: dayData.sessionType || dayData.type || "strength",
+      type: dayData.type || dayData.sessionType || "strength",
       focus: dayData.focus || "Whole Body",
-      badge: dayData.badge || "Strength",
+      badge: dayData.badge || (dayData.type === "run" ? "Quality Run" : "Strength"),
       targetKm: dayData.targetKm || 0,
       runDetail: dayData.runDetail || null,
-      checklist: dayData.checklist || [],
+      options: Array.isArray(dayData.options) ? [...dayData.options] : [],
+      checklist: Array.isArray(dayData.checklist) ? [...dayData.checklist] : [],
+      cardioPrescription: dayData.cardioPrescription || (dayData.targetKm ? { targetKm: dayData.targetKm, focus: dayData.focus || "" } : null),
       exercises: []
     };
     week.days.push(newDay);
@@ -241,73 +528,211 @@ class DinoStorage {
     return newDay;
   }
 
+  duplicateDay(progId, weekId, dayId) {
+    const progs = this.getPrograms();
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
+    if (!prog || !prog.weeks) return null;
+    const week = prog.weeks.find(w => w.id === weekId || w.weekId === weekId);
+    if (!week || !week.days) return null;
+    const origDay = week.days.find(d => d.id === dayId || d.dayId === dayId);
+    if (!origDay) return null;
+
+    const cloned = JSON.parse(JSON.stringify(origDay));
+    const newDayId = "d_" + Date.now();
+    cloned.dayId = newDayId;
+    cloned.id = newDayId;
+    cloned.dayNumber = week.days.length + 1;
+    cloned.dayKey = `D${week.days.length + 1}`;
+    cloned.dayLabel = cloned.dayKey;
+    cloned.title = `${origDay.title} (Bản sao)`;
+    cloned.dayName = cloned.title;
+
+    (cloned.exercises || []).forEach((ex, exIdx) => {
+      ex.prescriptionId = `rx_${newDayId}_${ex.exerciseId || ex.id}_${exIdx + 1}`;
+      ex.order = exIdx + 1;
+    });
+
+    week.days.push(cloned);
+    this.savePrograms(progs);
+    return cloned;
+  }
+
   deleteDayFromWeek(progId, weekId, dayId) {
     const progs = this.getPrograms();
-    const prog = progs.find(p => p.id === progId);
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
     if (!prog || !prog.weeks) return false;
-    const week = prog.weeks.find(w => w.id === weekId);
+    const week = prog.weeks.find(w => w.id === weekId || w.weekId === weekId);
     if (!week || !week.days) return false;
 
-    week.days = week.days.filter(d => d.id !== dayId);
+    week.days = week.days.filter(d => d.id !== dayId && d.dayId !== dayId);
     this.savePrograms(progs);
     return true;
   }
 
-  // Exercise Operations & Reordering via [Up] / [Down]
-  addExerciseToDay(progId, weekId, dayId, exercise) {
+  // Prescription Operations in Day
+  addExerciseToDay(progId, weekId, dayId, exercise, overrides = null) {
     const progs = this.getPrograms();
-    const prog = progs.find(p => p.id === progId);
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
     if (!prog || !prog.weeks) return false;
-    const week = prog.weeks.find(w => w.id === weekId);
+    const week = prog.weeks.find(w => w.id === weekId || w.weekId === weekId);
     if (!week || !week.days) return false;
-    const day = week.days.find(d => d.id === dayId);
+    const day = week.days.find(d => d.id === dayId || d.dayId === dayId);
     if (!day) return false;
     if (!day.exercises) day.exercises = [];
 
-    const newEx = {
-      id: exercise.id || "ex_" + Date.now(),
-      name: exercise.name,
-      category: exercise.category || "Upper",
-      equipment: exercise.equipment || "Barbell",
-      primaryMuscles: exercise.primaryMuscles || ["Chest"],
-      secondaryMuscles: exercise.secondaryMuscles || [],
-      targetRequirement: exercise.targetRequirement || "3 sets × 8–10 reps @ RIR 1",
-      defaultSets: exercise.defaultSets && exercise.defaultSets.length > 0 ? exercise.defaultSets : [
-        { setNum: 1, reps: "8-10", rir: "RIR 1", restSec: 120 },
-        { setNum: 2, reps: "8-10", rir: "RIR 1", restSec: 120 },
-        { setNum: 3, reps: "8-10", rir: "RIR 0-1", restSec: 120 }
+    const normEx = this.normalizeExercise(exercise);
+    const rxId = "rx_" + (normEx.exerciseId || normEx.id) + "_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
+    const setsCount = overrides && overrides.sets ? parseInt(overrides.sets, 10) : (normEx.defaultSets?.length || 2);
+    const repsStr = overrides && overrides.reps ? String(overrides.reps) : (normEx.defaultSets?.[0]?.reps || "8-10");
+    const rirStr = overrides && overrides.rir ? String(overrides.rir) : (normEx.defaultSets?.[0]?.rir || "RIR 1-2");
+    const restSecVal = overrides && overrides.restSec ? parseInt(overrides.restSec, 10) : (normEx.defaultSets?.[0]?.restSec || 120);
+
+    const newRx = {
+      prescriptionId: rxId,
+      exerciseId: normEx.exerciseId,
+      id: normEx.id, // backward compat
+      order: day.exercises.length + 1,
+      name: normEx.name,
+      category: normEx.category,
+      equipment: normEx.equipment,
+      primaryMuscles: [...normEx.primaryMuscles],
+      secondaryMuscles: [...normEx.secondaryMuscles],
+      targetRequirement: overrides?.targetRequirement || normEx.targetRequirement || `${setsCount} sets × ${repsStr} @ ${rirStr}`,
+      optionNote: normEx.optionNote || "",
+      formCues: normEx.formCues || "",
+      coachingCues: normEx.coachingCues || normEx.formCues || "",
+      sets: setsCount,
+      reps: repsStr,
+      repRange: repsStr,
+      load: overrides?.load || null,
+      rir: rirStr,
+      rpe: overrides?.rpe || null,
+      tempo: overrides?.tempo || null,
+      restSec: restSecVal,
+      notes: overrides?.notes || "",
+      isRestPause: !!normEx.isRestPause,
+      defaultSets: Array.isArray(normEx.defaultSets) && normEx.defaultSets.length > 0 ? normEx.defaultSets : [
+        { setNum: 1, reps: repsStr, rir: rirStr, restSec: restSecVal },
+        { setNum: 2, reps: repsStr, rir: rirStr, restSec: restSecVal }
       ]
     };
-    day.exercises.push(newEx);
+
+    day.exercises.push(newRx);
     this.savePrograms(progs);
-    return true;
+    return newRx;
+  }
+
+  updateExercisePrescription(progId, weekId, dayId, exerciseIndex, updates) {
+    const progs = this.getPrograms();
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
+    if (!prog || !prog.weeks) return false;
+    const week = prog.weeks.find(w => w.id === weekId || w.weekId === weekId);
+    if (!week || !week.days) return false;
+    const day = week.days.find(d => d.id === dayId || d.dayId === dayId);
+    if (!day || !day.exercises) return false;
+
+    const exIdx = typeof exerciseIndex === "number"
+      ? exerciseIndex
+      : day.exercises.findIndex(e => e.prescriptionId === exerciseIndex || e.id === exerciseIndex || e.exerciseId === exerciseIndex);
+    if (exIdx < 0 || exIdx >= day.exercises.length) return false;
+
+    const current = day.exercises[exIdx];
+    const newSetsCount = updates.sets !== undefined ? parseInt(updates.sets, 10) : current.sets;
+    const newReps = updates.reps !== undefined ? String(updates.reps).trim() : current.reps;
+    const newRir = updates.rir !== undefined ? String(updates.rir).trim() : current.rir;
+    const newRestSec = updates.restSec !== undefined ? parseInt(updates.restSec, 10) : current.restSec;
+    const newNotes = updates.notes !== undefined ? String(updates.notes).trim() : current.notes;
+    const newLoad = updates.load !== undefined ? updates.load : current.load;
+    const newTargetReq = updates.targetRequirement !== undefined ? updates.targetRequirement : `${newSetsCount} sets × ${newReps} @ ${newRir}`;
+
+    let defaultSets = [...(current.defaultSets || [])];
+    if (newSetsCount > 0 && newSetsCount !== defaultSets.length) {
+      defaultSets = Array.from({ length: newSetsCount }, (_, i) => ({
+        setNum: i + 1,
+        reps: newReps,
+        rir: newRir,
+        restSec: newRestSec,
+        note: (defaultSets[i] && defaultSets[i].note) || ""
+      }));
+    } else {
+      defaultSets = defaultSets.map(s => ({
+        ...s,
+        reps: newReps || s.reps,
+        rir: newRir || s.rir,
+        restSec: newRestSec || s.restSec
+      }));
+    }
+
+    day.exercises[exIdx] = {
+      ...current,
+      sets: newSetsCount,
+      reps: newReps,
+      repRange: newReps,
+      rir: newRir,
+      load: newLoad,
+      restSec: newRestSec,
+      notes: newNotes,
+      targetRequirement: newTargetReq,
+      optionNote: updates.optionNote !== undefined ? updates.optionNote : (current.optionNote || ""),
+      defaultSets: defaultSets
+    };
+
+    this.savePrograms(progs);
+    return day.exercises[exIdx];
+  }
+
+  duplicateExercisePrescription(progId, weekId, dayId, exerciseIndex) {
+    const progs = this.getPrograms();
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
+    if (!prog || !prog.weeks) return false;
+    const week = prog.weeks.find(w => w.id === weekId || w.weekId === weekId);
+    if (!week || !week.days) return false;
+    const day = week.days.find(d => d.id === dayId || d.dayId === dayId);
+    if (!day || !day.exercises) return false;
+
+    const exIdx = typeof exerciseIndex === "number"
+      ? exerciseIndex
+      : day.exercises.findIndex(e => e.prescriptionId === exerciseIndex || e.id === exerciseIndex || e.exerciseId === exerciseIndex);
+    if (exIdx < 0 || exIdx >= day.exercises.length) return false;
+
+    const orig = day.exercises[exIdx];
+    const cloned = JSON.parse(JSON.stringify(orig));
+    cloned.prescriptionId = `rx_${day.id || day.dayId}_${orig.exerciseId || orig.id}_${Date.now()}`;
+    day.exercises.splice(exIdx + 1, 0, cloned);
+    day.exercises.forEach((ex, idx) => { ex.order = idx + 1; });
+
+    this.savePrograms(progs);
+    return cloned;
   }
 
   deleteExerciseFromDay(progId, weekId, dayId, exerciseIndex) {
     const progs = this.getPrograms();
-    const prog = progs.find(p => p.id === progId);
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
     if (!prog || !prog.weeks) return false;
-    const week = prog.weeks.find(w => w.id === weekId);
+    const week = prog.weeks.find(w => w.id === weekId || w.weekId === weekId);
     if (!week || !week.days) return false;
-    const day = week.days.find(d => d.id === dayId);
+    const day = week.days.find(d => d.id === dayId || d.dayId === dayId);
     if (!day || !day.exercises) return false;
 
-    if (exerciseIndex >= 0 && exerciseIndex < day.exercises.length) {
-      day.exercises.splice(exerciseIndex, 1);
+    const exIdx = typeof exerciseIndex === "number"
+      ? exerciseIndex
+      : day.exercises.findIndex(e => e.prescriptionId === exerciseIndex || e.id === exerciseIndex || e.exerciseId === exerciseIndex);
+    if (exIdx >= 0 && exIdx < day.exercises.length) {
+      day.exercises.splice(exIdx, 1);
+      day.exercises.forEach((ex, idx) => { ex.order = idx + 1; });
       this.savePrograms(progs);
       return true;
     }
     return false;
   }
 
-  // Simple [Up] / [Down] Button Reordering (No Drag & Drop!)
   reorderExerciseInDay(progId, weekId, dayId, index, direction) {
     const progs = this.getPrograms();
-    const prog = progs.find(p => p.id === progId);
+    const prog = progs.find(p => p.id === progId || p.programId === progId);
     if (!prog || !prog.weeks) return false;
-    const week = prog.weeks.find(w => w.id === weekId);
+    const week = prog.weeks.find(w => w.id === weekId || w.weekId === weekId);
     if (!week || !week.days) return false;
-    const day = week.days.find(d => d.id === dayId);
+    const day = week.days.find(d => d.id === dayId || d.dayId === dayId);
     if (!day || !day.exercises) return false;
 
     const newIndex = direction === "up" ? index - 1 : index + 1;
@@ -316,17 +741,22 @@ class DinoStorage {
     const temp = day.exercises[index];
     day.exercises[index] = day.exercises[newIndex];
     day.exercises[newIndex] = temp;
+    day.exercises.forEach((ex, idx) => { ex.order = idx + 1; });
 
     this.savePrograms(progs);
     return true;
   }
 
   // =========================================================================
-  // 2. CUSTOM EXERCISES (SAVED GLOBALLY TO LOCAL LIBRARY)
+  // 4. CUSTOM EXERCISES & GLOBAL REPOSITORY (DINO-005A)
   // =========================================================================
   getCustomExercises() {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_EXERCISES) || "[]");
+      const customs = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_EXERCISES) || "[]");
+      if (Array.isArray(customs)) {
+        return customs.map(e => this.normalizeExercise(e));
+      }
+      return [];
     } catch (e) {
       return [];
     }
@@ -334,25 +764,72 @@ class DinoStorage {
 
   saveCustomExercise(exercise) {
     const customs = this.getCustomExercises();
-    const newEx = {
-      id: exercise.id || "custom_ex_" + Date.now(),
-      name: exercise.name.trim(),
-      category: exercise.category || "Upper",
-      equipment: exercise.equipment || "Dumbbell",
-      primaryMuscles: exercise.primaryMuscles || ["Chest"],
-      secondaryMuscles: exercise.secondaryMuscles || [],
-      formCues: exercise.formCues || "Thực hiện đúng kỹ thuật và kiểm soát eccentric.",
-      isCustom: true
-    };
+    const uniqueId = exercise.exerciseId || exercise.id || ("custom_ex_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4));
+    const newEx = this.normalizeExercise({
+      ...exercise,
+      exerciseId: uniqueId,
+      id: uniqueId,
+      name: (exercise.name || "").trim(),
+      status: "CUSTOM",
+      isCustom: true,
+      createdAt: exercise.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
     customs.push(newEx);
     localStorage.setItem(STORAGE_KEYS.CUSTOM_EXERCISES, JSON.stringify(customs));
     return newEx;
   }
 
-  getAllExercises() {
-    const builtIn = window.EXERCISE_LIBRARY || [];
+  updateCustomExercise(exerciseId, updates) {
     const customs = this.getCustomExercises();
-    return [...builtIn, ...customs];
+    const idx = customs.findIndex(e => e.id === exerciseId || e.exerciseId === exerciseId);
+    if (idx !== -1) {
+      const current = customs[idx];
+      const updated = this.normalizeExercise({
+        ...current,
+        ...updates,
+        exerciseId: current.exerciseId,
+        id: current.id,
+        status: "CUSTOM",
+        isCustom: true,
+        updatedAt: new Date().toISOString()
+      });
+      customs[idx] = updated;
+      localStorage.setItem(STORAGE_KEYS.CUSTOM_EXERCISES, JSON.stringify(customs));
+      return updated;
+    }
+    return null;
+  }
+
+  archiveCustomExercise(exerciseId) {
+    const customs = this.getCustomExercises();
+    const idx = customs.findIndex(e => e.id === exerciseId || e.exerciseId === exerciseId);
+    if (idx !== -1) {
+      customs[idx].status = "ARCHIVED";
+      customs[idx].updatedAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEYS.CUSTOM_EXERCISES, JSON.stringify(customs));
+      return true;
+    }
+    return false;
+  }
+
+  getAllExercises(includeArchived = false) {
+    const builtIn = (window.EXERCISE_LIBRARY || []).map(ex => this.normalizeExercise(ex));
+    const customs = this.getCustomExercises().map(ex => this.normalizeExercise(ex));
+    const all = [...builtIn, ...customs];
+    if (includeArchived) return all;
+    return all.filter(e => e.status !== "ARCHIVED");
+  }
+
+  getExerciseById(exerciseId) {
+    if (!exerciseId) return null;
+    const all = this.getAllExercises(true);
+    const target = String(exerciseId).trim().toLowerCase();
+    return all.find(e =>
+      (e.exerciseId && e.exerciseId.toLowerCase() === target) ||
+      (e.id && e.id.toLowerCase() === target) ||
+      (e.name && e.name.toLowerCase() === target)
+    ) || null;
   }
 
   // =========================================================================
@@ -373,9 +850,20 @@ class DinoStorage {
     return !!(state && (state.isActive || state.status === "IN_PROGRESS"));
   }
 
-  startWorkoutSession(progId, weekId, dayId, dayTitle, exercises, dayData = null, initialSelectedOption = null) {
+  startWorkoutSession(progId, weekId, dayId, dayTitle = null, exercises = null, dayData = null, initialSelectedOption = null) {
     const prog = this.getProgramById(progId) || this.getActiveProgram();
     const startTime = Date.now();
+
+    // Auto-resolve if not explicitly passed
+    if (!dayTitle || !exercises) {
+      const week = (prog?.weeks || []).find(w => w.id === weekId);
+      const day = (week?.days || []).find(d => d.id === dayId);
+      if (day) {
+        dayTitle = dayTitle || day.title;
+        exercises = exercises || day.exercises || [];
+        dayData = dayData || day;
+      }
+    }
 
     // Determine session type & cardio planning
     const hasExercises = exercises && exercises.length > 0;
@@ -383,8 +871,11 @@ class DinoStorage {
     const sessionType = (hasExercises && hasCardio) ? "hybrid" : (hasCardio ? "cardio" : "strength");
 
     // 1. Immutable Prescription Snapshot captured at workout start
-    const prescriptionSnapshot = (exercises || []).map(ex => ({
-      id: ex.id,
+    const prescriptionSnapshot = (exercises || []).map((ex, exIdx) => ({
+      prescriptionId: ex.prescriptionId || `rx_${dayId}_${ex.exerciseId || ex.id}_${exIdx + 1}`,
+      exerciseId: ex.exerciseId || ex.id,
+      id: ex.id || ex.exerciseId,
+      order: ex.order !== undefined ? ex.order : (exIdx + 1),
       name: ex.name,
       category: ex.category || "General",
       equipment: ex.equipment || "Barbell",
@@ -392,7 +883,8 @@ class DinoStorage {
       secondaryMuscles: [...(ex.secondaryMuscles || [])],
       targetRequirement: ex.targetRequirement || "",
       optionNote: ex.optionNote || "",
-      formCues: ex.formCues || "",
+      formCues: ex.formCues || ex.coachingCues || "",
+      coachingCues: ex.coachingCues || ex.formCues || "",
       defaultSets: (ex.defaultSets || []).map(s => ({
         setNum: s.setNum,
         reps: s.reps,
@@ -430,10 +922,12 @@ class DinoStorage {
     // Actual values MUST remain empty/null until user records them. No fake 50kg/reps/rir defaults.
     const loggedSets = {};
     (exercises || []).forEach(ex => {
-      loggedSets[ex.id] = (ex.defaultSets || []).map((s, idx) => {
+      const exKey = ex.id || ex.exerciseId;
+      loggedSets[exKey] = (ex.defaultSets || []).map((s, idx) => {
         return {
-          setId: `set_${ex.id}_${idx + 1}_${startTime}`,
-          exerciseId: ex.id,
+          setId: `set_${exKey}_${idx + 1}_${startTime}`,
+          prescriptionId: ex.prescriptionId || null,
+          exerciseId: ex.exerciseId || ex.id,
           exerciseName: ex.name,
           setNumber: s.setNum || (idx + 1),
           modality: "strength",
@@ -512,13 +1006,46 @@ class DinoStorage {
     localStorage.removeItem(STORAGE_KEYS.ACTIVE_WORKOUT_STATE);
   }
 
-  finishWorkoutSession(summaryData) {
+  cancelActiveWorkoutSession() {
+    this.cancelActiveWorkout();
+  }
+
+  getActiveWorkoutSession() {
+    return this.getActiveWorkoutState();
+  }
+
+  saveActiveWorkoutSession(state) {
+    if (state) {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKOUT_STATE, JSON.stringify(state));
+    }
+  }
+
+  getWorkouts() {
+    return this.getWorkoutHistory();
+  }
+
+  finishWorkoutSession(summaryData = {}) {
+    if (typeof summaryData === "number") {
+      summaryData = { durationSec: summaryData };
+    }
     const history = this.getWorkoutHistory();
     const activeState = this.getActiveWorkoutState();
     const prog = this.getProgramById(summaryData.progId || (activeState ? activeState.progId : this.getActiveProgramId()));
 
     // 1. Authoritative Actual Performance Sets & Actual Cardio
-    const actualPerformance = summaryData.actualPerformance || [];
+    let actualPerformance = summaryData.actualPerformance;
+    if (!actualPerformance && activeState && activeState.loggedSets) {
+      actualPerformance = Object.keys(activeState.loggedSets).map(exKey => {
+        const sets = activeState.loggedSets[exKey] || [];
+        const firstSet = sets[0];
+        return {
+          exerciseId: firstSet ? (firstSet.exerciseId || exKey) : exKey,
+          exerciseName: firstSet ? (firstSet.exerciseName || "Exercise") : "Exercise",
+          sets: sets
+        };
+      });
+    }
+    actualPerformance = actualPerformance || [];
     const actualCardio = summaryData.actualCardio || (activeState ? activeState.actualCardio : null) || null;
     const sessionType = summaryData.sessionType || (activeState ? activeState.sessionType : (actualCardio ? actualCardio.sessionType : "strength")) || "strength";
     const selectedOption = summaryData.selectedOption || (activeState ? activeState.selectedOption : null) || null;
@@ -841,6 +1368,13 @@ class DinoStorage {
               dayTitle: session.dayTitle || "Buổi tập",
               legacySummary: `${match.sets} sets • ${(match.volume || 0).toLocaleString()} kg`
             });
+          } else if (typeof match.sets === "string" && match.sets.length > 0) {
+            entries.push({
+              sessionId: session.id,
+              date: session.date || "Gần đây",
+              dayTitle: session.dayTitle || "Buổi tập",
+              legacySummary: match.sets
+            });
           }
         }
       }
@@ -959,4 +1493,11 @@ class DinoStorage {
 if (typeof window !== "undefined") {
   window.DinoStorage = DinoStorage;
   window.dinoStorage = new DinoStorage();
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    STORAGE_KEYS,
+    DinoStorage
+  };
 }

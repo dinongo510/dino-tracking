@@ -863,10 +863,13 @@ class DinoApp {
     if (!ex) return;
 
     const nameEl = document.getElementById("detailExName");
-    if (nameEl) nameEl.textContent = ex.name;
+    if (nameEl) nameEl.textContent = ex.name || ex.exerciseName;
 
     const catBadge = document.getElementById("detailExCategoryBadge");
-    if (catBadge) catBadge.textContent = ex.category || "Strength";
+    if (catBadge) {
+      const pattern = ex.movementPattern ? ` • ${ex.movementPattern}` : "";
+      catBadge.textContent = `${ex.category || "Strength"}${pattern}`;
+    }
 
     const eqEl = document.getElementById("detailExEquipment");
     if (eqEl) eqEl.textContent = `Dụng cụ: ${ex.equipment || "Barbell"}`;
@@ -878,7 +881,16 @@ class DinoApp {
     if (musclesEl) musclesEl.textContent = (ex.primaryMuscles || []).join(", ") || "Toàn thân";
 
     const cuesEl = document.getElementById("detailExCuesText");
-    if (cuesEl) cuesEl.textContent = ex.formCues || "Kiểm soát chuyển động chậm rãi ở pha eccentric (hạ tạ) và bùng nổ ở pha concentric (đẩy tạ). Giữ thân cốt lõi vững chắc.";
+    if (cuesEl) {
+      let cuesContent = ex.coachingCues || ex.formCues || "Kiểm soát chuyển động chậm rãi ở pha eccentric (hạ tạ) và bùng nổ ở pha concentric (đẩy tạ). Giữ thân cốt lõi vững chắc.";
+      if (ex.commonErrors && ex.commonErrors.length > 0) {
+        cuesContent += `\n⚠️ Lỗi thường gặp: ${ex.commonErrors.join("; ")}`;
+      }
+      if (ex.cautions && ex.cautions.length > 0) {
+        cuesContent += `\n🛑 Chú ý an toàn: ${ex.cautions.join("; ")}`;
+      }
+      cuesEl.innerHTML = cuesContent.replace(/\n/g, '<br/>');
+    }
 
     const optBox = document.getElementById("detailExOptionNoteBox");
     const optText = document.getElementById("detailExOptionNoteText");
@@ -897,9 +909,11 @@ class DinoApp {
     // Render Overload History from Actual Completed Sessions
     const historyContainer = document.getElementById("detailExHistoryContainer");
     if (historyContainer) {
-      const perfEntries = this.storage.getExercisePerformanceHistory(ex.id, ex.name);
+      const exIdentifier = ex.exerciseId || ex.id;
+      const exName = ex.exerciseName || ex.name;
+      const perfEntries = this.storage.getExercisePerformanceHistory(exIdentifier, exName);
 
-      if (perfEntries.length > 0) {
+      if (perfEntries && perfEntries.length > 0) {
         historyContainer.innerHTML = perfEntries.slice(0, 5).map(entry => {
           let setsSummary = "";
           if (entry.sets && entry.sets.length > 0) {
@@ -921,17 +935,11 @@ class DinoApp {
           `;
         }).join("");
       } else {
-        // Show default progressive overload recommendation
+        // Honest empty state - NO fake 50kg fallback
         historyContainer.innerHTML = `
-          <div style="font-size: 12px; color: var(--text-dim); padding: 6px 0 8px 0;">
-            Chưa có lịch sử tập bài này. Bắt đầu ghi nhận buổi tập hôm nay để tự động lưu biểu đồ Progressive Overload!
-          </div>
-          <div class="history-log-row" style="opacity: 0.75;">
-            <div>
-              <div style="font-weight: 700; color: #fff;">Khởi điểm khuyến nghị</div>
-              <div class="history-log-date">Chuẩn BFS Hybrid</div>
-            </div>
-            <div class="history-log-sets">${(ex.defaultSets || []).map((s, i) => `S${i+1}: ${s.weightKg || 50}kg × ${s.reps}`).join(" | ")}</div>
+          <div class="empty-perf-notice" style="font-size: 12.5px; color: var(--text-muted); padding: 12px; text-align: center; background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle);">
+            Chưa có lịch sử tập bài này (No performance history yet).
+            <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Dữ liệu sẽ tự động xuất hiện sau khi bạn hoàn thành buổi tập có bài này.</div>
           </div>
         `;
       }
@@ -1454,6 +1462,56 @@ class DinoApp {
       </option>
     `).join("");
 
+    // Program Duplicate & Version buttons
+    const metaBox = document.getElementById("builderProgramMetaBox");
+    let progToolbar = document.getElementById("builderProgExtraActions");
+    if (!progToolbar && metaBox) {
+      progToolbar = document.createElement("div");
+      progToolbar.id = "builderProgExtraActions";
+      progToolbar.className = "builder-prog-extra-actions";
+      progToolbar.style.marginTop = "8px";
+      progToolbar.style.display = "flex";
+      progToolbar.style.gap = "6px";
+      progToolbar.style.flexWrap = "wrap";
+      metaBox.appendChild(progToolbar);
+    }
+    if (progToolbar) {
+      const curProg = this.storage.getProgramById(this.builderSelectedProgId || this.storage.getActiveProgramId());
+      const curVer = curProg?.currentVersion || curProg?.version || 1;
+      progToolbar.innerHTML = `
+        <button type="button" id="btnDuplicateProgramFromBuilder" class="btn-mini-tag" title="Nhân bản toàn bộ giáo án">📋 Nhân Bản Giáo Án</button>
+        <button type="button" id="btnCreateVersionFromBuilder" class="btn-mini-tag highlight" title="Tạo phiên bản mới">➕ Nâng Phiên Bản (v${curVer})</button>
+      `;
+      const btnDupProg = document.getElementById("btnDuplicateProgramFromBuilder");
+      if (btnDupProg) {
+        btnDupProg.onclick = () => {
+          if (this.builderSelectedProgId) {
+            const dup = this.storage.duplicateProgram(this.builderSelectedProgId);
+            if (dup) {
+              this.builderSelectedProgId = dup.id;
+              this.showToast(`✓ Đã nhân bản thành "${dup.name}"!`);
+              this.renderBuilderView();
+            }
+          }
+        };
+      }
+      const btnVerProg = document.getElementById("btnCreateVersionFromBuilder");
+      if (btnVerProg) {
+        btnVerProg.onclick = () => {
+          if (this.builderSelectedProgId) {
+            const summary = prompt("Nhập ghi chú phiên bản mới (Change summary):", "Điều chỉnh bài tập và cường độ");
+            if (summary !== null) {
+              const ver = this.storage.createProgramVersion(this.builderSelectedProgId, summary);
+              if (ver) {
+                this.showToast(`✓ Đã tạo phiên bản v${ver.versionNumber}!`);
+                this.renderBuilderView();
+              }
+            }
+          }
+        };
+      }
+    }
+
     this.renderBuilderTree();
   }
 
@@ -1463,7 +1521,10 @@ class DinoApp {
 
     // Metadata Header
     const nameEl = document.getElementById("builderProgramNameDisplay");
-    if (nameEl) nameEl.textContent = prog.name;
+    if (nameEl) {
+      const verTag = prog.currentVersion ? ` (v${prog.currentVersion})` : "";
+      nameEl.textContent = `${prog.name}${verTag}`;
+    }
 
     const philoEl = document.getElementById("builderProgramPhilosophyDisplay");
     if (philoEl) philoEl.textContent = prog.philosophy || "Chưa có mô tả triết lý.";
@@ -1493,24 +1554,32 @@ class DinoApp {
               <span style="font-size: 10.5px; font-weight: 800; color: var(--red-primary); text-transform: uppercase;">${day.dayKey || 'DAY'}</span>
               <div class="builder-day-title">${day.title}</div>
             </div>
-            <div style="display: flex; gap: 4px;">
+            <div style="display: flex; gap: 4px; align-items: center;">
               <button class="btn-mini-tag btn-add-ex-to-day" data-week-id="${week.id}" data-day-id="${day.id}">+ Bài Tập</button>
-              <button class="btn-mini-tag danger btn-delete-day" data-week-id="${week.id}" data-day-id="${day.id}">✕</button>
+              <button class="btn-mini-tag btn-duplicate-day" data-week-id="${week.id}" data-day-id="${day.id}" title="Nhân bản ngày tập này">📋</button>
+              <button class="btn-mini-tag danger btn-delete-day" data-week-id="${week.id}" data-day-id="${day.id}" title="Xóa ngày">✕</button>
             </div>
           </div>
 
           <div class="builder-exercises-list">
             ${(day.exercises || []).map((ex, exIdx) => `
-              <div class="builder-ex-row">
+              <div class="builder-ex-row" data-prescription-id="${ex.prescriptionId || ''}">
                 <div class="builder-ex-info">
-                  <div class="builder-ex-name">${ex.name}</div>
+                  <div class="builder-ex-name">
+                    ${ex.name || ex.exerciseName}
+                    ${ex.movementPattern ? `<span class="builder-ex-pattern">[${ex.movementPattern}]</span>` : ''}
+                  </div>
                   <div class="builder-ex-target">${ex.targetRequirement || '3 sets x 8-10 reps'}</div>
                   ${ex.optionNote ? `<div class="builder-ex-opt"><span class="opt-tag-red">Option:</span> ${ex.optionNote.replace(/^Option:\s*/i, '')}</div>` : ''}
                 </div>
-                <div class="builder-ex-reorder-group">
-                  <button class="btn-reorder-arrow btn-up" data-week-id="${week.id}" data-day-id="${day.id}" data-idx="${exIdx}" ${exIdx === 0 ? 'disabled' : ''}>▲</button>
-                  <button class="btn-reorder-arrow btn-down" data-week-id="${week.id}" data-day-id="${day.id}" data-idx="${exIdx}" ${exIdx === day.exercises.length - 1 ? 'disabled' : ''}>▼</button>
-                  <button class="btn-ex-delete-mini" data-week-id="${week.id}" data-day-id="${day.id}" data-idx="${exIdx}">✕</button>
+                <div class="builder-ex-actions-cluster">
+                  <button type="button" class="btn-builder-ex-action btn-edit-prescription" data-week-id="${week.id}" data-day-id="${day.id}" data-prescription-id="${ex.prescriptionId || ''}" data-idx="${exIdx}" title="Sửa chỉ định bài tập">✏</button>
+                  <button type="button" class="btn-builder-ex-action btn-duplicate-prescription" data-week-id="${week.id}" data-day-id="${day.id}" data-prescription-id="${ex.prescriptionId || ''}" data-idx="${exIdx}" title="Nhân bản bài tập này">📋</button>
+                  <div class="builder-ex-reorder-group">
+                    <button class="btn-reorder-arrow btn-up" data-week-id="${week.id}" data-day-id="${day.id}" data-idx="${exIdx}" ${exIdx === 0 ? 'disabled' : ''} title="Chuyển lên">▲</button>
+                    <button class="btn-reorder-arrow btn-down" data-week-id="${week.id}" data-day-id="${day.id}" data-idx="${exIdx}" ${exIdx === day.exercises.length - 1 ? 'disabled' : ''} title="Chuyển xuống">▼</button>
+                    <button class="btn-ex-delete-mini" data-week-id="${week.id}" data-day-id="${day.id}" data-idx="${exIdx}" data-prescription-id="${ex.prescriptionId || ''}" title="Xóa bài tập">✕</button>
+                  </div>
                 </div>
               </div>
             `).join("")}
@@ -1521,8 +1590,9 @@ class DinoApp {
       weekCard.innerHTML = `
         <div class="builder-week-header">
           <div class="builder-week-title">📅 ${week.name}</div>
-          <div style="display: flex; gap: 6px;">
+          <div style="display: flex; gap: 6px; align-items: center;">
             <button class="btn-mini-tag btn-add-day-to-week" data-week-id="${week.id}">+ Thêm Ngày</button>
+            <button class="btn-mini-tag btn-duplicate-week" data-week-id="${week.id}" title="Nhân bản tuần này">📋 Nhân Bản</button>
             <button class="btn-mini-tag danger btn-delete-week" data-week-id="${week.id}">✕ Xóa Tuần</button>
           </div>
         </div>
@@ -1544,6 +1614,18 @@ class DinoApp {
         });
       }
 
+      // Duplicate Week
+      weekCard.querySelectorAll(".btn-duplicate-week").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const weekId = btn.getAttribute("data-week-id");
+          const dup = this.storage.duplicateWeek(prog.id, weekId);
+          if (dup) {
+            this.renderBuilderTree();
+            this.showToast(`✓ Đã nhân bản "${dup.name}"!`);
+          }
+        });
+      });
+
       // Delete Week
       const btnDeleteWeek = weekCard.querySelector(".btn-delete-week");
       if (btnDeleteWeek) {
@@ -1553,7 +1635,19 @@ class DinoApp {
             this.renderBuilderTree();
           }
         });
-      }
+      });
+
+      // Duplicate Day
+      weekCard.querySelectorAll(".btn-duplicate-day").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const dayId = btn.getAttribute("data-day-id");
+          const dup = this.storage.duplicateDay(prog.id, week.id, dayId);
+          if (dup) {
+            this.renderBuilderTree();
+            this.showToast(`✓ Đã nhân bản "${dup.title}"!`);
+          }
+        });
+      });
 
       // Add Exercise to Day via 50+ Library Modal
       weekCard.querySelectorAll(".btn-add-ex-to-day").forEach(btn => {
@@ -1570,6 +1664,44 @@ class DinoApp {
           });
           this.renderPickerExercises();
           this.openModal("modalExercisePicker");
+        });
+      });
+
+      // Edit Exercise Prescription
+      weekCard.querySelectorAll(".btn-edit-prescription").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const dayId = btn.getAttribute("data-day-id");
+          const prescId = btn.getAttribute("data-prescription-id");
+          const idx = parseInt(btn.getAttribute("data-idx"), 10);
+          const day = (week.days || []).find(d => d.id === dayId);
+          const ex = day ? (day.exercises || [])[idx] : null;
+          if (!ex) return;
+          const currentTarget = ex.targetRequirement || "";
+          const newTarget = prompt(`Chỉnh sửa mục tiêu (${ex.name || ex.exerciseName}):`, currentTarget);
+          if (newTarget !== null) {
+            const currentOpt = ex.optionNote || "";
+            const newOpt = prompt("Ghi chú thay thế / Option note (để trống nếu không có):", currentOpt);
+            this.storage.updateExercisePrescription(prog.id, week.id, dayId, prescId || idx, {
+              targetRequirement: newTarget.trim(),
+              optionNote: newOpt !== null ? newOpt.trim() : currentOpt
+            });
+            this.renderBuilderTree();
+            this.showToast(`✓ Đã cập nhật "${ex.name || ex.exerciseName}"!`);
+          }
+        });
+      });
+
+      // Duplicate Exercise Prescription
+      weekCard.querySelectorAll(".btn-duplicate-prescription").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const dayId = btn.getAttribute("data-day-id");
+          const prescId = btn.getAttribute("data-prescription-id");
+          const idx = parseInt(btn.getAttribute("data-idx"), 10);
+          const dup = this.storage.duplicateExercisePrescription(prog.id, week.id, dayId, prescId || idx);
+          if (dup) {
+            this.renderBuilderTree();
+            this.showToast(`✓ Đã nhân bản "${dup.name || dup.exerciseName}"!`);
+          }
         });
       });
 
@@ -1608,8 +1740,9 @@ class DinoApp {
       weekCard.querySelectorAll(".btn-ex-delete-mini").forEach(btn => {
         btn.addEventListener("click", () => {
           const dayId = btn.getAttribute("data-day-id");
+          const prescId = btn.getAttribute("data-prescription-id");
           const idx = parseInt(btn.getAttribute("data-idx"), 10);
-          this.storage.deleteExerciseFromDay(prog.id, week.id, dayId, idx);
+          this.storage.deleteExerciseFromDay(prog.id, week.id, dayId, prescId || idx);
           this.renderBuilderTree();
         });
       });
@@ -1624,17 +1757,18 @@ class DinoApp {
 
     let list = this.storage.getAllExercises();
 
-    // Category filter
+    // Category / Movement Pattern filter
     if (category && category !== "all") {
       list = list.filter(ex => {
         const catMatch = (ex.category || "").toLowerCase() === category.toLowerCase();
+        const patternMatch = (ex.movementPattern || "").toLowerCase() === category.toLowerCase();
         const primaryMatch = (ex.primaryMuscles || []).some(m => {
           if (category === "Lower") return ["Quads", "Hamstrings", "Glutes", "Calves"].includes(m);
           if (category === "Upper") return ["Chest", "Lats", "Upper Back", "Shoulders", "Biceps", "Triceps"].includes(m);
           if (category === "Core") return m === "Core";
           return m.toLowerCase() === category.toLowerCase();
         });
-        return catMatch || primaryMatch;
+        return catMatch || patternMatch || primaryMatch;
       });
     }
 
@@ -1643,9 +1777,12 @@ class DinoApp {
       const q = searchQuery.toLowerCase();
       list = list.filter(ex => 
         (ex.name && ex.name.toLowerCase().includes(q)) ||
+        (ex.exerciseName && ex.exerciseName.toLowerCase().includes(q)) ||
         (ex.category && ex.category.toLowerCase().includes(q)) ||
+        (ex.movementPattern && ex.movementPattern.toLowerCase().includes(q)) ||
         (ex.equipment && ex.equipment.toLowerCase().includes(q)) ||
         (ex.primaryMuscles && ex.primaryMuscles.some(m => m.toLowerCase().includes(q))) ||
+        (ex.coachingCues && ex.coachingCues.toLowerCase().includes(q)) ||
         (ex.formCues && ex.formCues.toLowerCase().includes(q))
       );
     }
@@ -1664,20 +1801,38 @@ class DinoApp {
       return;
     }
 
-    container.innerHTML = list.map(ex => `
-      <div class="picker-ex-item" data-ex-id="${ex.id}">
-        <div>
-          <div class="picker-ex-title">${ex.name}</div>
-          <div class="picker-ex-sub">${ex.category || 'Compound'} • ${ex.equipment || 'Barbell'} • ${(ex.primaryMuscles || []).join(', ')}</div>
+    container.innerHTML = list.map(ex => {
+      const patternTag = ex.movementPattern ? `[${ex.movementPattern}] ` : "";
+      const exId = ex.exerciseId || ex.id;
+      return `
+        <div class="picker-ex-item" data-ex-id="${exId}">
+          <div style="flex: 1; min-width: 0;">
+            <div class="picker-ex-title">${ex.name || ex.exerciseName}</div>
+            <div class="picker-ex-sub">${patternTag}${ex.category || 'Compound'} • ${ex.equipment || 'Barbell'} • ${(ex.primaryMuscles || []).join(', ')}</div>
+          </div>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <button type="button" class="picker-ex-detail-btn" data-ex-id="${exId}" title="Xem chi tiết & lịch sử">ℹ Chi Tiết</button>
+            <button type="button" class="picker-ex-add-badge" data-ex-id="${exId}">+ Thêm</button>
+          </div>
         </div>
-        <button type="button" class="picker-ex-add-badge">+ Thêm</button>
-      </div>
-    `).join("");
+      `;
+    }).join("");
+
+    container.querySelectorAll(".picker-ex-detail-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute("data-ex-id");
+        const found = list.find(e => (e.exerciseId || e.id) === id) || (this.storage.getAllExercises() || []).find(e => (e.exerciseId || e.id) === id);
+        if (found) {
+          this.openExerciseDetailModal(found);
+        }
+      });
+    });
 
     container.querySelectorAll(".picker-ex-item").forEach(item => {
       item.addEventListener("click", () => {
         const id = item.getAttribute("data-ex-id");
-        const found = list.find(e => e.id === id) || (this.storage.getAllExercises() || []).find(e => e.id === id);
+        const found = list.find(e => (e.exerciseId || e.id) === id) || (this.storage.getAllExercises() || []).find(e => (e.exerciseId || e.id) === id);
         if (found && this.builderPendingTarget) {
           this.storage.addExerciseToDay(
             this.builderPendingTarget.progId,
@@ -1687,7 +1842,7 @@ class DinoApp {
           );
           this.closeModal("modalExercisePicker");
           this.renderBuilderTree();
-          this.showToast(`✓ Đã thêm "${found.name}" vào buổi tập!`);
+          this.showToast(`✓ Đã thêm "${found.name || found.exerciseName}" vào buổi tập!`);
         }
       });
     });

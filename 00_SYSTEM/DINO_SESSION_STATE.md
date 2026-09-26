@@ -9,18 +9,43 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-004` Dino AUT APPROVED & LOCKED. |
-| **Active Change Set** | `DINO-004` (LOCKED) |
-| **Current State** | `LOCKED` |
-| **Dino AUT** | `APPROVED` |
+| **Session State** | `DINO-005A` AUTO_VERIFIED |
+| **Active Change Set** | `DINO-005A` |
+| **Current State** | `AUTO_VERIFIED` |
+| **Dino AUT** | `PENDING` |
 | **Active Branch** | `main` |
-| **Current Baseline HEAD** | `a30ab56b5fd2c314e6ff5a6dac6d277a3e4028c5` |
-| **Last Updated** | `2026-09-25` |
+| **Current Baseline HEAD** | `9b79f47b2c9ad3cead145e69b0faee2180860368` |
+| **Last Updated** | `2026-09-26` |
 | **Active Blockers** | None |
 
 ---
 
 ## 2. Completed / Active Change Set Details
+
+### `DINO-005A`
+
+- **Objective:** Exercise & Program System foundation. Standardize Exercise Identity & Metadata (exerciseId, status, category, movementPattern, trainingType, equipment, primary/secondary muscles, cues, errors, cautions), Exercise Library UI & filters, Exercise Detail UI with authentic performance history (no fake fallbacks), Program structure (Program -> Week -> Day -> Exercise Prescription with unique prescriptionId), Program Versioning & Version Safety, Builder improvements (Add/Edit prescription, Reorder, Remove, Duplicate Day/Week/Prescription), Custom Exercise management, Historical Safety (PRESCRIPTION ≠ ACTUAL, frozen prescriptionSnapshot), and hooks for DINO-005B/C.
+- **Dino AUT:** `PENDING`
+- **State:** `AUTO_VERIFIED` (`PROPOSED` → `SPEC_APPROVED` → `IMPLEMENTATION_AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED`)
+- **Automated Tests:** 12/12 test suites passing (44 assertions passed, 0 failed in `scratch/test_dino_005a.js`).
+- **Authorized Files:**
+  - `js/data.js`
+  - `js/storage.js`
+  - `js/app.js`
+  - `css/style.css`
+  - `00_SYSTEM/DINO_SESSION_STATE.md`
+- **Protected Areas (Untouched):**
+  - `index.html`
+  - `js/ai_coach.js`
+  - `js/charts.js`
+  - `js/audio.js`
+  - `js/timer.js`
+  - `js/supabase_sync.js`
+  - `sw.js`
+  - `vercel.json`
+  - `manifest.json`
+  - `package.json`
+  - `server.js`
 
 ### `DINO-004`
 
