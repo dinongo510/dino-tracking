@@ -2643,3 +2643,17 @@ html, body {
   color: var(--color-gold);
 }
 
+/* Stacking & Interaction for Exercise Detail Modal */
+#modalExerciseDetail {
+  z-index: 350;
+}
+
+.builder-ex-name {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.builder-ex-name:hover {
+  color: var(--red-primary);
+}
+

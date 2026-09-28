@@ -862,6 +862,12 @@ class DinoApp {
   openExerciseDetailModal(ex) {
     if (!ex) return;
 
+    // Ensure detail modal floats reliably on top of picker sheet if opened from library
+    const detailModal = document.getElementById("modalExerciseDetail");
+    if (detailModal) {
+      detailModal.style.zIndex = "350";
+    }
+
     const nameEl = document.getElementById("detailExName");
     if (nameEl) nameEl.textContent = ex.name || ex.exerciseName;
 
@@ -875,7 +881,14 @@ class DinoApp {
     if (eqEl) eqEl.textContent = `Dụng cụ: ${ex.equipment || "Barbell"}`;
 
     const targetEl = document.getElementById("detailExTargetRequirement");
-    if (targetEl) targetEl.textContent = `Mục tiêu: ${ex.targetRequirement || "2–3 sets × 6–10 reps"}`;
+    if (targetEl) {
+      if (ex.targetRequirement) {
+        targetEl.textContent = `Mục tiêu: ${ex.targetRequirement}`;
+        targetEl.style.display = "inline-block";
+      } else {
+        targetEl.style.display = "none";
+      }
+    }
 
     const musclesEl = document.getElementById("detailExMusclesList");
     if (musclesEl) musclesEl.textContent = (ex.primaryMuscles || []).join(", ") || "Toàn thân";
@@ -883,11 +896,13 @@ class DinoApp {
     const cuesEl = document.getElementById("detailExCuesText");
     if (cuesEl) {
       let cuesContent = ex.coachingCues || ex.formCues || "Kiểm soát chuyển động chậm rãi ở pha eccentric (hạ tạ) và bùng nổ ở pha concentric (đẩy tạ). Giữ thân cốt lõi vững chắc.";
-      if (ex.commonErrors && ex.commonErrors.length > 0) {
-        cuesContent += `\n⚠️ Lỗi thường gặp: ${ex.commonErrors.join("; ")}`;
+      if (ex.commonErrors && (Array.isArray(ex.commonErrors) ? ex.commonErrors.length > 0 : !!ex.commonErrors)) {
+        const errStr = Array.isArray(ex.commonErrors) ? ex.commonErrors.join("; ") : String(ex.commonErrors);
+        cuesContent += `\n⚠️ Lỗi thường gặp: ${errStr}`;
       }
-      if (ex.cautions && ex.cautions.length > 0) {
-        cuesContent += `\n🛑 Chú ý an toàn: ${ex.cautions.join("; ")}`;
+      if (ex.cautions && (Array.isArray(ex.cautions) ? ex.cautions.length > 0 : !!ex.cautions)) {
+        const cautStr = Array.isArray(ex.cautions) ? ex.cautions.join("; ") : String(ex.cautions);
+        cuesContent += `\n🛑 Chú ý an toàn: ${cautStr}`;
       }
       cuesEl.innerHTML = cuesContent.replace(/\n/g, '<br/>');
     }
@@ -919,7 +934,8 @@ class DinoApp {
           if (entry.sets && entry.sets.length > 0) {
             setsSummary = entry.sets.map(s => {
               const rirStr = (s.rir !== undefined && s.rir !== "" && s.rir !== null) ? ` @ RIR ${s.rir}` : "";
-              return `S${s.setNumber}: ${s.load}kg × ${s.reps}${rirStr}`;
+              const loadStr = (s.load !== null && s.load !== undefined && s.load !== "") ? `${s.load}kg` : "BW";
+              return `S${s.setNumber}: ${loadStr} × ${s.reps}${rirStr}`;
             }).join(" | ");
           } else if (entry.legacySummary) {
             setsSummary = entry.legacySummary;
@@ -1808,6 +1824,28 @@ class DinoApp {
         });
       });
 
+      // Click Exercise Name in Builder to open Detail
+      weekCard.querySelectorAll(".builder-ex-row").forEach(row => {
+        const nameEl = row.querySelector(".builder-ex-name");
+        const prescId = row.getAttribute("data-prescription-id");
+        if (nameEl) {
+          nameEl.addEventListener("click", () => {
+            const allDays = week.days || [];
+            let foundEx = null;
+            for (const d of allDays) {
+              const matched = (d.exercises || []).find(e => e.prescriptionId === prescId);
+              if (matched) { foundEx = matched; break; }
+            }
+            if (!foundEx) {
+              foundEx = (this.storage.getAllExercises() || []).find(e => (e.exerciseId || e.id) === prescId);
+            }
+            if (foundEx) {
+              this.openExerciseDetailModal(foundEx);
+            }
+          });
+        }
+      });
+
       // Delete Day
       weekCard.querySelectorAll(".btn-delete-day").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -1924,6 +1962,12 @@ class DinoApp {
       `;
     }).join("");
 
+    // Dynamic Picker Title based on browsing vs adding mode
+    const pickerTitleEl = document.getElementById("pickerModalTitle");
+    if (pickerTitleEl) {
+      pickerTitleEl.textContent = this.builderPendingTarget ? "Chọn Bài Tập Thêm Vào Buổi" : "Thư Viện Bài Tập Chuẩn (50+)";
+    }
+
     // Clicking "ℹ Chi Tiết" opens detail modal directly from library
     container.querySelectorAll(".picker-ex-detail-btn").forEach(btn => {
       btn.addEventListener("click", (e) => {
@@ -1936,10 +1980,11 @@ class DinoApp {
       });
     });
 
-    // Clicking exercise info area also opens detail modal (does NOT accidentally add to workout)
-    container.querySelectorAll(".picker-ex-main-info").forEach(infoEl => {
-      infoEl.addEventListener("click", () => {
-        const id = infoEl.getAttribute("data-ex-id");
+    // Clicking anywhere on the exercise card (except + Thêm) also opens detail modal
+    container.querySelectorAll(".picker-ex-item").forEach(item => {
+      item.addEventListener("click", (e) => {
+        if (e.target.closest(".picker-ex-add-badge")) return;
+        const id = item.getAttribute("data-ex-id");
         const found = list.find(e => (e.exerciseId || e.id) === id) || (this.storage.getAllExercises() || []).find(e => (e.exerciseId || e.id) === id);
         if (found) {
           this.openExerciseDetailModal(found);
