@@ -329,6 +329,150 @@ try {
   const workoutsAfter = JSON.stringify(storage8.getWorkouts());
   assert(workoutsBefore === workoutsAfter, "Completed workout history is 100% byte-for-byte identical after Program Builder operations");
 
+  // -------------------------------------------------------------------------
+  // TEST 13: Exercise Detail from Library (No duplicate created, same identity)
+  // -------------------------------------------------------------------------
+  console.log("\n[TEST 13] Exercise Detail from Library");
+  const storage9 = new DinoStorage();
+  const allLibExercises = storage9.getAllExercises();
+  const pinSquatLib = allLibExercises.find(e => (e.exerciseId || e.id) === "pin_squat");
+  assert(pinSquatLib !== undefined, "Pin Back Squat found directly in Exercise Library");
+  assert(pinSquatLib.movementPattern === "SQUAT", "Pin Back Squat has movementPattern 'SQUAT'");
+  assert(pinSquatLib.primaryMuscles.includes("Quads"), "Pin Back Squat has primary muscle 'Quads'");
+  const countBeforeDetail = storage9.getAllExercises().length;
+  // Opening detail should just reference the same object without creating a duplicate
+  const detailObj = storage9.getExerciseById("pin_squat");
+  const countAfterDetail = storage9.getAllExercises().length;
+  assert(countBeforeDetail === countAfterDetail, "Viewing Exercise Detail does NOT create duplicate entity");
+  assert(detailObj.exerciseId === pinSquatLib.exerciseId, "Detail entity maintains exact exercise identity");
+
+  // -------------------------------------------------------------------------
+  // TEST 14: Prescription Edit Persistence (Simulating full app reload)
+  // -------------------------------------------------------------------------
+  console.log("\n[TEST 14] Prescription Edit Persistence Across Reload");
+  const storage10 = new DinoStorage();
+  const prog10 = storage10.createProgram("Prescription Persistence Program");
+  const w10 = storage10.addWeekToProgram(prog10.id, "Week 1");
+  const d10 = storage10.addDayToWeek(prog10.id, w10.id, { title: "Day 1" });
+  const rx10 = storage10.addExerciseToDay(prog10.id, w10.id, d10.id, { name: "Bench Press", category: "Strength" });
+
+  storage10.updateExercisePrescription(prog10.id, w10.id, d10.id, rx10.prescriptionId, {
+    sets: 4,
+    reps: "6–8",
+    load: "85kg",
+    rir: "1",
+    rpe: "8.5",
+    tempo: "3-1-1-0",
+    restSec: 180,
+    notes: "Top set RPE 8.5, hạ chậm 3s",
+    optionNote: "Nếu vai đau: Dumbbell Floor Press 4 × 8",
+    targetRequirement: "4 sets × 6–8 reps @ RIR 1 (85kg)"
+  });
+
+  // Re-instantiate storage to simulate browser reload
+  const storage10Reloaded = new DinoStorage();
+  const reloadedProg10 = storage10Reloaded.getProgramById(prog10.id);
+  const reloadedRx = reloadedProg10.weeks[0].days[0].exercises[0];
+  assert(reloadedRx.sets === 4, "Edited sets count persisted after reload (actual: 4)");
+  assert(reloadedRx.reps === "6–8", "Edited reps persisted after reload (actual: 6–8)");
+  assert(reloadedRx.load === "85kg", "Edited load persisted after reload (actual: 85kg)");
+  assert(reloadedRx.rir === "1", "Edited RIR persisted after reload (actual: 1)");
+  assert(reloadedRx.rpe === "8.5", "Edited RPE persisted after reload (actual: 8.5)");
+  assert(reloadedRx.tempo === "3-1-1-0", "Edited tempo persisted after reload (actual: 3-1-1-0)");
+  assert(reloadedRx.restSec === 180, "Edited restSec persisted after reload (actual: 180)");
+  assert(reloadedRx.notes === "Top set RPE 8.5, hạ chậm 3s", "Edited notes persisted after reload");
+  assert(reloadedRx.optionNote.includes("Dumbbell Floor Press"), "Edited optionNote persisted after reload");
+  assert(reloadedRx.targetRequirement === "4 sets × 6–8 reps @ RIR 1 (85kg)", "Edited target requirement persisted after reload");
+
+  // -------------------------------------------------------------------------
+  // TEST 15: Exercise Add Persistence (Simulating full app reload)
+  // -------------------------------------------------------------------------
+  console.log("\n[TEST 15] Exercise Add Persistence Across Reload");
+  const storage11 = new DinoStorage();
+  const prog11 = storage11.createProgram("Add Persistence Program");
+  const w11 = storage11.addWeekToProgram(prog11.id, "Week 1");
+  const d11 = storage11.addDayToWeek(prog11.id, w11.id, { title: "Day 1" });
+  storage11.addExerciseToDay(prog11.id, w11.id, d11.id, { name: "Front Squat", category: "Strength", movementPattern: "SQUAT" });
+
+  const storage11Reloaded = new DinoStorage();
+  const reloadedProg11 = storage11Reloaded.getProgramById(prog11.id);
+  const reloadedDay11 = reloadedProg11.weeks[0].days[0];
+  assert(reloadedDay11.exercises.length === 1, "Added exercise count persisted after reload");
+  assert(reloadedDay11.exercises[0].name === "Front Squat", "Front Squat is present after reload");
+  assert(reloadedDay11.exercises[0].movementPattern === "SQUAT", "Front Squat movementPattern preserved");
+
+  // -------------------------------------------------------------------------
+  // TEST 16: Exercise Reorder Persistence (Simulating full app reload)
+  // -------------------------------------------------------------------------
+  console.log("\n[TEST 16] Reorder Persistence Across Reload");
+  const storage12 = new DinoStorage();
+  const prog12 = storage12.createProgram("Reorder Persistence Program");
+  const w12 = storage12.addWeekToProgram(prog12.id, "Week 1");
+  const d12 = storage12.addDayToWeek(prog12.id, w12.id, { title: "Day 1" });
+  storage12.addExerciseToDay(prog12.id, w12.id, d12.id, { name: "Exercise A", category: "Strength" });
+  storage12.addExerciseToDay(prog12.id, w12.id, d12.id, { name: "Exercise B", category: "Strength" });
+  storage12.addExerciseToDay(prog12.id, w12.id, d12.id, { name: "Exercise C", category: "Strength" });
+
+  // Order before: A (idx 0), B (idx 1), C (idx 2)
+  // Move C upward (idx 2 -> idx 1): A, C, B
+  storage12.reorderExerciseInDay(prog12.id, w12.id, d12.id, 2, "up");
+
+  // Reload application / new storage instance
+  const storage12Reloaded = new DinoStorage();
+  const reloadedProg12 = storage12Reloaded.getProgramById(prog12.id);
+  const reorderedDay = reloadedProg12.weeks[0].days[0];
+  assert(reorderedDay.exercises[0].name === "Exercise A", "Position 1 is Exercise A after reload");
+  assert(reorderedDay.exercises[1].name === "Exercise C", "Position 2 is Exercise C after reload (reorder persisted!)");
+  assert(reorderedDay.exercises[2].name === "Exercise B", "Position 3 is Exercise B after reload (reorder persisted!)");
+
+  // -------------------------------------------------------------------------
+  // TEST 17: Duplicate Independence (Day & Prescription cloning)
+  // -------------------------------------------------------------------------
+  console.log("\n[TEST 17] Duplicate Independence");
+  const storage13 = new DinoStorage();
+  const prog13 = storage13.createProgram("Duplication Program");
+  const w13 = storage13.addWeekToProgram(prog13.id, "Week 1");
+  const d13 = storage13.addDayToWeek(prog13.id, w13.id, { title: "Leg Day" });
+  const rxOrig = storage13.addExerciseToDay(prog13.id, w13.id, d13.id, {
+    name: "Barbell Back Squat",
+    targetRequirement: "3 sets × 5 reps @ RIR 2"
+  });
+
+  // Duplicate Prescription
+  const rxCloned = storage13.duplicateExercisePrescription(prog13.id, w13.id, d13.id, rxOrig.prescriptionId);
+  assert(rxCloned.prescriptionId !== rxOrig.prescriptionId, "Cloned prescription has distinct prescriptionId");
+  assert(rxCloned.name === rxOrig.name, "Cloned prescription matches original name");
+
+  // Edit Clone
+  storage13.updateExercisePrescription(prog13.id, w13.id, d13.id, rxCloned.prescriptionId, {
+    targetRequirement: "1 set × 20 reps @ RIR 0 (Widowmaker)",
+    sets: 1,
+    reps: "20"
+  });
+
+  const refreshedDay = storage13.getProgramById(prog13.id).weeks[0].days[0];
+  const refreshedOrig = refreshedDay.exercises.find(e => e.prescriptionId === rxOrig.prescriptionId);
+  const refreshedClone = refreshedDay.exercises.find(e => e.prescriptionId === rxCloned.prescriptionId);
+  assert(refreshedOrig.targetRequirement === "3 sets × 5 reps @ RIR 2", "Original prescription target remained untouched");
+  assert(refreshedOrig.sets === 2 || refreshedOrig.sets === 3, "Original sets remained untouched");
+  assert(refreshedClone.targetRequirement === "1 set × 20 reps @ RIR 0 (Widowmaker)", "Cloned prescription target updated independently");
+  assert(refreshedClone.sets === 1, "Cloned prescription sets updated to 1");
+
+  // Duplicate Day
+  const dupDay = storage13.duplicateDay(prog13.id, w13.id, d13.id);
+  assert(dupDay.id !== d13.id, "Cloned day has distinct dayId");
+  assert(dupDay.title.includes("(Bản sao)"), "Cloned day title annotated");
+  assert(dupDay.exercises[0].prescriptionId !== refreshedDay.exercises[0].prescriptionId, "Cloned day exercises have newly generated prescriptionIds");
+
+  // -------------------------------------------------------------------------
+  // TEST 18: No Fake Performance Fallback (Detail & History Integrity)
+  // -------------------------------------------------------------------------
+  console.log("\n[TEST 18] No Fake Performance Fallback");
+  const storage14 = new DinoStorage();
+  const unperformedHistory = storage14.getExercisePerformanceHistory("unperformed_ex_123", "Unperformed Exercise");
+  assert(Array.isArray(unperformedHistory), "History is an array");
+  assert(unperformedHistory.length === 0, "Unperformed exercise returns empty array, NOT fake 50kg historical sets");
+
   console.log("\n==================================================");
   console.log(`ALL TESTS PASSED: ${passedTests} passed, ${failedTests} failed`);
   console.log("==================================================");

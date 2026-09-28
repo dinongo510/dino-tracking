@@ -1317,6 +1317,22 @@ class DinoApp {
       });
     }
 
+    const btnOpenExLibrary = document.getElementById("btnOpenExerciseLibraryModal");
+    if (btnOpenExLibrary) {
+      btnOpenExLibrary.addEventListener("click", () => {
+        this.builderPendingTarget = null;
+        this.pickerSearchQuery = "";
+        this.pickerCategory = "all";
+        const searchInput = document.getElementById("inputPickerExSearch");
+        if (searchInput) searchInput.value = "";
+        document.querySelectorAll(".btn-picker-cat").forEach(b => {
+          b.classList.toggle("active", b.getAttribute("data-cat") === "all");
+        });
+        this.renderPickerExercises();
+        this.openModal("modalExercisePicker");
+      });
+    }
+
     // Search in exercise picker modal
     const inputPickerSearch = document.getElementById("inputPickerExSearch");
     if (inputPickerSearch) {
@@ -1445,6 +1461,106 @@ class DinoApp {
         }
       });
     }
+
+    // Form: Edit Exercise Prescription Modal
+    const formEditRx = document.getElementById("formEditPrescription");
+    if (formEditRx) {
+      formEditRx.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const progId = document.getElementById("editRxProgId").value;
+        const weekId = document.getElementById("editRxWeekId").value;
+        const dayId = document.getElementById("editRxDayId").value;
+        const prescId = document.getElementById("editRxPrescriptionId").value;
+
+        const sets = parseInt(document.getElementById("inputEditRxSets").value, 10) || 2;
+        const reps = document.getElementById("inputEditRxReps").value.trim();
+        const loadRaw = document.getElementById("inputEditRxLoad").value.trim();
+        const load = loadRaw === "" ? null : (isNaN(parseFloat(loadRaw)) ? loadRaw : parseFloat(loadRaw));
+        const rir = document.getElementById("inputEditRxRir").value.trim();
+        const rpe = document.getElementById("inputEditRxRpe").value.trim() || null;
+        const tempo = document.getElementById("inputEditRxTempo").value.trim() || null;
+        const restSec = parseInt(document.getElementById("inputEditRxRest").value, 10) || 120;
+        const notes = document.getElementById("inputEditRxNotes").value.trim();
+        const optionNote = document.getElementById("inputEditRxOptionNote").value.trim();
+        let target = document.getElementById("inputEditRxTarget").value.trim();
+        if (!target) {
+          target = `${sets} sets × ${reps}${rir ? ' @ ' + rir : ''}`;
+        }
+
+        this.storage.updateExercisePrescription(progId, weekId, dayId, prescId, {
+          sets,
+          reps,
+          load,
+          rir,
+          rpe,
+          tempo,
+          restSec,
+          notes,
+          optionNote,
+          targetRequirement: target
+        });
+
+        this.closeModal("modalEditPrescription");
+        this.renderBuilderTree();
+        this.renderWorkoutView();
+        this.showToast("✓ Đã lưu chỉ định bài tập!");
+      });
+    }
+
+    document.querySelectorAll(".btn-close-edit-rx").forEach(btn => {
+      btn.addEventListener("click", () => this.closeModal("modalEditPrescription"));
+    });
+  }
+
+  openEditPrescriptionModal(progId, weekId, dayId, prescriptionIdOrIdx) {
+    const prog = this.storage.getProgramById(progId);
+    if (!prog) return;
+    const week = (prog.weeks || []).find(w => w.id === weekId || w.weekId === weekId);
+    if (!week) return;
+    const day = (week.days || []).find(d => d.id === dayId || d.dayId === dayId);
+    if (!day) return;
+    const exIdx = typeof prescriptionIdOrIdx === "number"
+      ? prescriptionIdOrIdx
+      : (day.exercises || []).findIndex(e => e.prescriptionId === prescriptionIdOrIdx || e.id === prescriptionIdOrIdx || e.exerciseId === prescriptionIdOrIdx);
+    const ex = (day.exercises || [])[exIdx];
+    if (!ex) return;
+
+    const progIdEl = document.getElementById("editRxProgId");
+    if (progIdEl) progIdEl.value = progId;
+    const weekIdEl = document.getElementById("editRxWeekId");
+    if (weekIdEl) weekIdEl.value = weekId;
+    const dayIdEl = document.getElementById("editRxDayId");
+    if (dayIdEl) dayIdEl.value = dayId;
+    const prescIdEl = document.getElementById("editRxPrescriptionId");
+    if (prescIdEl) prescIdEl.value = ex.prescriptionId || exIdx;
+
+    const nameEl = document.getElementById("editRxExName");
+    if (nameEl) nameEl.textContent = ex.name || ex.exerciseName;
+    const dayLabelEl = document.getElementById("editRxDayLabel");
+    if (dayLabelEl) dayLabelEl.textContent = `${week.name} • ${day.title}`;
+
+    const setsInput = document.getElementById("inputEditRxSets");
+    if (setsInput) setsInput.value = ex.sets !== undefined ? ex.sets : (ex.defaultSets ? ex.defaultSets.length : 2);
+    const repsInput = document.getElementById("inputEditRxReps");
+    if (repsInput) repsInput.value = ex.reps || (ex.defaultSets && ex.defaultSets[0] ? ex.defaultSets[0].reps : "8-10");
+    const loadInput = document.getElementById("inputEditRxLoad");
+    if (loadInput) loadInput.value = (ex.load !== null && ex.load !== undefined) ? ex.load : "";
+    const rirInput = document.getElementById("inputEditRxRir");
+    if (rirInput) rirInput.value = ex.rir || (ex.defaultSets && ex.defaultSets[0] ? ex.defaultSets[0].rir : "");
+    const rpeInput = document.getElementById("inputEditRxRpe");
+    if (rpeInput) rpeInput.value = ex.rpe || "";
+    const tempoInput = document.getElementById("inputEditRxTempo");
+    if (tempoInput) tempoInput.value = ex.tempo || "";
+    const restInput = document.getElementById("inputEditRxRest");
+    if (restInput) restInput.value = ex.restSec !== undefined ? ex.restSec : 120;
+    const notesInput = document.getElementById("inputEditRxNotes");
+    if (notesInput) notesInput.value = ex.notes || "";
+    const optInput = document.getElementById("inputEditRxOptionNote");
+    if (optInput) optInput.value = ex.optionNote || "";
+    const targetInput = document.getElementById("inputEditRxTarget");
+    if (targetInput) targetInput.value = ex.targetRequirement || "";
+
+    this.openModal("modalEditPrescription");
   }
 
   renderBuilderView() {
@@ -1554,9 +1670,9 @@ class DinoApp {
               <span style="font-size: 10.5px; font-weight: 800; color: var(--red-primary); text-transform: uppercase;">${day.dayKey || 'DAY'}</span>
               <div class="builder-day-title">${day.title}</div>
             </div>
-            <div style="display: flex; gap: 4px; align-items: center;">
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
               <button class="btn-mini-tag btn-add-ex-to-day" data-week-id="${week.id}" data-day-id="${day.id}">+ Bài Tập</button>
-              <button class="btn-mini-tag btn-duplicate-day" data-week-id="${week.id}" data-day-id="${day.id}" title="Nhân bản ngày tập này">📋</button>
+              <button class="btn-mini-tag btn-duplicate-day" data-week-id="${week.id}" data-day-id="${day.id}" title="Nhân bản ngày tập này">📋 Nhân Bản Ngày</button>
               <button class="btn-mini-tag danger btn-delete-day" data-week-id="${week.id}" data-day-id="${day.id}" title="Xóa ngày">✕</button>
             </div>
           </div>
@@ -1569,12 +1685,12 @@ class DinoApp {
                     ${ex.name || ex.exerciseName}
                     ${ex.movementPattern ? `<span class="builder-ex-pattern">[${ex.movementPattern}]</span>` : ''}
                   </div>
-                  <div class="builder-ex-target">${ex.targetRequirement || '3 sets x 8-10 reps'}</div>
+                  <div class="builder-ex-target">${ex.targetRequirement || '3 sets × 8–10 reps'}</div>
                   ${ex.optionNote ? `<div class="builder-ex-opt"><span class="opt-tag-red">Option:</span> ${ex.optionNote.replace(/^Option:\s*/i, '')}</div>` : ''}
                 </div>
                 <div class="builder-ex-actions-cluster">
-                  <button type="button" class="btn-builder-ex-action btn-edit-prescription" data-week-id="${week.id}" data-day-id="${day.id}" data-prescription-id="${ex.prescriptionId || ''}" data-idx="${exIdx}" title="Sửa chỉ định bài tập">✏</button>
-                  <button type="button" class="btn-builder-ex-action btn-duplicate-prescription" data-week-id="${week.id}" data-day-id="${day.id}" data-prescription-id="${ex.prescriptionId || ''}" data-idx="${exIdx}" title="Nhân bản bài tập này">📋</button>
+                  <button type="button" class="btn-builder-ex-pill btn-edit-prescription" data-week-id="${week.id}" data-day-id="${day.id}" data-prescription-id="${ex.prescriptionId || ''}" data-idx="${exIdx}" title="Sửa chi tiết chỉ định">✏ Sửa</button>
+                  <button type="button" class="btn-builder-ex-pill btn-duplicate-prescription" data-week-id="${week.id}" data-day-id="${day.id}" data-prescription-id="${ex.prescriptionId || ''}" data-idx="${exIdx}" title="Nhân bản bài tập này">📋 Nhân Bản</button>
                   <div class="builder-ex-reorder-group">
                     <button class="btn-reorder-arrow btn-up" data-week-id="${week.id}" data-day-id="${day.id}" data-idx="${exIdx}" ${exIdx === 0 ? 'disabled' : ''} title="Chuyển lên">▲</button>
                     <button class="btn-reorder-arrow btn-down" data-week-id="${week.id}" data-day-id="${day.id}" data-idx="${exIdx}" ${exIdx === day.exercises.length - 1 ? 'disabled' : ''} title="Chuyển xuống">▼</button>
@@ -1590,9 +1706,9 @@ class DinoApp {
       weekCard.innerHTML = `
         <div class="builder-week-header">
           <div class="builder-week-title">📅 ${week.name}</div>
-          <div style="display: flex; gap: 6px; align-items: center;">
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
             <button class="btn-mini-tag btn-add-day-to-week" data-week-id="${week.id}">+ Thêm Ngày</button>
-            <button class="btn-mini-tag btn-duplicate-week" data-week-id="${week.id}" title="Nhân bản tuần này">📋 Nhân Bản</button>
+            <button class="btn-mini-tag btn-duplicate-week" data-week-id="${week.id}" title="Nhân bản tuần này">📋 Nhân Bản Tuần</button>
             <button class="btn-mini-tag danger btn-delete-week" data-week-id="${week.id}">✕ Xóa Tuần</button>
           </div>
         </div>
@@ -1635,7 +1751,7 @@ class DinoApp {
             this.renderBuilderTree();
           }
         });
-      });
+      }
 
       // Duplicate Day
       weekCard.querySelectorAll(".btn-duplicate-day").forEach(btn => {
@@ -1673,21 +1789,7 @@ class DinoApp {
           const dayId = btn.getAttribute("data-day-id");
           const prescId = btn.getAttribute("data-prescription-id");
           const idx = parseInt(btn.getAttribute("data-idx"), 10);
-          const day = (week.days || []).find(d => d.id === dayId);
-          const ex = day ? (day.exercises || [])[idx] : null;
-          if (!ex) return;
-          const currentTarget = ex.targetRequirement || "";
-          const newTarget = prompt(`Chỉnh sửa mục tiêu (${ex.name || ex.exerciseName}):`, currentTarget);
-          if (newTarget !== null) {
-            const currentOpt = ex.optionNote || "";
-            const newOpt = prompt("Ghi chú thay thế / Option note (để trống nếu không có):", currentOpt);
-            this.storage.updateExercisePrescription(prog.id, week.id, dayId, prescId || idx, {
-              targetRequirement: newTarget.trim(),
-              optionNote: newOpt !== null ? newOpt.trim() : currentOpt
-            });
-            this.renderBuilderTree();
-            this.showToast(`✓ Đã cập nhật "${ex.name || ex.exerciseName}"!`);
-          }
+          this.openEditPrescriptionModal(prog.id, week.id, dayId, prescId || idx);
         });
       });
 
@@ -1700,6 +1802,7 @@ class DinoApp {
           const dup = this.storage.duplicateExercisePrescription(prog.id, week.id, dayId, prescId || idx);
           if (dup) {
             this.renderBuilderTree();
+            this.renderWorkoutView();
             this.showToast(`✓ Đã nhân bản "${dup.name || dup.exerciseName}"!`);
           }
         });
@@ -1723,6 +1826,7 @@ class DinoApp {
           const idx = parseInt(btn.getAttribute("data-idx"), 10);
           this.storage.reorderExerciseInDay(prog.id, week.id, dayId, idx, "up");
           this.renderBuilderTree();
+          this.renderWorkoutView();
         });
       });
 
@@ -1733,6 +1837,7 @@ class DinoApp {
           const idx = parseInt(btn.getAttribute("data-idx"), 10);
           this.storage.reorderExerciseInDay(prog.id, week.id, dayId, idx, "down");
           this.renderBuilderTree();
+          this.renderWorkoutView();
         });
       });
 
@@ -1744,6 +1849,7 @@ class DinoApp {
           const idx = parseInt(btn.getAttribute("data-idx"), 10);
           this.storage.deleteExerciseFromDay(prog.id, week.id, dayId, prescId || idx);
           this.renderBuilderTree();
+          this.renderWorkoutView();
         });
       });
 
@@ -1806,18 +1912,19 @@ class DinoApp {
       const exId = ex.exerciseId || ex.id;
       return `
         <div class="picker-ex-item" data-ex-id="${exId}">
-          <div style="flex: 1; min-width: 0;">
+          <div class="picker-ex-main-info" data-ex-id="${exId}" style="flex: 1; min-width: 0; cursor: pointer;">
             <div class="picker-ex-title">${ex.name || ex.exerciseName}</div>
             <div class="picker-ex-sub">${patternTag}${ex.category || 'Compound'} • ${ex.equipment || 'Barbell'} • ${(ex.primaryMuscles || []).join(', ')}</div>
           </div>
-          <div style="display: flex; gap: 6px; align-items: center;">
-            <button type="button" class="picker-ex-detail-btn" data-ex-id="${exId}" title="Xem chi tiết & lịch sử">ℹ Chi Tiết</button>
-            <button type="button" class="picker-ex-add-badge" data-ex-id="${exId}">+ Thêm</button>
+          <div class="picker-ex-btn-group" style="display: flex; gap: 6px; align-items: center;">
+            <button type="button" class="picker-ex-detail-btn" data-ex-id="${exId}" title="Xem chi tiết kỹ thuật & 3D heatmap">ℹ Chi Tiết</button>
+            <button type="button" class="picker-ex-add-badge" data-ex-id="${exId}" title="Thêm vào buổi tập">+ Thêm</button>
           </div>
         </div>
       `;
     }).join("");
 
+    // Clicking "ℹ Chi Tiết" opens detail modal directly from library
     container.querySelectorAll(".picker-ex-detail-btn").forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -1829,20 +1936,38 @@ class DinoApp {
       });
     });
 
-    container.querySelectorAll(".picker-ex-item").forEach(item => {
-      item.addEventListener("click", () => {
-        const id = item.getAttribute("data-ex-id");
+    // Clicking exercise info area also opens detail modal (does NOT accidentally add to workout)
+    container.querySelectorAll(".picker-ex-main-info").forEach(infoEl => {
+      infoEl.addEventListener("click", () => {
+        const id = infoEl.getAttribute("data-ex-id");
         const found = list.find(e => (e.exerciseId || e.id) === id) || (this.storage.getAllExercises() || []).find(e => (e.exerciseId || e.id) === id);
-        if (found && this.builderPendingTarget) {
-          this.storage.addExerciseToDay(
-            this.builderPendingTarget.progId,
-            this.builderPendingTarget.weekId,
-            this.builderPendingTarget.dayId,
-            found
-          );
-          this.closeModal("modalExercisePicker");
-          this.renderBuilderTree();
-          this.showToast(`✓ Đã thêm "${found.name || found.exerciseName}" vào buổi tập!`);
+        if (found) {
+          this.openExerciseDetailModal(found);
+        }
+      });
+    });
+
+    // Clicking "+ Thêm" adds exercise to workout day if pending target is set
+    container.querySelectorAll(".picker-ex-add-badge").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute("data-ex-id");
+        const found = list.find(e => (e.exerciseId || e.id) === id) || (this.storage.getAllExercises() || []).find(e => (e.exerciseId || e.id) === id);
+        if (found) {
+          if (this.builderPendingTarget) {
+            this.storage.addExerciseToDay(
+              this.builderPendingTarget.progId,
+              this.builderPendingTarget.weekId,
+              this.builderPendingTarget.dayId,
+              found
+            );
+            this.closeModal("modalExercisePicker");
+            this.renderBuilderTree();
+            this.renderWorkoutView();
+            this.showToast(`✓ Đã thêm "${found.name || found.exerciseName}" vào buổi tập!`);
+          } else {
+            this.showToast("Mở ngày tập trong Builder và bấm '+ Bài Tập' để chọn ngày thêm bài.");
+          }
         }
       });
     });

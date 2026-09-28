@@ -36,11 +36,18 @@ class DinoStorage {
     } else {
       try {
         const stored = JSON.parse(storedProgsRaw);
-        if (stored.length === 0 && defaultProgs.length > 0) {
-          stored.push(defaultProgs[0]);
+        if (Array.isArray(stored) && stored.length > 0) {
+          // Existing stored programs found: preserve user modifications, do not overwrite!
+          let needsSave = false;
+          stored.forEach(p => {
+            if (!p.version) { p.version = "1.0"; needsSave = true; }
+          });
+          if (needsSave) {
+            localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(stored));
+          }
+        } else if (defaultProgs.length > 0) {
+          localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(defaultProgs));
         }
-        stored.forEach(p => { if (!p.version) p.version = "1.0"; });
-        localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(stored));
       } catch (e) {
         localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(defaultProgs));
       }
@@ -179,6 +186,8 @@ class DinoStorage {
             order: ex.order !== undefined ? ex.order : (exIdx + 1),
             name: ex.name || "",
             category: ex.category || "General",
+            movementPattern: ex.movementPattern || this.inferMovementPattern(ex),
+            trainingType: ex.trainingType || this.inferTrainingType(ex),
             equipment: ex.equipment || "Barbell",
             primaryMuscles: Array.isArray(ex.primaryMuscles) ? [...ex.primaryMuscles] : [],
             secondaryMuscles: Array.isArray(ex.secondaryMuscles) ? [...ex.secondaryMuscles] : [],
@@ -273,6 +282,7 @@ class DinoStorage {
   savePrograms(programs) {
     const normalized = (programs || []).map(p => this.normalizeProgram(p));
     localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(normalized));
+    localStorage.setItem("dino_local_last_updated", String(Date.now()));
   }
 
   getActiveProgramId() {
@@ -594,6 +604,8 @@ class DinoStorage {
       order: day.exercises.length + 1,
       name: normEx.name,
       category: normEx.category,
+      movementPattern: normEx.movementPattern || this.inferMovementPattern(normEx),
+      trainingType: normEx.trainingType || this.inferTrainingType(normEx),
       equipment: normEx.equipment,
       primaryMuscles: [...normEx.primaryMuscles],
       secondaryMuscles: [...normEx.secondaryMuscles],
@@ -640,6 +652,8 @@ class DinoStorage {
     const newSetsCount = updates.sets !== undefined ? parseInt(updates.sets, 10) : current.sets;
     const newReps = updates.reps !== undefined ? String(updates.reps).trim() : current.reps;
     const newRir = updates.rir !== undefined ? String(updates.rir).trim() : current.rir;
+    const newRpe = updates.rpe !== undefined ? (updates.rpe !== null ? String(updates.rpe).trim() : null) : (current.rpe || null);
+    const newTempo = updates.tempo !== undefined ? (updates.tempo !== null ? String(updates.tempo).trim() : null) : (current.tempo || null);
     const newRestSec = updates.restSec !== undefined ? parseInt(updates.restSec, 10) : current.restSec;
     const newNotes = updates.notes !== undefined ? String(updates.notes).trim() : current.notes;
     const newLoad = updates.load !== undefined ? updates.load : current.load;
@@ -669,6 +683,8 @@ class DinoStorage {
       reps: newReps,
       repRange: newReps,
       rir: newRir,
+      rpe: newRpe,
+      tempo: newTempo,
       load: newLoad,
       restSec: newRestSec,
       notes: newNotes,
@@ -697,7 +713,7 @@ class DinoStorage {
 
     const orig = day.exercises[exIdx];
     const cloned = JSON.parse(JSON.stringify(orig));
-    cloned.prescriptionId = `rx_${day.id || day.dayId}_${orig.exerciseId || orig.id}_${Date.now()}`;
+    cloned.prescriptionId = `rx_${day.id || day.dayId}_${orig.exerciseId || orig.id}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
     day.exercises.splice(exIdx + 1, 0, cloned);
     day.exercises.forEach((ex, idx) => { ex.order = idx + 1; });
 
