@@ -9,13 +9,13 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-005A` AUTO_VERIFIED |
+| **Session State** | `DINO-005A` LOCKED |
 | **Active Change Set** | `DINO-005A` |
-| **Current State** | `AUTO_VERIFIED` |
-| **Dino AUT** | `PENDING` |
+| **Current State** | `LOCKED` |
+| **Dino AUT** | `APPROVED` |
 | **Active Branch** | `main` |
-| **Current Baseline HEAD** | `9b79f47b2c9ad3cead145e69b0faee2180860368` |
-| **Last Updated** | `2026-09-26` |
+| **Current Baseline HEAD** | `d54b6b2d6493452ca4b22641d6d45067be7d2218` |
+| **Last Updated** | `2026-09-28` |
 | **Active Blockers** | None |
 
 ---
@@ -25,26 +25,27 @@
 ### `DINO-005A`
 
 - **Objective:** Exercise & Program System foundation. Standardize Exercise Identity & Metadata (exerciseId, status, category, movementPattern, trainingType, equipment, primary/secondary muscles, cues, errors, cautions), Exercise Library UI & filters, Exercise Detail UI with authentic performance history (no fake fallbacks), Program structure (Program -> Week -> Day -> Exercise Prescription with unique prescriptionId), Program Versioning & Version Safety, Builder improvements (Add/Edit prescription, Reorder, Remove, Duplicate Day/Week/Prescription), Custom Exercise management, Historical Safety (PRESCRIPTION ≠ ACTUAL, frozen prescriptionSnapshot), and hooks for DINO-005B/C.
-- **Dino AUT:** `PENDING`
-- **State:** `AUTO_VERIFIED` (`PROPOSED` → `SPEC_APPROVED` → `IMPLEMENTATION_AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED`)
-- **Automated Tests:** 12/12 test suites passing (44 assertions passed, 0 failed in `scratch/test_dino_005a.js`).
-- **Authorized Files:**
+- **Dino AUT:** `APPROVED`
+- **State:** `LOCKED` (`PROPOSED` → `SPEC_APPROVED` → `IMPLEMENTATION_AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `UAT_DEFECT_ROUND_1` → `DEPLOY_RECOVERY` → `UAT_DEFECT_ROUND_2` → `DINO_AUT_APPROVED` → `LOCKED`)
+- **Automated Tests:** 18/18 test suites passing (76 assertions passed, 0 failed in `scratch/test_dino_005a.js`).
+- **Authorized Files Changed:**
   - `js/data.js`
   - `js/storage.js`
   - `js/app.js`
   - `css/style.css`
-  - `00_SYSTEM/DINO_SESSION_STATE.md`
-- **Protected Areas (Untouched):**
   - `index.html`
+  - `package.json`
+  - `vercel.json`
+  - `00_SYSTEM/DINO_SESSION_STATE.md`
+- **Production Verification:** Deployed and verified live at `https://dino-tracking-six.vercel.app/`.
+- **Protected Areas (Untouched):**
   - `js/ai_coach.js`
   - `js/charts.js`
   - `js/audio.js`
   - `js/timer.js`
   - `js/supabase_sync.js`
   - `sw.js`
-  - `vercel.json`
   - `manifest.json`
-  - `package.json`
   - `server.js`
 
 ### `DINO-004`
@@ -177,13 +178,15 @@
 | `DINO-000` | Establish DINO Development Governance | `LOCKED` (`COMMITTED` → `PUSHED` → `GITHUB_AUDITED` → `DINO_AUT_APPROVED` → `LOCKED`) | Permanent governance docs creation (`AGENTS.md`, `00_SYSTEM/*`) | 2026-09-23 |
 | `DINO-GOV-001` | Governance Authority Correction & Lock | `LOCKED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `GITHUB_AUDITED` → `DINO_AUT_APPROVED` → `LOCKED`) | Align governance with DINO authority model; remove Founder/delegated authorization | 2026-09-24 |
 | `DINO-001` | Establish Training Data Foundation | `LOCKED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `GITHUB_AUDITED` → `DINO_AUT_APPROVED` → `LOCKED`) | Core data foundation: prescription vs actual, session snapshotting, history retrieval | 2026-09-24 |
-| `DINO-003` | Core Tracking Integrity | `AUTO_VERIFIED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED`) | Real stats (PR/Overload/Mileage), minimal cardio tracking, input validation, historical safety | In Progress (2026-09-25) |
+| `DINO-003` | Core Tracking Integrity | `LOCKED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `AI_AUDIT_CORRECTED` → `AUTO_VERIFIED` → `DINO_AUT_APPROVED` → `LOCKED`) | Real stats (PR/Overload/Mileage), minimal cardio tracking, input validation, historical safety | 2026-09-25 |
+| `DINO-004` | 2-Week Hybrid Athlete Schedule, Options, & Cache Reliability | `LOCKED` (`AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `CACHE_RE_AUDITED` → `CACHE_CORRECTED` → `AUTO_VERIFIED` → `DINO_AUT_APPROVED` → `LOCKED`) | BFS schedule restoration, interactive option selection, deterministic PWA caching (v12, v=2.3) | 2026-09-25 |
+| `DINO-005A` | Exercise & Program System Foundation | `LOCKED` (`PROPOSED` → `SPEC_APPROVED` → `IMPLEMENTATION_AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `UAT_DEFECT_ROUND_1` → `DEPLOY_RECOVERY` → `UAT_DEFECT_ROUND_2` → `DINO_AUT_APPROVED` → `LOCKED`) | Exercise Identity & Metadata (59+ exercises), Exercise Library & Detail, Program Builder (Add/Edit/Reorder/Duplicate/Delete), Persistence & Version Safety | 2026-09-28 |
 
 ---
 
 ## 4. Active Blockers & Decisions Required
 
-*No active blockers. DINO-003 implementation is completed, tested, and AUTO_VERIFIED. Awaiting commit, push, GitHub audit, and DINO AUT.*
+*No active blockers. DINO-005A is DINO AUT APPROVED and LOCKED on production. The platform is ready for the next authorized change set (DINO-005B or roadmap item).*
 
 ---
 
