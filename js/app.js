@@ -15,7 +15,7 @@ class DinoApp {
     this.storage = window.dinoStorage;
     this.timer = window.DinoTimerEngine ? new DinoTimerEngine() : null;
     this.aiCoach = window.dinoAICoach;
-    
+
     this.activeTab = "workout";
     this.currentRouletteWOD = null;
     this.prehabCurrentStepIndex = 0;
@@ -28,7 +28,7 @@ class DinoApp {
     this.pickerCategory = "all";
     this.builderPendingTarget = null;
     this._transientSelectedOption = null;
-    
+
     this.init();
   }
 
@@ -234,7 +234,7 @@ class DinoApp {
     // Active Week & Days
     const activeWeek = (prog.weeks || []).find(w => w.id === this.storage.getActiveWeekId()) || (prog.weeks ? prog.weeks[0] : null);
     const dayChipsContainer = document.getElementById("dayChipsContainer");
-    
+
     if (dayChipsContainer && activeWeek && activeWeek.days) {
       dayChipsContainer.innerHTML = "";
       activeWeek.days.forEach(d => {
@@ -254,7 +254,7 @@ class DinoApp {
 
     // Active Day Meta
     const activeDay = activeWeek && activeWeek.days ? activeWeek.days.find(d => d.id === this.storage.getActiveDayId()) || activeWeek.days[0] : null;
-    
+
     if (activeDay) {
       const dayTag = document.getElementById("heroDayTag");
       if (dayTag) dayTag.textContent = `${activeDay.dayKey || "DAY"} • ${activeDay.badge || "WORKOUT"}`;
@@ -281,7 +281,7 @@ class DinoApp {
           if (stopwatchCluster) stopwatchCluster.style.display = "flex";
           if (lockBadge) lockBadge.style.display = "inline-block";
           if (lockedWarning) lockedWarning.style.display = "none";
-          
+
           if (this.timer && !this.timer.sessionIsRunning) {
             const elapsed = Math.max(0, Math.floor((Date.now() - activeState.startTime) / 1000));
             this.timer.startSession(elapsed);
@@ -1919,7 +1919,7 @@ class DinoApp {
     // Search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      list = list.filter(ex => 
+      list = list.filter(ex =>
         (ex.name && ex.name.toLowerCase().includes(q)) ||
         (ex.exerciseName && ex.exerciseName.toLowerCase().includes(q)) ||
         (ex.category && ex.category.toLowerCase().includes(q)) ||
@@ -2103,15 +2103,145 @@ class DinoApp {
   }
 
   generateNASMPrehabRoutine() {
-    const db = window.NASM_CEX_DATABASE;
-    if (!db) return;
-
     const checkedRadios = document.querySelectorAll(".prehab-radio-input:checked");
     const selectedDevIds = Array.from(checkedRadios)
       .map(r => r.value)
       .filter(val => !val.endsWith("_none"));
 
     const activeType = document.querySelector(".btn-prehab-workout-type.active")?.getAttribute("data-type") || "full_body";
+
+    // DINO-005B Deterministic Prehab Engine Integration
+    if (window.PREHAB_ENGINE && typeof window.PREHAB_ENGINE.generatePrehabRoutine === "function") {
+      const DEVIATION_MAP = {
+        "pelvis_apt": "imp-lphc-apt",
+        "pelvis_ppt": "imp-lphc-ppt",
+        "upper_forward_head": "imp-neck-fwd",
+        "upper_rounded_shoulders": "imp-shldr-round",
+        "lower_knee_valgus": "imp-knee-valgus",
+        "lower_tight_calves": "imp-foot-turnout"
+      };
+
+      const CONTEXT_MAP = {
+        "upper": "upper",
+        "lower": "lower",
+        "full_body": "full_body",
+        "run": "quality_run",
+        "off_day": "offday"
+      };
+
+      const findings = selectedDevIds.map((id, idx) => ({
+        impairmentKey: DEVIATION_MAP[id] || id,
+        userPriority: idx === 0
+      }));
+
+      const workoutContext = CONTEXT_MAP[activeType] || "full_body";
+      const sessionMode = activeType === "off_day" ? "off_day" : "pre_workout";
+
+      const routine = window.PREHAB_ENGINE.generatePrehabRoutine(
+        { findings, availableEquipment: ["bodyweight", "foam_roller", "mini_band", "dumbbell", "mat", "wall"] },
+        workoutContext,
+        sessionMode
+      );
+
+      const resultBox = document.getElementById("prehabRoutineResultContainer");
+      const stepsList = document.getElementById("prehab4StepsList");
+
+      if (routine.status === "INVALID_INPUT") {
+        if (resultBox && stepsList) {
+          stepsList.innerHTML = `
+            <div style="background: rgba(255, 42, 42, 0.12); border: 1px solid var(--red-primary); border-radius: 10px; padding: 14px; color: var(--text-white);">
+              <div style="font-weight: 800; color: var(--red-primary); margin-bottom: 4px;">⚠️ XUNG ĐỘT TƯ THẾ HỌC (PR-001)</div>
+              <div style="font-size: 13px; color: var(--text-muted);">${routine.message || 'Các lỗi tư thế bạn chọn có xung đột cơ sinh học trực tiếp. Vui lòng chọn lại.'}</div>
+            </div>
+          `;
+          resultBox.style.display = "block";
+          resultBox.scrollIntoView({ behavior: "smooth" });
+        }
+        return;
+      }
+
+      if (routine.status === "SAFETY_BLOCKED") {
+        if (resultBox && stepsList) {
+          stepsList.innerHTML = `
+            <div style="background: rgba(255, 42, 42, 0.15); border: 1px solid var(--red-primary); border-radius: 10px; padding: 14px; color: var(--text-white);">
+              <div style="font-weight: 800; color: var(--red-primary); margin-bottom: 4px;">🛑 CẢNH BÁO AN TOÀN Y TẾ</div>
+              <div style="font-size: 13px; color: var(--text-muted);">${routine.safetyNotice?.messageVi || 'Dừng vận động để đảm bảo an toàn.'}</div>
+            </div>
+          `;
+          resultBox.style.display = "block";
+          resultBox.scrollIntoView({ behavior: "smooth" });
+        }
+        return;
+      }
+
+      const phaseKeyNames = {
+        phase1_inhibit: "GIAI ĐOẠN 1: ỨC CHẾ (INHIBIT / SMR)",
+        phase2_lengthen: "GIAI ĐOẠN 2: KÉO GIÃN (LENGTHEN / STATIC)",
+        phase3_activate: "GIAI ĐOẠN 3: KÍCH HOẠT (ACTIVATE / ISOLATION)",
+        phase4_integrate: "GIAI ĐOẠN 4: TÍCH HỢP (INTEGRATE / DYNAMIC)"
+      };
+
+      this.prehabSteps = [];
+
+      if (resultBox && stepsList) {
+        const renderedCards = Object.entries(routine.phases).map(([key, item]) => {
+          if (!item) return "";
+          const d = item.dosage || {};
+          const durationSec = d.durationSeconds || (d.reps ? d.reps * 4 : 45);
+
+          this.prehabSteps.push({
+            stepName: phaseKeyNames[key] || key,
+            ex: {
+              name: item.name,
+              nameEn: item.nameEn,
+              muscles: item.primaryMuscles ? item.primaryMuscles.join(", ") : "Toàn thân",
+              durationSec: durationSec,
+              cue: item.formCues?.[0] || item.cautions || "Tập đúng tư thế, kiểm soát chuyển động."
+            }
+          });
+
+          return `
+            <div class="cex-step-card" style="margin-bottom: 12px; border-left: 3px solid var(--red-primary); padding: 12px; background: var(--bg-surface); border-radius: 8px;">
+              <div class="cex-step-num-title" style="font-size: 11px; font-weight: 800; color: var(--red-primary); text-transform: uppercase;">
+                ${phaseKeyNames[key] || key}
+              </div>
+              <div class="cex-exercise-name" style="font-size: 15px; font-weight: 800; color: var(--text-white); margin-top: 2px;">
+                ${item.name} <span style="font-size: 12px; color: var(--text-muted); font-weight: 400;">(${item.nameEn})</span>
+              </div>
+              <div style="font-size: 11.5px; color: var(--color-green); margin-top: 4px;">
+                🎯 <strong>Cơ tác động:</strong> ${item.primaryMuscles ? item.primaryMuscles.join(", ") : 'Toàn thân'} •
+                <strong>Dụng cụ:</strong> ${item.equipment ? item.equipment.join(", ") : 'Bodyweight'}
+              </div>
+              <div style="font-size: 12px; color: var(--text-white); margin-top: 4px; background: rgba(255,255,255,0.04); padding: 6px 8px; border-radius: 6px;">
+                ⏱️ <strong>Liều lượng:</strong> ${d.sets} hiệp • ${d.durationSeconds ? d.durationSeconds + 's giữ' : d.reps + ' reps'} • Tempo: ${d.tempo || 'Kiểm soát'} • <em>${d.fatigueIntent || 'ZERO FATIGUE'}</em>
+              </div>
+              ${item.formCues && item.formCues.length > 0 ? `
+                <div class="cex-cue-text" style="font-size: 11.5px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;">
+                  💡 <strong>Form Cues:</strong> ${item.formCues.join(' • ')}
+                </div>
+              ` : ''}
+              ${item.cautions ? `
+                <div style="font-size: 11px; color: #ffb86c; margin-top: 4px;">
+                  ⚠️ <strong>Lưu ý:</strong> ${item.cautions}
+                </div>
+              ` : ''}
+              <div style="font-size: 10px; color: #6272a4; margin-top: 6px;">
+                🔬 <strong>Thuật toán:</strong> Điểm: ${item.audit?.totalScore || 100} • Nguồn: ${item.audit?.sourceProvenance?.sourceId || 'SOURCE-01'} [${item.audit?.provenanceClassification?.physiologicalFacts || 'LOCKED-SOURCE'}]
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        stepsList.innerHTML = renderedCards;
+        resultBox.style.display = "block";
+        resultBox.scrollIntoView({ behavior: "smooth" });
+      }
+      return;
+    }
+
+    // Fallback legacy code if engine not loaded
+    const db = window.NASM_CEX_DATABASE;
+    if (!db) return;
 
     this.prehabSteps = db.generateRoutine(selectedDevIds, activeType);
 
@@ -2566,7 +2696,7 @@ class DinoApp {
 
     const barbellStack = document.getElementById("barbellPlatesStack");
     if (barbellStack) {
-      barbellStack.innerHTML = platesNeeded.flatMap(p => 
+      barbellStack.innerHTML = platesNeeded.flatMap(p =>
         Array(p.count).fill(0).map(() => `<div class="plate-disc ${p.cls}">${p.kg}</div>`)
       ).join("");
     }
@@ -2619,27 +2749,27 @@ class DinoApp {
           ${svgFilterDefs}
           <!-- Head & Neck -->
           <circle cx="50" cy="18" r="10" fill="#1c1c1c" stroke="#333" />
-          
+
           <!-- Chest -->
           <path id="pec_left" class="muscle-path ${highlightMuscle === 'Chest' ? 'targeted' : ''}" d="M38 42 C44 42 48 48 48 56 C42 58 35 54 34 46 Z" data-muscle="Chest" />
           <path id="pec_right" class="muscle-path ${highlightMuscle === 'Chest' ? 'targeted' : ''}" d="M62 42 C56 42 52 48 52 56 C58 58 65 54 66 46 Z" data-muscle="Chest" />
-          
+
           <!-- Shoulders (Anterior Deltoids) -->
           <path id="delt_front_left" class="muscle-path ${highlightMuscle === 'Shoulders' ? 'targeted' : ''}" d="M28 42 C34 40 37 46 36 54 C30 52 26 48 28 42 Z" data-muscle="Shoulders" />
           <path id="delt_front_right" class="muscle-path ${highlightMuscle === 'Shoulders' ? 'targeted' : ''}" d="M72 42 C66 40 63 46 64 54 C70 52 74 48 72 42 Z" data-muscle="Shoulders" />
-          
+
           <!-- Biceps -->
           <path id="biceps_left" class="muscle-path ${highlightMuscle === 'Biceps' ? 'targeted' : ''}" d="M25 56 C30 56 30 70 26 76 C23 72 22 62 25 56 Z" data-muscle="Biceps" />
           <path id="biceps_right" class="muscle-path ${highlightMuscle === 'Biceps' ? 'targeted' : ''}" d="M75 56 C70 56 70 70 74 76 C77 72 78 62 75 56 Z" data-muscle="Biceps" />
-          
+
           <!-- Core / Abs -->
           <rect id="abs_upper" class="muscle-path ${highlightMuscle === 'Core' ? 'targeted' : ''}" x="44" y="60" width="12" height="12" rx="2" data-muscle="Core" />
           <rect id="abs_lower" class="muscle-path ${highlightMuscle === 'Core' ? 'targeted' : ''}" x="44" y="74" width="12" height="14" rx="2" data-muscle="Core" />
-          
+
           <!-- Quads (Thighs) -->
           <path id="quad_left" class="muscle-path ${highlightMuscle === 'Quads' ? 'targeted' : ''}" d="M37 98 C46 98 48 116 46 138 C40 140 35 125 34 106 Z" data-muscle="Quads" />
           <path id="quad_right" class="muscle-path ${highlightMuscle === 'Quads' ? 'targeted' : ''}" d="M63 98 C54 98 52 116 54 138 C60 140 65 125 66 106 Z" data-muscle="Quads" />
-          
+
           <!-- Calves (Anterior Tibialis) -->
           <path id="calf_front_left" class="muscle-path ${highlightMuscle === 'Calves' ? 'targeted' : ''}" d="M37 146 C42 146 43 166 41 182 C37 182 36 166 37 146 Z" data-muscle="Calves" />
           <path id="calf_front_right" class="muscle-path ${highlightMuscle === 'Calves' ? 'targeted' : ''}" d="M63 146 C58 146 57 166 59 182 C63 182 64 166 63 146 Z" data-muscle="Calves" />
@@ -2654,26 +2784,26 @@ class DinoApp {
           ${svgFilterDefs}
           <!-- Head -->
           <circle cx="50" cy="18" r="10" fill="#1c1c1c" stroke="#333" />
-          
+
           <!-- Upper Traps -->
           <path id="traps_upper" class="muscle-path ${highlightMuscle === 'Upper Back' ? 'targeted' : ''}" d="M42 30 L58 30 L64 42 L36 42 Z" data-muscle="Upper Back" />
-          
+
           <!-- Lats (Back) -->
           <path id="lat_left" class="muscle-path ${highlightMuscle === 'Lats' ? 'targeted' : ''}" d="M36 44 C44 48 44 70 38 78 C33 68 32 54 36 44 Z" data-muscle="Lats" />
           <path id="lat_right" class="muscle-path ${highlightMuscle === 'Lats' ? 'targeted' : ''}" d="M64 44 C56 48 56 70 62 78 C67 68 68 54 64 44 Z" data-muscle="Lats" />
-          
+
           <!-- Triceps -->
           <path id="triceps_left" class="muscle-path ${highlightMuscle === 'Triceps' ? 'targeted' : ''}" d="M24 54 C28 54 28 70 24 74 C21 70 21 60 24 54 Z" data-muscle="Triceps" />
           <path id="triceps_right" class="muscle-path ${highlightMuscle === 'Triceps' ? 'targeted' : ''}" d="M76 54 C72 54 72 70 76 74 C79 70 79 60 76 54 Z" data-muscle="Triceps" />
-          
+
           <!-- Glutes (Mông) -->
           <path id="glute_left" class="muscle-path ${highlightMuscle === 'Glutes' ? 'targeted' : ''}" d="M37 92 C48 90 49 110 40 114 C33 112 32 100 37 92 Z" data-muscle="Glutes" />
           <path id="glute_right" class="muscle-path ${highlightMuscle === 'Glutes' ? 'targeted' : ''}" d="M63 92 C52 90 51 110 60 114 C67 112 68 100 63 92 Z" data-muscle="Glutes" />
-          
+
           <!-- Hamstrings (Đùi sau) -->
           <path id="ham_left" class="muscle-path ${highlightMuscle === 'Hamstrings' ? 'targeted' : ''}" d="M36 116 C46 116 47 136 44 142 C38 142 35 132 36 116 Z" data-muscle="Hamstrings" />
           <path id="ham_right" class="muscle-path ${highlightMuscle === 'Hamstrings' ? 'targeted' : ''}" d="M64 116 C54 116 53 136 56 142 C62 142 65 132 64 116 Z" data-muscle="Hamstrings" />
-          
+
           <!-- Calves (Gastrocnemius) -->
           <path id="calf_left" class="muscle-path ${highlightMuscle === 'Calves' ? 'targeted' : ''}" d="M36 148 C44 148 43 170 39 180 C34 176 34 160 36 148 Z" data-muscle="Calves" />
           <path id="calf_right" class="muscle-path ${highlightMuscle === 'Calves' ? 'targeted' : ''}" d="M64 148 C56 148 57 170 61 180 C66 176 66 160 64 148 Z" data-muscle="Calves" />
@@ -3017,7 +3147,7 @@ class DinoApp {
         try {
           const athlete = this.storage.getAthleteContextSummary();
           const testReply = await this.aiCoach.callGeminiAPI(key, "Kiểm tra kết nối AI Coach", athlete);
-          
+
           if (statusBox) {
             statusBox.style.color = "var(--color-green)";
             statusBox.innerHTML = "✓ <strong>Kết nối thành công!</strong> Mô hình đã sẵn sàng phản hồi.";

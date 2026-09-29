@@ -9,12 +9,12 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-005A` LOCKED / `DINO-005B` SPECIFICATION (`STEP_06_SCORING_SPEC_COMPLETE`) |
-| **Active Change Set** | `DINO-005B` (Specification Only) |
-| **Current State** | `STEP_06_SCORING_SPEC_COMPLETE` |
+| **Session State** | `DINO-005A` LOCKED / `DINO-005B` RUNTIME (`STEP_07_RUNTIME_IMPLEMENTATION_COMPLETE`) |
+| **Active Change Set** | `DINO-005B` (Runtime Implementation) |
+| **Current State** | `STEP_07_RUNTIME_IMPLEMENTATION_COMPLETE` |
 | **Dino AUT** | `DINO-005A APPROVED` |
-| **Active Branch** | `feature/dino-005b-step06-scoring-spec` |
-| **Current Baseline HEAD** | `9838ebef2eb1087415bf96543e9154e11b941e97` |
+| **Active Branch** | `feature/dino-005b-step07-runtime` |
+| **Current Baseline HEAD** | `9a58c3188bc2e56855cc5adb321973aef0b8d2dd` |
 | **Last Updated** | `2026-09-29` |
 | **Active Blockers** | None |
 
@@ -22,31 +22,45 @@
 
 ## 2. Completed / Active Change Set Details
 
-### `DINO-005B` (Prehab / Corrective Engine — Specification Phase)
+### `DINO-005B` (Prehab / Corrective Engine — Runtime Implementation)
 
-- **Objective:** Design and specify the deterministic Prehab / Corrective recommendation engine, exercise candidate matrix, and deterministic scoring pipeline based on NASM CEx (S01), NASM PES (S02), NSCA 4th Ed. (S03), and BFS Hybrid 2-Week Rotation (S04).
-- **Current Step:** `STEP_06_SCORING_SPEC_COMPLETE`
-- **State:** `SPECIFICATION_IN_PROGRESS` (Zero application code modified; pure governance/specification artifacts).
+- **Objective:** Implement the deterministic client-side Prehab & Corrective recommendation engine, 37-exercise database, and 14-stage scoring pipeline based on NASM CEx (S01), NASM PES (S02), NSCA 4th Ed. (S03), and BFS Hybrid 2-Week Rotation (S04).
+- **Current Step:** `STEP_07_RUNTIME_IMPLEMENTATION_COMPLETE`
+- **State:** `IMPLEMENTED` / `AUTO_VERIFIED` (Automated verification complete: 31/31 Step 07 tests passing; 18/18 DINO-005A regression tests passing).
 - **Completed Steps:**
   - `STEP 01`: Source Ingestion & Inventory Register (`00_SYSTEM/SOURCES/DINO-005B/SOURCE_REGISTER.md`)
   - `STEP 02`: Source Domain Mapping & Provenance Tiers (`00_SYSTEM/SOURCES/DINO-005B/SOURCE_MAP.md`)
   - `STEP 03`: Extracted Rules Register (`00_SYSTEM/SOURCES/DINO-005B/EXTRACTED_RULES.md`)
   - `STEP 04`: Exercise Database & Candidate Matrix (`00_SYSTEM/SOURCES/DINO-005B/EXERCISE_MATRIX.md`)
   - `STEP 05`: Deterministic Engine Architecture & Permutation Matrix (`00_SYSTEM/SOURCES/DINO-005B/PREHAB_ENGINE_DESIGN.md` & `PREHAB_RULE_MATRIX.md`, Commit: `9838ebe`)
-  - `STEP 06`: Deterministic Scoring & Pipeline Specification (`00_SYSTEM/SOURCES/DINO-005B/DETERMINISTIC_SCORING_SPECIFICATION.md`)
-- **Authorized Files Changed:**
-  - `00_SYSTEM/SOURCES/DINO-005B/DETERMINISTIC_SCORING_SPECIFICATION.md` (Created)
-  - `00_SYSTEM/DINO-005B_SPECIFICATION.md` (Updated)
-  - `00_SYSTEM/DINO_SESSION_STATE.md` (Updated)
+  - `STEP 06`: 37-Exercise Database & Deterministic Scoring Pipeline Specification (`00_SYSTEM/SOURCES/DINO-005B/EXERCISE_DATABASE_SPECIFICATION.md` & `DETERMINISTIC_SCORING_SPECIFICATION.md`, Commit: `9a58c31`)
+  - `STEP 07`: Runtime Implementation (`js/prehab_data.js`, `js/prehab_engine.js`, `index.html`, `js/app.js`, `scratch/test_dino_005b_step07.js`)
+- **Authorized Files Created:**
+  - `js/prehab_data.js` (37 exercises catalog)
+  - `js/prehab_engine.js` (14-stage deterministic engine)
+  - `scratch/test_dino_005b_step07.js` (31 automated tests)
+  - `00_SYSTEM/SOURCES/DINO-005B/EXERCISE_DATABASE_SPECIFICATION.md` (Authoritative exercise database)
+  - `00_SYSTEM/SOURCES/DINO-005B/SOURCE_REGISTER.md`
+  - `00_SYSTEM/SOURCES/DINO-005B/PREHAB_ENGINE_AUDIT.md`
+- **Authorized Files Modified:**
+  - `index.html` (Script tags for prehab_data.js and prehab_engine.js)
+  - `js/app.js` (Wired window.PREHAB_ENGINE into generateNASMPrehabRoutine())
+  - `00_SYSTEM/DINO-005B_SPECIFICATION.md` (Updated status)
+  - `00_SYSTEM/DINO_SESSION_STATE.md` (Updated status)
 - **Protected Areas (100% Untouched):**
-  - `js/*` (`js/data.js`, `js/storage.js`, `js/app.js`, `js/ai_coach.js`, `js/charts.js`, `js/audio.js`, `js/timer.js`, `js/supabase_sync.js`)
-  - `css/*` (`css/style.css`)
-  - `index.html`
-  - `package.json`
-  - `vercel.json`
-  - `sw.js`
-  - `manifest.json`
-- **Implementation Status:** NOT AUTHORIZED. DINO-005B is NOT marked complete.
+  - `js/data.js` (UNTOUCHED)
+  - `js/storage.js` (UNTOUCHED)
+  - `js/ai_coach.js` (UNTOUCHED)
+  - `js/charts.js` (UNTOUCHED)
+  - `js/audio.js` (UNTOUCHED)
+  - `js/timer.js` (UNTOUCHED)
+  - `js/supabase_sync.js` (UNTOUCHED)
+  - `css/*` (UNTOUCHED)
+  - `package.json` (UNTOUCHED)
+  - `vercel.json` (UNTOUCHED)
+  - `sw.js` (UNTOUCHED)
+  - `manifest.json` (UNTOUCHED)
+- **Implementation Status:** STEP_07_RUNTIME_IMPLEMENTATION_COMPLETE. DINO-005B is NOT marked complete. Pending DINO AUT.
 
 ### `DINO-005A`
 
