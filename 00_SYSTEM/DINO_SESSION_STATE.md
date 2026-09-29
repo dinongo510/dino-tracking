@@ -9,18 +9,58 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-005A` LOCKED |
-| **Active Change Set** | `DINO-005A` |
-| **Current State** | `LOCKED` |
-| **Dino AUT** | `APPROVED` |
-| **Active Branch** | `main` |
-| **Current Baseline HEAD** | `d54b6b2d6493452ca4b22641d6d45067be7d2218` |
-| **Last Updated** | `2026-09-28` |
+| **Session State** | `DINO-005A` LOCKED / `DINO-005B` UNCHANGED / `DINO-ARCH-001` AUTHORIZED |
+| **Active Change Set** | `DINO-ARCH-001` (Documentation Only) |
+| **Current State** | `DOCUMENTATION_COMPLETE` |
+| **Dino AUT** | `DINO-005A APPROVED` |
+| **Active Branch** | `feature/dino-arch-001-9router-learning` |
+| **Current Baseline HEAD** | `81aada51934c826f08dc6b75f24bb36f9e413c98` |
+| **Last Updated** | `2026-09-29` |
 | **Active Blockers** | None |
 
 ---
 
 ## 2. Completed / Active Change Set Details
+
+### `DINO-ARCH-001` (9Router Architecture Learning Notes)
+
+- **Objective:** Document architecture learning from 9Router (`decolua/9router`) to establish a resilient, multi-provider, capability-aware AI Coach blueprint.
+- **Authorization:** Founder Authorized — Documentation-Only.
+- **Status:** `PROPOSED` / `AUTHORIZED` → `DOCUMENTATION_COMPLETE` (On branch `feature/dino-arch-001-9router-learning`).
+- **Scope & Boundaries:**
+  - Documentation-only (`00_SYSTEM/ARCHITECTURE/DINO_AI_COACH_9ROUTER_LEARNING.md`).
+  - Zero application code modified (`js/`, `css/`, `index.html` untouched).
+  - No refactors, no dependency changes, no UI changes, no AI provider integrations.
+  - **DINO-005B Status:** 100% UNCHANGED. The deterministic Prehab Engine remains the sole authority for corrective protocols; AI Coach does not generate or override corrective prescriptions.
+- **Authorized Files Changed:**
+  - `00_SYSTEM/ARCHITECTURE/DINO_AI_COACH_9ROUTER_LEARNING.md` (Created)
+  - `00_SYSTEM/DINO_SESSION_STATE.md` (Updated)
+
+### `DINO-005B` (Prehab / Corrective Engine — Specification Phase)
+
+- **Objective:** Design and specify the deterministic Prehab / Corrective recommendation engine and 37-exercise database based on NASM Essentials of Corrective Exercise Training (Clark et al.), NASM Sports Performance Training (McGill et al.), NSCA Essentials of Strength & Conditioning (Haff et al.), and BFS Hybrid 2-Week Rotation context.
+- **Current Step:** `STEP 06 — EXERCISE DATABASE SPECIFICATION COMPLETE`
+- **State:** `SPECIFICATION_IN_PROGRESS` (Zero application code modified; pure governance/specification artifacts).
+- **Completed Steps:**
+  - `STEP 01`: Source Ingestion & Inventory Register (`00_SYSTEM/SOURCES/DINO-005B/SOURCE_REGISTER.md`)
+  - `STEP 02`: Source Domain Mapping & Provenance Tiers (`00_SYSTEM/SOURCES/DINO-005B/SOURCE_MAP.md`)
+  - `STEP 03`: Extracted Rules Register (`00_SYSTEM/SOURCES/DINO-005B/EXTRACTED_RULES.md`)
+  - `STEP 04`: Exercise Database & Exercise Matrix Design (`00_SYSTEM/SOURCES/DINO-005B/EXERCISE_MATRIX.md`)
+  - `STEP 05`: Deterministic Engine Architecture & Rule Matrix (`00_SYSTEM/SOURCES/DINO-005B/PREHAB_ENGINE_DESIGN.md` & `PREHAB_RULE_MATRIX.md`)
+  - `STEP 05A`: Independent Product Architect Audit & Reconciliation (`00_SYSTEM/SOURCES/DINO-005B/PREHAB_ENGINE_AUDIT.md`)
+  - `STEP 06`: Complete 37-Exercise Database Specification (`00_SYSTEM/SOURCES/DINO-005B/EXERCISE_DATABASE_SPECIFICATION.md`)
+- **Authorized Files Changed:**
+  - `00_SYSTEM/SOURCES/DINO-005B/EXERCISE_DATABASE_SPECIFICATION.md`
+  - `00_SYSTEM/DINO-005B_SPECIFICATION.md`
+  - `00_SYSTEM/DINO_SESSION_STATE.md`
+- **Protected Areas (100% Untouched):**
+  - `js/*` (`js/data.js`, `js/storage.js`, `js/app.js`, etc.)
+  - `css/*` (`css/style.css`)
+  - `index.html`
+  - `package.json`
+  - `vercel.json`
+  - `sw.js`
+  - `manifest.json`
 
 ### `DINO-005A`
 
