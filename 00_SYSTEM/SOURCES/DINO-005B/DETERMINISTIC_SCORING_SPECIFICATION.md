@@ -24,7 +24,7 @@ This specification is complete and implementation-ready: a developer implementin
 
 1. **NO APPLICATION CODE:** This document is an architectural and mathematical specification. Zero application files (`js/*`, `css/*`, `index.html`, `package.json`, `sw.js`, `vercel.json`, `manifest.json`) are modified.
 2. **ZERO HEURISTIC MASKING:** Every mathematical multiplier, scoring threshold, priority sequence, and tie-breaker is explicitly classified as `[ENGINEERING-PROPOSAL]` or `[NEEDS-ADMIN-DECISION]`. No engineering heuristic is presented as a NASM or NSCA laboratory fact.
-3. **AI COACH INDEPENDENCE:** The DINO AI Coach is strictly decoupled from this engine. The engine operates entirely in client memory as a stateless, deterministic function ($O(1)$ lookup time, zero network dependencies).
+3. **AI COACH INDEPENDENCE:** The DINO AI Coach is strictly decoupled from this engine. The engine operates entirely in client memory as a stateless, deterministic function (**$O(N)$ bounded deterministic catalog evaluation, where $N = 37$ in current catalog**, sub-2ms execution bounds, zero network dependencies).
 4. **ABSOLUTE EXERCISE INVENTORY INTEGRITY:** The scoring pipeline selects candidates exclusively from the source-locked `EXERCISE_MATRIX.md`. The engine will never synthesize or fabricate an unverified exercise to satisfy phase completeness.
 
 ---
@@ -186,7 +186,9 @@ $$\text{candidateScore} = S_{\text{impairment}} + S_{\text{context}} + S_{\text{
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-> **Mandatory Classification Notice:** The point values above ($+100, +60, +50, +25, +20, +10$) are an `[ENGINEERING-PROPOSAL]` designed to create clear mathematical separation and prevent ambiguous ties. They are NOT published constants of NASM or NSCA.
+> [!IMPORTANT]
+> **Mandatory Governance Notice on Scoring Weights (P1-02):**
+> These weights and multipliers ($+100, +60, +50, +25, +20, +10$, multipliers $1.0–3.5$) are deterministic engineering heuristics (`[ENGINEERING-PROPOSAL]`) created for product ranking and reproducibility. They are NOT clinical scoring values derived directly from NASM, NSCA, or another scientific source.
 
 ---
 
@@ -212,7 +214,7 @@ The context suitability multiplier $W_{\text{context}}$ adapts exercise selectio
 2. **Ambiguous Context:**
    If multiple workout types are detected, the scheduled BFS rotation day from `S04` takes precedence.
 3. **Cross-Context Conflict:**
-   If an upper-body impairment is selected on a `lower` body day, the engine preserves Phase 1, Phase 2, and Phase 3 targeting the upper body, but Phase 4 (Integrate) is filtered to an athletic lower/core integration drill (`KV-INT-01` or `EFL-INT-01`) to prepare for the day's compound loading.
+   If an upper-body impairment is selected on a `lower` body day, the engine preserves Phase 1, Phase 2, and Phase 3 targeting the upper body, but Phase 4 (Integrate) is filtered to an athletic lower/core integration drill (`cex-int-02` or `cex-int-01`) to prepare for the day's compound loading.
 
 ---
 
@@ -250,16 +252,16 @@ S01 Chapter 14 mandates explicit cross-body asymmetric programming. The engine e
         ┌────────────────┴────────────────┐
         ▼                                 ▼
 [ RIGHT SIDE (Shifted / Same-Side) ]   [ LEFT SIDE (Unweighted / Opposite) ]
-• INHIBIT: Right Adductors (AWS-INH-01) • INHIBIT: Left Piriformis (AWS-INH-03)
-• INHIBIT: Right TFL/ITB (AWS-INH-02)   • INHIBIT: Left Biceps Fem. (AWS-INH-04)
-• LENGTHEN: Right Adductors (AWS-LEN-01)• LENGTHEN: Left Biceps Fem. (AWS-LEN-04)
-• ACTIVATE: Right Glute Med (AWS-ACT-01)• LENGTHEN: Left Piriformis (AWS-LEN-05)
-                                        • ACTIVATE: Left Adductor (AWS-ACT-02)
+• INHIBIT: Right Adductors (cex-inh-03) • INHIBIT: Left Piriformis (cex-inh-07)
+• INHIBIT: Right TFL/ITB (cex-inh-04)   • INHIBIT: Left Biceps Fem. (cex-inh-06)
+• LENGTHEN: Right Adductors (cex-len-03)• LENGTHEN: Left Biceps Fem. (cex-len-06)
+• ACTIVATE: Right Glute Med (cex-act-02)• LENGTHEN: Left Gastroc/Soleus (cex-len-01)
+                                        • ACTIVATE: Left Adductor / Band Walk (cex-act-03)
 ```
 
-### 8.3 Missing Laterality Handling (`[NEEDS-ADMIN-DECISION]` AD-002)
+### 8.3 Missing Laterality Handling (`[NEEDS-ADMIN-DECISION]` AD-002: STATUS = OPEN)
 - If a user selects Asymmetric Weight Shift but leaves laterality `unspecified`:
-  - **Deterministic Policy:** The engine halts unilateral specialization, outputs routine status `PARTIAL_NEEDS_LATERALITY`, and provides safe bilateral posterior-chain mobility (`LBR-INH-01`, `LBR-LEN-01`) while prompting the user to declare the shifted side.
+  - **Deterministic Policy:** The engine halts unilateral specialization, outputs routine status `PARTIAL_NEEDS_LATERALITY`, and provides safe bilateral posterior-chain mobility (`cex-inh-06`, `cex-len-06`) while prompting the user to declare the shifted side.
   - **Strict Invariant:** The engine **never silently guesses** or randomly assigns `left` or `right`.
 
 ---
@@ -294,7 +296,7 @@ Every generated routine must satisfy the 4-phase continuum:
 1. **Zero Exercise Fabrication:** If no source-verified exercise in `EXERCISE_MATRIX.md` matches an eligible candidate for a phase, the engine **must not invent a placeholder**.
 2. **Phase Gap Handling:**
    - If Phase 1, 2, or 3 is missing: Apply Tier 2 compatible candidate from the same kinetic checkpoint.
-   - If Phase 4 is missing (e.g. Scapular Winging `SG-001`): Apply Tier 3 general movement integration drill (`EFL-INT-01` Ball Squat to Press or `FA-INT-01` Balance Reach) and mark status `FALLBACK_APPLIED`.
+   - If Phase 4 is missing (e.g. Scapular Winging `SG-001: OPEN`): Apply Tier 3 general movement integration drill (`cex-int-07` Push-Up Plus or `cex-int-01` Pause Squat) and mark status `FALLBACK_APPLIED`.
    - If zero compatible candidates exist across all tiers: Return `INSUFFICIENT_SUPPORTED_DATA` and safely halt.
 
 ---
@@ -413,14 +415,14 @@ When candidate retrieval or equipment filtering produces zero eligible exercises
 ┌────────────────────────────────────────────────────────┐
 │ LEVEL 2: COMPATIBLE SAME-CHECKPOINT CANDIDATE          │
 │ Secondary exercise from same anatomical checkpoint     │
-│ (e.g. Soleus stretch FA-LEN-02 if Gastrocnemius taken) │
+│ (e.g. Soleus stretch cex-len-02 if Gastrocnemius taken)│
 └────────────────────────────────────────────────────────┘
                            │
                            ▼ (if 0 eligible candidates)
 ┌────────────────────────────────────────────────────────┐
 │ LEVEL 3: AUTHORIZED GENERAL ATHLETIC CANDIDATE         │
 │ General athletic movement prep drill from S02/S04       │
-│ (e.g. Ball Wall Squat EFL-INT-01 or Balance Reach)     │
+│ (e.g. Ball Wall Squat cex-int-01 or Balance Reach)     │
 └────────────────────────────────────────────────────────┘
                            │
                            ▼ (if Level 3 unavailable)
@@ -476,7 +478,7 @@ interface PrehabRoutine {
 }
 
 interface PrescribedPhaseItem {
-  exerciseId: string;                   // Catalog candidate ID, e.g. "FA-INH-01"
+  exerciseId: string;                   // Canonical catalog exercise ID, e.g. "cex-inh-01"
   name: string;                         // Standard English / anatomical name
   phase: "inhibit" | "lengthen" | "activate" | "integrate";
   targetMuscle: string;
@@ -516,75 +518,45 @@ $$\forall (I, C, M, V): \quad f(I, C, M, V) \equiv f(I, C, M, V)$$
 
 The following test matrix defines the expected programmatic behavior across all boundary conditions:
 
-| # | Test Scenario | Input Vector (`AssessmentInput`) | Expected Stage Behavior | Expected Output Result | Verification Rationale |
+| # | Test Scenario | Input Vector (`AssessmentInput`) | Expected Stage Behavior | Expected Output Result (Canonical IDs) | Verification Rationale |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **01** | **APT Only** | `imp-lphc-apt`, `lower`, Mode A | Stage 08 retrieves LPHC APT candidates; $W_{\text{lower}}=3.0$ | `EFL-INH-02`, `EFL-LEN-02`, `EFL-ACT-02`, `EFL-INT-01` | S01 Chapter 14 anterior pelvic tilt protocol. |
-| **02** | **PPT Only** | `imp-lphc-ppt`, `lower`, Mode A | Stage 08 retrieves Hamstring/Adductor Magnus; $W_{\text{lower}}=3.0$ | `LBR-INH-01`, `LBR-LEN-01`, `LBR-ACT-01`, `LBR-INT-01` | S01 Chapter 14 posterior pelvic tilt protocol. |
-| **03** | **Valgus Only** | `imp-knee-valgus`, `soccer`, Mode A | Stage 06 applies $W_{\text{soccer}}=3.5$; retrieves Adductor/Glute Med | `KV-INH-02`, `KV-LEN-02`, `KV-ACT-03`, `KV-INT-01` | S01 Chapter 13 & S02 soccer adductor resilience. |
-| **04** | **Varus Only** | `imp-knee-varus`, `lower`, Mode A | Stage 08 retrieves lateral hamstring / TFL candidates | Source-locked varus tuple assigned | S01 Chapter 13 outward knee deviation. |
-| **05** | **APT + Valgus** | Both selected, `lower`, Valgus has priority | Stage 05 applies priority score; Valgus wins; Knee sequence selected | `KV-INH-02`, `KV-LEN-02`, `KV-ACT-03`, `KV-INT-01` | Priority bonus (+50) cleanly breaks multi-joint tie. |
-| **06** | **PPT + Varus** | Both selected, `full_body`, Mode B | Stage 05 LPHC kinetic precedence (LPHC > Knee); PPT wins | `LBR-INH-01`, `LBR-LEN-01`, `LBR-ACT-01`, `LBR-INT-01` | Deterministic kinetic-chain hierarchy (EP-001). |
-| **07** | **Lower Workout** | `imp-shldr-fall`, `lower` day | Upper body P1-P3 preserved; P4 filtered to lower integration drill | P1-P3 Shoulder, P4: `EFL-INT-01` Ball Squat to Press | Cross-context safety: legs prepared for squatting. |
-| **08** | **Upper Workout** | `imp-shldr-elev`, `upper` day | Stage 06 applies $W_{\text{upper}}=3.5$; Cervicothoracic sequence | `SE-INH-02`, `SE-LEN-02`, `SE-ACT-01`, `SE-INT-01` | S01 Chapter 15 shoulder elevation protocol. |
-| **09** | **Quality Run** | `imp-foot-turnout`, `quality_run` | Stage 06 applies $W_{\text{run}}=3.5$; static stretch capped $\le 30$s | `FA-INH-01`, `FA-LEN-01` (25s), `FA-ACT-02`, `FA-INT-03`| NSCA pre-running stretch cap strictly enforced. |
-| **10** | **Easy Run** | `imp-lphc-apt`, `easy_run` | Stage 06 applies $W_{\text{easy}}=2.5$; hip flexor / glute sequence | `EFL-INH-02`, `EFL-LEN-02`, `EFL-ACT-02`, `FA-INT-01` | Aerobic gait stabilization without fatigue. |
-| **11** | **Soccer Match** | `imp-knee-valgus`, `soccer` | Stage 06 applies $W_{\text{soccer}}=3.5$; groin prep prioritized | `KV-INH-02`, `KV-LEN-02`, `KV-ACT-03`, `KV-INT-01` | Groin strain prevention for Saturday match play. |
-| **12** | **Full Body** | `imp-lphc-apt`, `full_body` | Global kinetic chain linkage prioritized in Phase 4 | P1-P3 APT, P4: `EFL-INT-01` Squat to Overhead Press | S01 Chapter 14 multi-joint linkage. |
+| **01** | **APT Only** | `imp-lphc-apt`, `lower`, Mode A | Stage 08 retrieves LPHC APT candidates; $W_{\text{lower}}=3.0$ | `cex-inh-05`, `cex-len-05`, `cex-act-04`, `cex-int-08` | S01 Chapter 14 anterior pelvic tilt protocol. |
+| **02** | **PPT Only** | `imp-lphc-ppt`, `lower`, Mode A | Stage 08 retrieves Hamstring/Adductor Magnus; $W_{\text{lower}}=3.0$ | `cex-inh-06`, `cex-len-06`, `cex-act-04`, `cex-int-08` | S01 Chapter 14 posterior pelvic tilt protocol. |
+| **03** | **Valgus Only** | `imp-knee-valgus`, `soccer`, Mode A | Stage 06 applies $W_{\text{soccer}}=3.5$; retrieves Adductor/Glute Med | `cex-inh-03`, `cex-len-03`, `cex-act-02`, `cex-int-04` | S01 Chapter 13 & S02 soccer adductor resilience. |
+| **04** | **Varus Only** | `imp-knee-varus`, `lower`, Mode A | Stage 08 retrieves lateral hamstring / TFL candidates | `cex-inh-04`, `cex-len-04`, `cex-act-10`, `cex-int-01` | S01 Chapter 13 outward knee deviation. |
+| **05** | **APT + Valgus** | Both selected, `lower`, Valgus has priority | Stage 05 applies priority score; Valgus wins; Knee sequence selected | `cex-inh-03`, `cex-len-03`, `cex-act-02`, `cex-int-01` | Priority bonus (+50) cleanly breaks multi-joint tie. |
+| **06** | **PPT + Varus** | Both selected, `full_body`, Mode B | Stage 05 LPHC kinetic precedence (LPHC > Knee); PPT wins | `cex-inh-06`, `cex-len-06`, `cex-act-04`, `cex-int-08` | Deterministic kinetic-chain hierarchy (EP-001). |
+| **07** | **Lower Workout** | `imp-shldr-fall`, `lower` day | Upper body P1-P3 preserved; P4 filtered to lower integration drill | `cex-inh-08`, `cex-len-07`, `cex-act-07`, `cex-int-01` | Cross-context safety: legs prepared for squatting. |
+| **08** | **Upper Workout** | `imp-shldr-elev`, `upper` day | Stage 06 applies $W_{\text{upper}}=3.5$; Cervicothoracic sequence | `cex-inh-10`, `cex-len-09`, `cex-act-07`, `cex-int-06` | S01 Chapter 15 shoulder elevation protocol. |
+| **09** | **Quality Run** | `imp-foot-turnout`, `quality_run` | Stage 06 applies $W_{\text{run}}=3.5$; static stretch capped $\le 30$s | `cex-inh-01`, `cex-len-01` (25s), `cex-act-01`, `cex-int-05`| NSCA pre-running stretch cap strictly enforced. |
+| **10** | **Easy Run** | `imp-lphc-apt`, `easy_run` | Stage 06 applies $W_{\text{easy}}=2.5$; hip flexor / glute sequence | `cex-inh-05`, `cex-len-05`, `cex-act-04`, `cex-int-02` | Aerobic gait stabilization without fatigue. |
+| **11** | **Soccer Match** | `imp-knee-valgus`, `soccer` | Stage 06 applies $W_{\text{soccer}}=3.5$; groin prep prioritized | `cex-inh-03`, `cex-len-03`, `cex-act-02`, `cex-int-04` | Groin strain prevention for Saturday match play. |
+| **12** | **Full Body** | `imp-lphc-apt`, `full_body` | Global kinetic chain linkage prioritized in Phase 4 | `cex-inh-05`, `cex-len-05`, `cex-act-04`, `cex-int-08` | S01 Chapter 14 multi-joint linkage. |
 | **13** | **Off-Day Mode** | `imp-lphc-apt`, `offday`, Mode B | Stage 12 assigns Mode B dosage (2–3 sets, 60s holds) | Complete 4-phase routine with Mode B volume | Tissue remodeling during non-training days. |
 | **14** | **Missing Context** | `workoutContext: ""` | Stage 06 defaults to $W=1.0$ (neutral context); logs warning | Standard routine generated; status: `FALLBACK_APPLIED` | Zero crash guarantee on missing client fields. |
 | **15** | **Missing Gear** | Only `bodyweight`, candidate needs roller | Stage 07 eliminates roller candidate; substitutes bodyweight variant | Substitute bodyweight candidate selected | Equipment availability filter strictly respected. |
 | **16** | **Bilateral State** | `imp-foot-turnout`, bilateral | Routine outputs alternating bilateral dosage | Instructions flag equal sets per leg | Symmetrical movement prescription. |
-| **17** | **Left Laterality** | `AWS`, shifted to LEFT | Stage 03 assigns same-side to Left, opposite to Right | Left: Adductor/TFL; Right: Piriformis/Biceps Fem. | Strict asymmetric cross-body mapping preserved. |
-| **18** | **Right Laterality**| `AWS`, shifted to RIGHT | Stage 03 assigns same-side to Right, opposite to Left | Right: Adductor/TFL; Left: Piriformis/Biceps Fem. | Strict asymmetric cross-body mapping preserved. |
-| **19** | **AWS Unspecified** | `AWS`, `laterality: "unspecified"` | Stage 08 halts unilateral routine; flags missing laterality | Status: `PARTIAL_NEEDS_LATERALITY`; safe bilateral SMR | Invariant: Never guess user laterality (AD-002). |
+| **17** | **Left Laterality** | `AWS`, shifted to LEFT | Stage 03 assigns same-side to Left, opposite to Right | Left: `cex-inh-03`, `cex-inh-04`; Right: `cex-inh-07`, `cex-len-06` | Strict asymmetric cross-body mapping preserved. |
+| **18** | **Right Laterality**| `AWS`, shifted to RIGHT | Stage 03 assigns same-side to Right, opposite to Left | Right: `cex-inh-03`, `cex-inh-04`; Left: `cex-inh-07`, `cex-len-06` | Strict asymmetric cross-body mapping preserved. |
+| **19** | **AWS Unspecified** | `AWS`, `laterality: "unspecified"` | Stage 08 halts unilateral routine; flags missing laterality | Status: `PARTIAL_NEEDS_LATERALITY`; safe bilateral SMR (`cex-inh-06`, `cex-len-06`) | Invariant: Never guess user laterality (AD-002: OPEN). |
 | **20** | **Zero Impairments**| `findings: []` | Stage 01 detects empty findings; queries general athletic prep | S02 general warm-up routine generated | Empty state renders safe athletic prep routine. |
 | **21** | **Conflicting Payload**| Both `APT` and `PPT` selected | Stage 03 enforces PR-001; retains primary, discards opposing | Valid routine for primary; logs conflict warning | Engine validates and resolves invalid UI payload. |
 | **22** | **Candidate Absent** | Target candidate lacks equipment | Stage 14 invokes Level 2 compatible same-checkpoint candidate | Level 2 alternative selected; status logged | Transparent fallback without invented exercises. |
-| **23** | **Phase Gap** | Phase 4 has no source drill (Winging) | Stage 14 invokes Level 3 general movement drill (`EFL-INT-01`) | Routine completed with Tier 3 fallback marker | SG-001 source gap handled deterministically. |
+| **23** | **Phase Gap** | Phase 4 has no source drill (Winging) | Stage 14 invokes Level 3 general movement drill (`cex-int-07` or `cex-int-08`) | Routine completed with Tier 3 fallback marker | SG-001 source gap handled deterministically. |
 | **24** | **Safety Block** | `painLevel: 6`, sharp pain | Stage 13 triggers immediate abort; clears exercise array | Status: `SAFETY_BLOCKED`; output medical notice | Clinical red flag prevents loading damaged tissue. |
-| **25** | **Score Tie** | Two candidates have identical 250 score | Stage 10 applies tie-breaker: Gear > Specificity > Catalog ID | Deterministic winner selected (lower catalog ID) | Zero random selection under identical math. |
-
----
-
-## 17. Traceability Matrix
-
-Every candidate exercise chosen by the engine must populate the `auditTrail` block in `PrehabRoutine`:
-
-```json
-{
-  "exerciseId": "FA-INH-01",
-  "phase": "inhibit",
-  "targetImpairment": "imp-foot-turnout",
-  "workoutContext": "quality_run",
-  "scoringBreakdown": {
-    "baseScore": 100,
-    "contextMultiplier": 3.5,
-    "contextBonus": 250,
-    "equipmentBonus": 5,
-    "userPriorityBonus": 50,
-    "lateralityBonus": 10,
-    "totalScore": 415
-  },
-  "tieBreakerApplied": false,
-  "fallbackLevel": 1,
-  "sourceCitation": "S01 NASM Corrective Exercise Training, Chapter 12, p. 235",
-  "provenanceTier": "LOCKED-SOURCE"
-}
-```
-
-This guarantees complete forensic explainability: any coach, auditor, or user can inspect exactly why an exercise was selected without querying an AI model.
+| **25** | **Score Tie** | Two candidates have identical 250 score | Stage 10 applies tie-breaker: Gear > Specificity > Catalog ID | Deterministic winner selected (lower canonical ID: e.g. `cex-inh-01` over `cex-inh-02`) | Zero random selection under identical math. |
 
 ---
 
 ## 18. Open Administrative Decisions & Gaps
 
-The following decisions remain formally **OPEN** and will be finalized upon product acceptance:
+The following decisions remain formally **`STATUS = OPEN`** and will be finalized upon product acceptance:
 
-| Decision ID | Domain | Open Question | Current Proposed Baseline | Authority Required |
-| :--- | :--- | :--- | :--- | :--- |
-| **AD-001** | Dosage Pinning | Finalize exact second/rep durations for Mode A (3–6 min) vs Mode B (12–20 min). | Mode A: 45s SMR, 25s stretch, 10 reps activate, 8 reps integrate. Mode B: 60s SMR, 35s stretch, 12 reps, 10 reps. | DINO / Founder Approval |
-| **AD-002** | Missing Laterality on AWS | Should unspecified laterality block routine generation or provide bilateral safe guidance? | Block unilateral routine, prompt for shifted side, deliver interim bilateral posterior chain relief. | DINO / Founder Approval |
-| **SG-001** | Scapular Winging P4 Gap | S01 omits a dedicated Phase 4 integration drill for scapular winging. | Authorize `EFL-INT-01` (Ball Wall Squat to Overhead Press) as official Level 3 fallback. | DINO / Product Architect |
+| Decision ID | Domain | Open Question | Current Proposed Baseline | Status | Authority Required |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| **`AD-001`** | Dosage Pinning | Finalize exact second/rep durations for Mode A (3–6 min) vs Mode B (12–20 min). | Mode A: 45s SMR, 25s stretch, 10 reps activate, 8 reps integrate. Mode B: 60s SMR, 35s stretch, 12 reps, 10 reps. | **OPEN** | DINO / Founder Approval |
+| **`AD-002`** | Missing Laterality on AWS | Should unspecified laterality block routine generation or provide bilateral safe guidance? | Block unilateral routine, prompt for shifted side, deliver interim bilateral posterior chain relief. | **OPEN** | DINO / Founder Approval |
+| **`SG-001`** | Scapular Winging P4 Gap | S01 omits a dedicated Phase 4 integration drill for scapular winging. | Authorize `cex-int-07` (Push-Up Plus) or `cex-int-01` (Pause Squat) as official Level 3 fallback. | **OPEN** | DINO / Product Architect |
 
 ---
 

@@ -1,9 +1,9 @@
 # DINO-005B — SOURCE MAP
 
-> Change Set: DINO-005B — Prehab / Corrective Engine  
-> Step: 02 — Source Mapping  
-> Status: REGISTERED  
-> Implementation: NOT STARTED  
+> Change Set: DINO-005B — Prehab / Corrective Engine
+> Step: 02 — Source Mapping
+> Status: REGISTERED
+> Implementation: NOT STARTED
 > Baseline governance: DINO-005B specification registered before implementation.
 
 ---
@@ -126,6 +126,12 @@ S03 provides the **strength & conditioning framework** used to evaluate how corr
 - What programming variables can increase or reduce total training stress?
 - What sequencing/load considerations matter when integrating prehab into training?
 
+### Conceptual Separation: NASM CEx vs. NSCA RAMP (P2-02)
+
+- **NASM Corrective Exercise Continuum (S01):** Targeted neuromyofascial restoration (`Inhibit` $\to$ `Lengthen` $\to$ `Activate` $\to$ `Integrate`) addressing specific static and dynamic movement compensations.
+- **NSCA RAMP Warm-Up (S03 Ch. 14):** Systemic athletic preparation framework (`Raise` $\to$ `Activate & Mobilize` $\to$ `Potentiate`).
+- **Integration Boundary:** Mode A prehab slots into the *Activate & Mobilize* component of a workout warm-up prior to specific resistance warm-up sets (which satisfy *Potentiate*). NASM CEx and NSCA RAMP are complementary, but they are NOT interchangeable frameworks.
+
 ### S03 does NOT automatically determine
 
 - NASM CEX stage selection.
@@ -176,24 +182,23 @@ It describes how the target athlete combines running performance, resistance tra
 
 ### Primary authority
 
-S05 is a **BFS product/feature requirement source**, not a textbook evidence source.
+S05 is a **BFS product/feature requirement source**, not a textbook evidence source. It possesses **ZERO scientific authority** and must never be cited as clinical or physiological evidence.
 
 ### Information to extract in Step 03
 
 - Existing DINO Prehab & Corrective feature requirements.
-- Required user-selection behavior (for example, mutually exclusive opposing deviations where specified).
-- Intended corrective workflow.
-- Existing examples of corrective mappings that the product specification explicitly requests.
-- UI/UX requirements related to Prehab.
+- Required user-selection behavior (mutually exclusive opposing deviations via radio buttons, PR-001).
+- Intended corrective workflow with workout-type dependency (PR-002).
+- Client-side determinism and AI Coach decoupling (PR-003).
+- Dual operational modes: Mode A Pre-Workout vs. Mode B Off-Day (PR-004).
 - Existing terminology that must be preserved for product continuity.
 
-### Important source-status note
+### Physical vs. Governance Status (P0-02 Resolution)
 
-The source was reported as unavailable on the developer's local filesystem during initial ingestion, but the exact file is present and readable in the current Project context. Therefore:
-
-- **Project source:** FOUND / READABLE.
-- **Local filesystem mirror:** NOT VERIFIED.
-- Do not mark the actual source as missing merely because the local path is unavailable.
+- **Physical Source:** **NOT AVAILABLE** on local filesystem (verified via recursive disk scan; no standalone `.txt` recovered).
+- **Governance Record:** **RECONCILED / PROJECT-OWNER-AUTHORIZED** (substantive product and UX rules originally authored by DINO during early planning are formally articulated and locked in repository governance).
+- **Scientific Authority:** **NONE**. All derived rules are strictly classified as `[DINO BUSINESS RULE]` or `[DINO DESIGN DECISION]`.
+- Do not claim the physical `.txt` file was recovered.
 
 ### Product questions S05 may answer
 

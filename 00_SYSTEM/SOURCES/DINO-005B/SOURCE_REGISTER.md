@@ -154,17 +154,18 @@ flowchart TD
 
 ### SOURCE-05: Kế-hoạch-cơ-bản.txt
 - **Source ID:** `SOURCE-05`
-- **Exact Filename:** `Kế-hoạch-cơ-bản.txt`
-- **File Path:** Project Source Set / Legacy Specification (Physical file not present as separate .txt on local filesystem; contents confirmed via Project Owner governance input)
-- **File Type:** Plain text (`.txt`) / Legacy Specification Notes
-- **Role in DINO-005B:** **PRODUCT / LEGACY REQUIREMENTS**
-- **Purpose:** Governs legacy product requirements, business logic, and UX constraints originally defined by DINO:
-  1. *Radio Button Exclusivity:* Biomechanically opposing conditions (Anterior Pelvic Tilt vs. Posterior Pelvic Tilt; Knee Valgus vs. Knee Varus) must use mutually exclusive radio/toggle inputs.
-  2. *Workout-Type Dependency:* Corrective exercise selection must be dynamically influenced by the scheduled training day (Upper, Lower, Running, Soccer, Offday).
-  3. *AI Coach Boundaries:* Corrective rules and exercise prescriptions must be deterministic and rule-based, not generated unpredictably by an unconstrained external AI LLM.
-- **Relevant Sections & Content:** Prehab & Corrective Logic, Pelvic Alignment Exclusivity, Workout Context Linkage, Client-Side Determinism.
-- **Read Status:** **RECONCILED (PROJECT OWNER AUTHORIZED)**
-- **Extraction Limitations & Provenance:** Reconciled under Step 05A authorization. Governs `[DINO BUSINESS RULE]` and `[DINO DESIGN DECISION]` categories. Does NOT alter physiological source facts of NASM or NSCA.
+- **Exact Designation:** `Kế-hoạch-cơ-bản.txt` (Legacy Product Specification Notes)
+- **Physical Source Status:** **NOT AVAILABLE** (Physical file does not exist on local filesystem; verified by exhaustive recursive scans).
+- **Governance Record Status:** **RECONCILED / PROJECT-OWNER-AUTHORIZED** (Authoritative product/business requirements PR-001 to PR-004 originally authored by DINO during early app planning are formally articulated and locked in repository governance).
+- **Scientific Authority:** **NONE** (Product & UX requirements only; does NOT constitute clinical or physiological evidence).
+- **Role in DINO-005B:** **PRODUCT / BUSINESS REQUIREMENTS**
+- **Provenance Classification:** All derived rules are strictly classified as `[DINO BUSINESS RULE]` or `[DINO DESIGN DECISION]`. They never override S01, S02, or S03 scientific facts.
+- **Reconciled Scope & Approved Business Rules:**
+  1. *Radio Button Exclusivity (`RULE-MEX-01 & 02` / PR-001):* Biomechanically opposing conditions (Anterior Pelvic Tilt vs. Posterior Pelvic Tilt; Knee Valgus vs. Knee Varus) must use mutually exclusive radio/toggle inputs.
+  2. *Workout-Type Dependency (`RULE-CTX-01` / PR-002):* Corrective exercise recommendations must dynamically adapt to the scheduled training day (Upper, Lower, Running, Soccer, Offday).
+  3. *Client-Side Determinism (`RULE-SYS-01` / PR-003):* Prehab engine must be rule-based, offline-executable, and completely decoupled from external LLM generation.
+  4. *Two Operational Modes (`RULE-CTX-06` / PR-004):* Dual mode structure distinguishing compact pre-workout prehab (3–6 min, Mode A) from extended off-day recovery (12–20 min, Mode B).
+- **Read Status:** **RECONCILED (GOVERNANCE SPECIFICATION RECORD)**
 
 ---
 

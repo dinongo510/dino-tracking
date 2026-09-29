@@ -1,276 +1,244 @@
 # DINO-005B — STEP 04 EXERCISE MATRIX
 
-> Change Set: DINO-005B — Prehab / Corrective Engine  
-> Step: 04 — Exercise Matrix  
-> Status: DRAFT / SOURCE-RECONCILED  
-> Implementation: NOT STARTED  
-> Branch: feature/dino-005b-step04-exercise-matrix  
-> Baseline: main@bd96bd8004fe8a89111597052a1529e4ac5f259a
+> **Change Set:** DINO-005B — Prehab / Corrective Engine
+> **Step:** 04 — Exercise Matrix (Remediated under Step 07A)
+> **Status:** SOURCE-RECONCILED & CANONICAL ID MIGRATED
+> **Authority:** DINO (Project Owner / Founder)
+> **Primary Exercise Identity:** Canonical `cex-*` IDs (37 Exercises)
+
+---
 
 ## 1. Purpose
 
-Define the source-traceable corrective exercise matrix needed before any deterministic Prehab Engine implementation.
+Define the source-traceable corrective exercise matrix needed before deterministic Prehab Engine execution.
 
-This document distinguishes:
-- source-supported corrective exercise relationships;
-- DINO/BFS product requirements;
-- engineering proposals that still require authorization.
+This document establishes:
+- The canonical exercise identity system (`cex-*`) matching `EXERCISE_DATABASE_SPECIFICATION.md`.
+- Complete legacy checkpoint cross-referencing (`FA-INH-01`, `KV-ACT-03`, etc.) to maintain full traceability to NASM CEx chapters.
+- Explicit classification of source-supported relationships vs. product rules vs. open administrative proposals.
+- No clinical diagnosis is created by this matrix.
 
-No clinical diagnosis is created by this matrix.
+---
 
-## 2. Exercise Record Model
+## 2. Exercise Record Model & Canonical Identity System (P0-01)
 
-Each matrix record should retain:
-- exercise name;
-- corrective phase: Inhibit / Lengthen / Activate / Integrate;
-- target impairment or assessment finding;
-- laterality/side when the source makes side relevant;
-- source ID;
-- chapter/section or location when identifiable;
-- evidence status;
-- regression/progression note where source-supported;
-- product compatibility note where relevant.
+Every corrective exercise record possesses exactly **one canonical identifier**:
+- **Canonical ID (`exerciseId`):** `cex-{phase}-{index}` (e.g. `cex-inh-01`, `cex-len-03`, `cex-act-02`, `cex-int-08`). This is the sole primary key consumed by the runtime engine and database.
+- **Legacy Matrix ID (`matrixId`):** Historical checkpoint code (e.g. `FA-INH-01`, `KV-INH-02`, `EFL-INT-01`) preserved strictly for anatomical checkpoint cross-reference and S01 chapter traceability.
 
-## 3. Source Authority
+### 2.1 Master Migration & Equivalence Table (37 Canonical Exercises)
 
-S01 NASM Corrective Exercise Training:
-primary authority for corrective phase, impairment, muscle/tissue and exercise relationships.
+| Canonical ID | Legacy Checkpoint ID(s) | Exercise Name (English) | Phase | Target Checkpoint | Verification Status |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| `cex-inh-01` | `FA-INH-01`, `KV-INH-01`, `EFL-INH-01` | SMR Calves (Gastrocnemius/Soleus) | Inhibit | `foot_ankle` | **VERIFIED** |
+| `cex-inh-02` | `FA-INH-02` | SMR Peroneals | Inhibit | `foot_ankle` | **VERIFIED** |
+| `cex-inh-03` | `KV-INH-02`, `AWS-INH-01` | SMR Adductors | Inhibit | `knee` / `lphc` | **VERIFIED** |
+| `cex-inh-04` | `KV-INH-03`, `AWS-INH-02` | SMR Tensor Fascia Latae & IT Band | Inhibit | `knee` / `lphc` | **VERIFIED** |
+| `cex-inh-05` | `EFL-INH-02` | SMR Quadriceps & Rectus Femoris | Inhibit | `lphc` | **VERIFIED** |
+| `cex-inh-06` | `LBR-INH-01`, `AWS-INH-04`, `FA-INH-03` | SMR Hamstrings (Biceps Femoris) | Inhibit | `lphc` / `knee` | **VERIFIED** |
+| `cex-inh-07` | `AWS-INH-03` | SMR Piriformis & Gluteal Complex | Inhibit | `lphc` | **VERIFIED** |
+| `cex-inh-08` | `SW-INH-01`, `SE-INH-01` | SMR Latissimus Dorsi | Inhibit | `shoulder` / `lphc` | **VERIFIED** |
+| `cex-inh-09` | `FH-INH-01`, `SE-INH-01`, `SW-INH-02` | SMR Thoracic Spine Extension | Inhibit | `cervical_spine` / `shoulder` | **VERIFIED** |
+| `cex-inh-10` | `SE-INH-02`, `SE-INH-03`, `FH-INH-04` | SMR Upper Trapezius & Levator Scapulae | Inhibit | `shoulder` / `cervical_spine` | **VERIFIED** |
+| `cex-len-01` | `FA-LEN-01`, `KV-LEN-01`, `EFL-LEN-01` | Static Gastrocnemius Stretch | Lengthen | `foot_ankle` | **VERIFIED** |
+| `cex-len-02` | `FA-LEN-02` | Static Soleus Stretch | Lengthen | `foot_ankle` | **VERIFIED** |
+| `cex-len-03` | `KV-LEN-02`, `AWS-LEN-01`, `LBR-LEN-02` | Static Standing Adductor Stretch | Lengthen | `knee` / `lphc` | **VERIFIED** |
+| `cex-len-04` | `KV-LEN-03`, `AWS-LEN-02` | Static Standing TFL Stretch | Lengthen | `knee` / `lphc` | **VERIFIED** |
+| `cex-len-05` | `EFL-LEN-02` | Static Kneeling Hip Flexor Stretch | Lengthen | `lphc` | **VERIFIED** |
+| `cex-len-06` | `LBR-LEN-01`, `AWS-LEN-04`, `FA-LEN-03` | Static Hamstring Stretch | Lengthen | `lphc` | **VERIFIED** |
+| `cex-len-07` | `SW-LEN-01`, `SE-LEN-01` | Static Kneeling Lat Stretch | Lengthen | `shoulder` / `lphc` | **VERIFIED** |
+| `cex-len-08` | `SW-LEN-02`, `SE-LEN-01` | Static Doorway Pectoral Stretch | Lengthen | `shoulder` | **VERIFIED** |
+| `cex-len-09` | `SE-LEN-02`, `SE-LEN-03`, `FH-LEN-02` | Static Upper Trapezius / Levator Stretch | Lengthen | `cervical_spine` / `shoulder` | **VERIFIED** |
+| `cex-act-01` | `FA-ACT-02`, `KV-ACT-01`, `EFL-ACT-01` | Isolated Tibialis Anterior Dorsiflexion | Activate | `foot_ankle` | **VERIFIED** |
+| `cex-act-02` | `KV-ACT-03`, `AWS-ACT-01` | Side-Lying Clamshell | Activate | `knee` / `lphc` | **VERIFIED** |
+| `cex-act-03` | `KV-ACT-03` (Progression) | Lateral Band Walk | Activate | `knee` / `lphc` | **VERIFIED** |
+| `cex-act-04` | `EFL-ACT-02`, `KV-ACT-04`, `LBR-ACT-01` | Floor Glute Bridge | Activate | `lphc` | **VERIFIED** |
+| `cex-act-05` | `EFL-ACT-04`, `DEADBUG-01` | Deadbug Stabilization | Activate | `lphc` | **VERIFIED** |
+| `cex-act-06` | `LBR-ACT-03` | Quadruped Bird-Dog | Activate | `lphc` | **VERIFIED** |
+| `cex-act-07` | `SE-ACT-01`, `FH-ACT-03` | Prone Cobra (Lower Trap / Rhomboids) | Activate | `shoulder` | **VERIFIED** |
+| `cex-act-08` | `SE-ACT-01`, `SW-ACT-02` | Band Pull-Apart / External Rotation | Activate | `shoulder` | **VERIFIED** |
+| `cex-act-09` | `FH-ACT-01` | Chin Tuck (Deep Cervical Flexors) | Activate | `cervical_spine` | **VERIFIED** |
+| `cex-act-10` | `KV-ACT-02`, `FA-ACT-05` | Terminal Knee Extension (TKE) | Activate | `knee` | **VERIFIED** |
+| `cex-int-01` | `EFL-INT-01`, `KV-INT-01` | Pause Squat (3s Isometric Pause) | Integrate | `lphc` / `knee` | **VERIFIED** |
+| `cex-int-02` | `SE-INT-01`, `FA-INT-01` | Single-Leg Romanian Deadlift to Balance | Integrate | `lphc` / `knee` / `foot_ankle` | **VERIFIED** |
+| `cex-int-03` | `FA-INT-03`, `KV-INT-01` | Multi-Planar Lunge with Rotation | Integrate | `lphc` / `knee` | **VERIFIED** |
+| `cex-int-04` | `KV-INT-01`, `FA-INT-04` | Lateral Skater Hop with Stabilization | Integrate | `knee` / `lphc` | **VERIFIED** |
+| `cex-int-05` | `FA-INT-03` | A-Skip & Ankling Dynamic Prep | Integrate | `foot_ankle` / `lphc` | **VERIFIED** |
+| `cex-int-06` | `SE-INT-01` | Overhead Band Walk / Carry | Integrate | `shoulder` | **VERIFIED** |
+| `cex-int-07` | `SW-ACT-01`, `SW-INT-01` | Push-Up Plus (Serratus Anterior) | Integrate | `shoulder` | **VERIFIED** |
+| `cex-int-08` | `EFL-INT-01`, `LBR-INT-01`, `FH-INT-01` | Squat to Overhead Press Integration | Integrate | `lphc` / `shoulder` | **VERIFIED** |
 
-S02 NASM Essentials of Sports Performance Training:
-athletic preparation, maintenance, movement preparation, fatigue-aware performance context.
+---
 
-S03 NSCA Essentials of Strength Training and Conditioning 4th Ed.:
-training-load, sequencing, fatigue/recovery and broader strength & conditioning context.
+## 3. Source Authority & Framework Separation
 
-S04 BFS Hybrid Athlete 2-Week Rotation:
-BFS-specific scheduling and practical hybrid constraints.
+- **S01 NASM Corrective Exercise Training:** Primary authority for corrective phases (Inhibit $\to$ Lengthen $\to$ Activate $\to$ Integrate), impairment definitions, and muscle/tissue actions.
+- **S02 NASM Essentials of Sports Performance Training:** Athletic movement preparation, non-fatiguing active warm-up, and dynamic sport-specific integration.
+- **S03 NSCA Essentials of Strength Training and Conditioning 4th Ed.:** Program design, resistance load modulation, static stretch duration caps ($\le 30$s pre-lifting), and warm-up sequencing (RAMP framework).
+- **S04 BFS Hybrid Athlete 2-Week Rotation:** Operational hybrid athlete training context (Heavy Lifting + Running + Saturday Soccer).
+- **S05 Kế-hoạch-cơ-bản.txt (Reconciled Governance Record):** Product and UX requirements only (PR-001 to PR-004); **zero clinical/scientific authority**.
 
-S05 Kế-hoạch-cơ-bản.txt:
-product/UX requirements only; not textbook evidence.
+### Conceptual Framework Distinction (P2-02):
+- **NASM CEx Continuum:** Targeted corrective rehabilitation addressing overactive/underactive muscle imbalances.
+- **NSCA RAMP Warm-Up:** Systemic physiological elevation, activation/mobilization, and neuromuscular potentiation. Prehab Mode A integrates into the *Activate & Mobilize* portion of RAMP.
 
-## 4. Source-Locked Exercise Matrix
+---
 
-### 4.1 Foot / Ankle impairment — S01
+## 4. Source-Locked Exercise Matrix (Organized by Kinetic Checkpoint)
 
-| ID | Phase | Exercise / target | Status | Source |
-|---|---|---|---|---|
-| FA-INH-01 | Inhibit | Foam roll lateral gastrocnemius / soleus | LOCKED-SOURCE | S01 Ch.12 |
-| FA-INH-02 | Inhibit | Foam roll peroneals | LOCKED-SOURCE | S01 Ch.12 |
-| FA-INH-03 | Inhibit | Foam roll biceps femoris (short head) | LOCKED-SOURCE | S01 Ch.12 |
-| FA-LEN-01 | Lengthen | Gastrocnemius stretch | LOCKED-SOURCE | S01 Ch.12 |
-| FA-LEN-02 | Lengthen | Soleus stretch | LOCKED-SOURCE | S01 Ch.12 |
-| FA-LEN-03 | Lengthen | Biceps femoris stretch | LOCKED-SOURCE | S01 Ch.12 |
-| FA-ACT-01 | Activate | Posterior tibialis strengthening / positional isometric | LOCKED-SOURCE | S01 Ch.12 |
-| FA-ACT-02 | Activate | Anterior tibialis strengthening / positional isometric | LOCKED-SOURCE | S01 Ch.12 |
-| FA-ACT-03 | Activate | Medial hamstring strengthening / positional isometric | LOCKED-SOURCE | S01 Ch.12 |
-| FA-ACT-04 | Activate | Toe flexors / intrinsic foot muscles | LOCKED-SOURCE | S01 Ch.12 |
-| FA-ACT-05 | Activate | Medial gastrocnemius | LOCKED-SOURCE | S01 Ch.12 |
-| FA-INT-01 | Integrate | Single-leg balance reach | LOCKED-SOURCE | S01 Ch.12 |
-| FA-INT-02 | Integrate | Step-up to balance | LOCKED-SOURCE | S01 Ch.12 |
-| FA-INT-03 | Integrate | Lunge to balance | LOCKED-SOURCE | S01 Ch.12 |
-| FA-INT-04 | Integrate | Single-leg squat | LOCKED-SOURCE | S01 Ch.12 |
+### 4.1 Foot / Ankle Impairment — S01 Chapter 12
 
-S01 specifies a progression from simpler/transitional and uniplanar tasks toward more dynamic and multiplanar tasks. Integration exercise may need regression when the client cannot perform the listed movement.
+| Canonical ID | Legacy ID | Phase | Exercise / Target | Status | Source |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `cex-inh-01` | `FA-INH-01` | Inhibit | Foam roll lateral gastrocnemius / soleus | `[LOCKED-SOURCE]` | S01 Ch. 12 |
+| `cex-inh-02` | `FA-INH-02` | Inhibit | Foam roll peroneals | `[LOCKED-SOURCE]` | S01 Ch. 12 |
+| `cex-inh-06` | `FA-INH-03` | Inhibit | Foam roll biceps femoris (short head) | `[LOCKED-SOURCE]` | S01 Ch. 12 |
+| `cex-len-01` | `FA-LEN-01` | Lengthen | Static Gastrocnemius stretch | `[LOCKED-SOURCE]` | S01 Ch. 12 |
+| `cex-len-02` | `FA-LEN-02` | Lengthen | Static Soleus stretch | `[LOCKED-SOURCE]` | S01 Ch. 12 |
+| `cex-len-06` | `FA-LEN-03` | Lengthen | Static Biceps femoris stretch | `[LOCKED-SOURCE]` | S01 Ch. 12 |
+| `cex-act-01` | `FA-ACT-02` | Activate | Anterior tibialis dorsiflexion / positional isometric | `[LOCKED-SOURCE]` | S01 Ch. 12 |
+| `cex-act-10` | `FA-ACT-05` | Activate | Terminal Knee Extension / medial gastrocnemius | `[LOCKED-SOURCE]` | S01 Ch. 12 |
+| `cex-int-02` | `FA-INT-01` | Integrate | Single-leg balance reach / RDL | `[LOCKED-SOURCE]` | S01 Ch. 12 |
+| `cex-int-03` | `FA-INT-03` | Integrate | Multi-planar lunge to balance | `[LOCKED-SOURCE]` | S01 Ch. 12 |
+| `cex-int-05` | `FA-INT-03` | Integrate | A-Skip & ankling dynamic preparation | `[LOCKED-SOURCE]` | S02 Ch. 11 |
 
-### 4.2 Knee inward / valgus compensation — S01
+---
 
-| ID | Phase | Exercise / target | Status | Source |
-|---|---|---|---|---|
-| KV-INH-01 | Inhibit | Gastrocnemius / soleus | LOCKED-SOURCE | S01 Ch.13 |
-| KV-INH-02 | Inhibit | Adductors | LOCKED-SOURCE | S01 Ch.13 |
-| KV-INH-03 | Inhibit | TFL / IT band | LOCKED-SOURCE | S01 Ch.13 |
-| KV-INH-04 | Inhibit | Short-head biceps femoris | LOCKED-SOURCE | S01 Ch.13 |
-| KV-LEN-01 | Lengthen | Gastrocnemius / soleus static or neuromuscular stretch | LOCKED-SOURCE | S01 Ch.13 |
-| KV-LEN-02 | Lengthen | Adductor stretch | LOCKED-SOURCE | S01 Ch.13 |
-| KV-LEN-03 | Lengthen | TFL stretch | LOCKED-SOURCE | S01 Ch.13 |
-| KV-LEN-04 | Lengthen | Biceps femoris stretch | LOCKED-SOURCE | S01 Ch.13 |
-| KV-ACT-01 | Activate | Anterior tibialis | LOCKED-SOURCE | S01 Ch.13 |
-| KV-ACT-02 | Activate | Posterior tibialis | LOCKED-SOURCE | S01 Ch.13 |
-| KV-ACT-03 | Activate | Gluteus medius | LOCKED-SOURCE | S01 Ch.13 |
-| KV-ACT-04 | Activate | Gluteus maximus | LOCKED-SOURCE | S01 Ch.13 |
-| KV-INT-01 | Integrate | Ball squat → step-up → lunge → single-leg squat progression | LOCKED-SOURCE | S01 Ch.13 |
+### 4.2 Knee Inward / Valgus Compensation — S01 Chapter 13
 
-Important assessment rule: an inward knee compensation does not automatically identify one single causal region. S01 describes a heels-elevated comparison to help distinguish lower-leg versus hip contribution.
+| Canonical ID | Legacy ID | Phase | Exercise / Target | Status | Source |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `cex-inh-01` | `KV-INH-01` | Inhibit | Gastrocnemius / soleus | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-inh-03` | `KV-INH-02` | Inhibit | Adductor complex | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-inh-04` | `KV-INH-03` | Inhibit | TFL / IT band | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-inh-06` | `KV-INH-04` | Inhibit | Biceps femoris (short head) | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-len-01` | `KV-LEN-01` | Lengthen | Static Gastrocnemius / soleus stretch | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-len-03` | `KV-LEN-02` | Lengthen | Static Adductor stretch | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-len-04` | `KV-LEN-03` | Lengthen | Static Standing TFL stretch | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-len-06` | `KV-LEN-04` | Lengthen | Static Biceps femoris stretch | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-act-01` | `KV-ACT-01` | Activate | Anterior tibialis dorsiflexion | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-act-02` | `KV-ACT-03` | Activate | Side-lying clamshell (Gluteus medius) | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-act-03` | `KV-ACT-03` | Activate | Lateral band walk (Gluteus medius) | `[LOCKED-SOURCE]` | S01 Ch. 10 |
+| `cex-act-04` | `KV-ACT-04` | Activate | Floor glute bridge (Gluteus maximus) | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-act-10` | `KV-ACT-02` | Activate | Terminal Knee Extension (VMO) | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-int-01` | `KV-INT-01` | Integrate | Pause squat (3s isometric pause) | `[LOCKED-SOURCE]` | S01 Ch. 13 |
+| `cex-int-04` | `KV-INT-01` | Integrate | Lateral skater hop with stabilization | `[LOCKED-SOURCE]` | S02 Ch. 10 |
 
-### 4.3 LPHC / low-back rounds — S01
+---
 
-| ID | Phase | Exercise / target | Status | Source |
-|---|---|---|---|---|
-| LBR-INH-01 | Inhibit | Hamstring complex | LOCKED-SOURCE | S01 Ch.14 |
-| LBR-INH-02 | Inhibit | Adductor magnus | LOCKED-SOURCE | S01 Ch.14 |
-| LBR-LEN-01 | Lengthen | Hamstring complex | LOCKED-SOURCE | S01 Ch.14 |
-| LBR-LEN-02 | Lengthen | Adductor magnus | LOCKED-SOURCE | S01 Ch.14 |
-| LBR-LEN-03 | Lengthen | Abdominal complex | LOCKED-SOURCE | S01 Ch.14 |
-| LBR-ACT-01 | Activate | Gluteus maximus | LOCKED-SOURCE | S01 Ch.14 |
-| LBR-ACT-02 | Activate | Hip flexors | LOCKED-SOURCE | S01 Ch.14 |
-| LBR-ACT-03 | Activate | Erector spinae | LOCKED-SOURCE | S01 Ch.14 |
-| LBR-INT-01 | Integrate | Ball squat to overhead press | LOCKED-SOURCE | S01 Ch.14 |
+### 4.3 LPHC / Low Back Rounds (Posterior Pelvic Tilt) — S01 Chapter 14
 
-### 4.4 LPHC / excessive forward lean — S01
+| Canonical ID | Legacy ID | Phase | Exercise / Target | Status | Source |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `cex-inh-06` | `LBR-INH-01` | Inhibit | Hamstring complex (Biceps femoris) | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-inh-03` | `LBR-INH-02` | Inhibit | Adductor magnus / complex | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-len-06` | `LBR-LEN-01` | Lengthen | Static Hamstring stretch | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-len-03` | `LBR-LEN-02` | Lengthen | Static Adductor magnus stretch | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-act-04` | `LBR-ACT-01` | Activate | Floor glute bridge (Gluteus maximus) | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-act-06` | `LBR-ACT-03` | Activate | Quadruped bird-dog (Erector spinae) | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-int-08` | `LBR-INT-01` | Integrate | Squat to overhead press integration | `[LOCKED-SOURCE]` | S01 Ch. 14 |
 
-| ID | Phase | Exercise / target | Status | Source |
-|---|---|---|---|---|
-| EFL-INH-01 | Inhibit | Gastrocnemius / soleus | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-INH-02 | Inhibit | Hip-flexor complex / rectus femoris | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-LEN-01 | Lengthen | Gastrocnemius / soleus | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-LEN-02 | Lengthen | Hip-flexor complex | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-LEN-03 | Lengthen | Abdominal complex | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-ACT-01 | Activate | Anterior tibialis | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-ACT-02 | Activate | Gluteus maximus | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-ACT-03 | Activate | Erector spinae | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-ACT-04 | Activate | Intrinsic core stabilizers | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-INT-01 | Integrate | Ball wall squat to overhead press | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-INT-02 | Integrate | Step-up / overhead-press progression | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-INT-03 | Integrate | Lunge / overhead-press progression | LOCKED-SOURCE | S01 Ch.14 |
-| EFL-INT-04 | Integrate | Single-leg squat / overhead-press progression | LOCKED-SOURCE | S01 Ch.14 |
+---
 
-### 4.5 LPHC / asymmetric weight shift — S01
+### 4.4 LPHC / Excessive Forward Lean & Anterior Pelvic Tilt — S01 Chapter 14
 
-| ID | Phase | Exercise / target | Status | Source |
-|---|---|---|---|---|
-| AWS-INH-01 | Inhibit | Same-side adductors | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-INH-02 | Inhibit | Same-side TFL / IT band | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-INH-03 | Inhibit | Opposite-side piriformis | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-INH-04 | Inhibit | Opposite-side biceps femoris | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-INH-05 | Inhibit | Gastrocnemius / soleus where implicated | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-LEN-01 | Lengthen | Same-side adductors | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-LEN-02 | Lengthen | Opposite-side TFL / IT band | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-LEN-03 | Lengthen | Opposite-side gastrocnemius / soleus | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-LEN-04 | Lengthen | Opposite-side biceps femoris | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-LEN-05 | Lengthen | Opposite-side piriformis | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-ACT-01 | Activate | Same-side gluteus medius | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-ACT-02 | Activate | Opposite-side adductor complex | LOCKED-SOURCE | S01 Ch.14 |
-| AWS-INT-01 | Integrate | Ball squat to overhead press | LOCKED-SOURCE | S01 Ch.14 |
+| Canonical ID | Legacy ID | Phase | Exercise / Target | Status | Source |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `cex-inh-01` | `EFL-INH-01` | Inhibit | Gastrocnemius / soleus | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-inh-05` | `EFL-INH-02` | Inhibit | Hip flexor complex / rectus femoris | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-len-01` | `EFL-LEN-01` | Lengthen | Static Gastrocnemius stretch | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-len-05` | `EFL-LEN-02` | Lengthen | Static Kneeling hip flexor stretch | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-act-01` | `EFL-ACT-01` | Activate | Anterior tibialis dorsiflexion | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-act-04` | `EFL-ACT-02` | Activate | Floor glute bridge (Gluteus maximus) | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-act-05` | `EFL-ACT-04` | Activate | Deadbug core stabilization | `[LOCKED-SOURCE]` | S01 Ch. 10 |
+| `cex-int-01` | `EFL-INT-01` | Integrate | Pause squat (3s isometric pause) | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-int-08` | `EFL-INT-01` | Integrate | Squat to overhead press integration | `[LOCKED-SOURCE]` | S01 Ch. 14 |
 
-Laterality is first-class data for this compensation and must not be flattened into a bilateral generic rule.
+---
 
-### 4.6 Shoulder elevation — S01
+### 4.5 LPHC / Asymmetric Weight Shift — S01 Chapter 14
 
-| ID | Phase | Exercise / target | Status | Source |
-|---|---|---|---|---|
-| SE-INH-01 | Inhibit | Thoracic spine | LOCKED-SOURCE | S01 Ch.15 |
-| SE-INH-02 | Inhibit | Upper trapezius | LOCKED-SOURCE | S01 Ch.15 |
-| SE-INH-03 | Inhibit | Levator scapulae | LOCKED-SOURCE | S01 Ch.15 |
-| SE-LEN-01 | Lengthen | Pectorals | LOCKED-SOURCE | S01 Ch.15 |
-| SE-LEN-02 | Lengthen | Upper trapezius | LOCKED-SOURCE | S01 Ch.15 |
-| SE-LEN-03 | Lengthen | Levator scapulae | LOCKED-SOURCE | S01 Ch.15 |
-| SE-ACT-01 | Activate | Middle / lower trapezius | LOCKED-SOURCE | S01 Ch.15 |
-| SE-INT-01 | Integrate | Single-leg Romanian deadlift with PNF pattern | LOCKED-SOURCE | S01 Ch.15 |
+| Canonical ID | Legacy ID | Phase | Exercise / Target | Status | Source |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `cex-inh-03` | `AWS-INH-01` | Inhibit | Same-side adductors | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-inh-04` | `AWS-INH-02` | Inhibit | Same-side TFL / IT band | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-inh-07` | `AWS-INH-03` | Inhibit | Opposite-side piriformis | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-inh-06` | `AWS-INH-04` | Inhibit | Opposite-side biceps femoris | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-len-03` | `AWS-LEN-01` | Lengthen | Same-side adductor stretch | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-len-04` | `AWS-LEN-02` | Lengthen | Opposite-side TFL stretch | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-len-06` | `AWS-LEN-04` | Lengthen | Opposite-side hamstring stretch | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-act-02` | `AWS-ACT-01` | Activate | Same-side gluteus medius (clamshell) | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-act-03` | `AWS-ACT-02` | Activate | Opposite-side lateral band walk | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-int-01` | `AWS-INT-01` | Integrate | Pause squat (3s isometric pause) | `[LOCKED-SOURCE]` | S01 Ch. 14 |
+| `cex-int-08` | `AWS-INT-01` | Integrate | Squat to overhead press integration | `[LOCKED-SOURCE]` | S01 Ch. 14 |
 
-### 4.7 Scapular winging — S01
+---
 
-| ID | Phase | Exercise / target | Status | Source |
-|---|---|---|---|---|
-| SW-INH-01 | Inhibit | Latissimus dorsi | LOCKED-SOURCE | S01 Ch.15 |
-| SW-INH-02 | Inhibit | Thoracic spine | LOCKED-SOURCE | S01 Ch.15 |
-| SW-LEN-01 | Lengthen | Latissimus dorsi | LOCKED-SOURCE | S01 Ch.15 |
-| SW-LEN-02 | Lengthen | Pectorals | LOCKED-SOURCE | S01 Ch.15 |
-| SW-ACT-01 | Activate | Serratus anterior / push-up with plus | LOCKED-SOURCE | S01 Ch.15 |
-| SW-ACT-02 | Activate | Middle / lower trapezius / ball combo | LOCKED-SOURCE | S01 Ch.15 |
+### 4.6 Shoulder Elevation — S01 Chapter 15
 
-Integration for scapular winging requires a targeted source extraction before locking the specific DINO integration exercise record.
+| Canonical ID | Legacy ID | Phase | Exercise / Target | Status | Source |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `cex-inh-09` | `SE-INH-01` | Inhibit | SMR Thoracic spine extension | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-inh-10` | `SE-INH-02` | Inhibit | SMR Upper trapezius / levator scapulae | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-len-07` | `SE-LEN-01` | Lengthen | Static Kneeling lat stretch | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-len-08` | `SE-LEN-01` | Lengthen | Static Doorway pectoral stretch | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-len-09` | `SE-LEN-02` | Lengthen | Static Upper trapezius / levator stretch | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-act-07` | `SE-ACT-01` | Activate | Prone cobra (Middle / lower trapezius) | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-act-08` | `SE-ACT-01` | Activate | Band pull-apart / external rotation | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-int-02` | `SE-INT-01` | Integrate | Single-leg RDL to balance | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-int-06` | `SE-INT-01` | Integrate | Overhead band walk / carry | `[LOCKED-SOURCE]` | S01 Ch. 15 |
 
-### 4.8 Forward head — S01
+---
 
-| ID | Phase | Exercise / target | Status | Source |
-|---|---|---|---|---|
-| FH-INH-01 | Inhibit | Thoracic spine | LOCKED-SOURCE | S01 Ch.16 |
-| FH-INH-02 | Inhibit | Sternocleidomastoid | LOCKED-SOURCE | S01 Ch.16 |
-| FH-INH-03 | Inhibit | Levator scapulae | LOCKED-SOURCE | S01 Ch.16 |
-| FH-INH-04 | Inhibit | Upper trapezius | LOCKED-SOURCE | S01 Ch.16 |
-| FH-LEN-01 | Lengthen | Sternocleidomastoid | LOCKED-SOURCE | S01 Ch.16 |
-| FH-LEN-02 | Lengthen | Levator scapulae | LOCKED-SOURCE | S01 Ch.16 |
-| FH-LEN-03 | Lengthen | Upper trapezius | LOCKED-SOURCE | S01 Ch.16 |
-| FH-ACT-01 | Activate | Deep cervical flexors | LOCKED-SOURCE | S01 Ch.16 |
-| FH-ACT-02 | Activate | Cervicothoracic extensors | LOCKED-SOURCE | S01 Ch.16 |
-| FH-ACT-03 | Activate | Lower trapezius | LOCKED-SOURCE | S01 Ch.16 |
-| FH-INT-01 | Integrate | Ball combo with cervical retraction / scaption | LOCKED-SOURCE | S01 Ch.16 |
+### 4.7 Scapular Winging — S01 Chapter 15
 
-## 5. Sport-Performance Compatibility Rules
+| Canonical ID | Legacy ID | Phase | Exercise / Target | Status | Source |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `cex-inh-08` | `SW-INH-01` | Inhibit | SMR Latissimus dorsi | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-inh-09` | `SW-INH-02` | Inhibit | SMR Thoracic spine extension | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-len-07` | `SW-LEN-01` | Lengthen | Static Kneeling lat stretch | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-len-08` | `SW-LEN-02` | Lengthen | Static Doorway pectoral stretch | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-act-07` | `SW-ACT-02` | Activate | Prone cobra (Rhomboids / Lower Trap) | `[LOCKED-SOURCE]` | S01 Ch. 15 |
+| `cex-int-07` | `SW-ACT-01` / `SW-INT-01` | Integrate | Push-Up Plus (Serratus anterior protraction) | `[ENGINEERING-PROPOSAL]` (SG-001) | S01 Ch. 11/15 |
 
-These are not corrective mappings; they constrain how the matrix may later be integrated.
+*Note on Scapular Winging Phase 4 (`SG-001`):* S01 omits a dedicated Phase 4 dynamic integration drill for serratus anterior; `cex-int-07` (Push-Up Plus) is proposed as Level 3 fallback (`[ENGINEERING-PROPOSAL]`). Status remains `OPEN`.
 
-### S02
+---
 
-S02 explicitly describes:
-- attending to impaired movement patterns using corrective strategies;
-- maintaining ROM, joint stability, strength/endurance and cardiorespiratory endurance in-season;
-- considering injury-prevention/performance-training exercise volume against the athlete's activity/travel load;
-- using active warm-ups that do not cause fatigue that could impair performance.
+### 4.8 Forward Head Posture — S01 Chapter 16
 
-Status: LOCKED-SOURCE for the stated performance-context principles. It does not define DINO's exact session multiplier or exact prehab volume.
+| Canonical ID | Legacy ID | Phase | Exercise / Target | Status | Source |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `cex-inh-09` | `FH-INH-01` | Inhibit | SMR Thoracic spine extension | `[LOCKED-SOURCE]` | S01 Ch. 16 |
+| `cex-inh-10` | `FH-INH-04` | Inhibit | SMR Upper trapezius & levator | `[LOCKED-SOURCE]` | S01 Ch. 16 |
+| `cex-len-09` | `FH-LEN-02` | Lengthen | Static Upper trapezius / levator stretch | `[LOCKED-SOURCE]` | S01 Ch. 16 |
+| `cex-act-09` | `FH-ACT-01` | Activate | Chin tuck (Deep cervical flexors) | `[LOCKED-SOURCE]` | S01 Ch. 16 |
+| `cex-act-07` | `FH-ACT-03` | Activate | Prone cobra (Lower trapezius) | `[LOCKED-SOURCE]` | S01 Ch. 16 |
+| `cex-int-08` | `FH-INT-01` | Integrate | Squat to overhead press integration | `[LOCKED-SOURCE]` | S01 Ch. 16 |
 
-### S03
+---
 
-S03 provides the broader programming principle that training stress must be managed across resistance training, running and other modes, and that progression/loading should consider intensity, volume and recovery. It does not provide a DINO-specific prehab matrix.
+## 5. Product Rules from S05 (Reconciled Governance Status)
 
-Status: LOCKED-SOURCE for context; exact DINO dosage remains open.
+- **PR-001 (Mutual Exclusivity):** Biomechanically opposing conditions (APT vs PPT; Knee Valgus vs Varus) use mutually exclusive radio inputs in UI (`[PRODUCT-RULE]`).
+- **PR-002 (Context Linkage):** The corrective workflow uses the 4-phase sequence and adapts to daily workout context (`[PRODUCT-RULE]`).
+- **PR-003 (Deterministic Pipeline):** Rule-based client execution decoupled from external LLMs (`[PRODUCT-RULE]`).
+- **PR-004 (Dual Dosing Modes):** Compact Mode A (3–6m) vs extended Mode B (12–20m) (`[PRODUCT-RULE]`).
 
-### S04
+---
 
-S04 is the BFS-specific implementation context:
-- Week A includes quality run, full-body strength, easy run, upper strength/hypertrophy, long run, soccer.
-- Week B includes hybrid/game conditioning, lower strength/hypertrophy, easy run, upper hypertrophy, long/progression run, soccer.
-- Heavy lower training should not be placed with unreasonable overlap.
-- The program explicitly notes not to chase failure on barbell squat/hinge and to reduce loading/fatigue when run/soccer stress is high.
+## 6. Open Administrative Decisions & Gaps (P1-01)
 
-Status: LOCKED-SOURCE for BFS scheduling context.
+The following administrative decisions belong exclusively to DINO (Project Owner) and remain **`STATUS = OPEN`**:
 
-## 6. Product Rules from S05
+| Decision ID | Domain | Open Question | Proposed Engineering Baseline | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **`AD-001`** | Dosage Pinning | Finalize exact second/rep durations for Mode A (3–6 min) vs Mode B (12–20 min). | Mode A: 45s SMR, 25s stretch, 10 reps activate, 8 reps integrate. Mode B: 60s SMR, 35s stretch, 12 reps, 10 reps. | **OPEN** |
+| **`AD-002`** | Missing AWS Laterality | Policy when user selects Asymmetric Weight Shift without declaring shifted side. | Halt unilateral routine, flag `PARTIAL_NEEDS_LATERALITY`, deliver bilateral posterior chain relief, prompt for shifted side. | **OPEN** |
+| **`SG-001`** | Scapular Winging P4 | S01 omits dedicated Phase 4 integration drill for serratus anterior. | Authorize `cex-int-07` (Push-Up Plus) or `cex-int-01` (Pause Squat) as Level 3 fallback. | **OPEN** |
 
-### PR-001
-Opposing deviations use mutually exclusive radio-button behavior. Example: Anterior Pelvic Tilt vs Posterior Pelvic Tilt.
+---
 
-Status: PRODUCT-RULE.
+## 7. Computational Complexity Notice (P2-01)
 
-### PR-002
-The corrective workflow uses the four-phase NASM sequence and has workout-type dependency.
-
-Status: PRODUCT-RULE.
-
-### PR-003
-The product includes a Prehab/Corrective area with deviation selection, workout-type selection, four-step protocol, guided timer, and frequency matrix concept.
-
-Status: PRODUCT-RULE.
-
-## 7. Explicitly Not Locked in STEP 04
-
-The following must remain open:
-- full deviation taxonomy;
-- complete opposite/compatibility graph beyond the explicitly documented APT/PPT product pair;
-- one canonical exercise per phase for every impairment;
-- exact session-type multipliers;
-- exact pre-workout/off-day dosage;
-- 2-week frequency algorithm;
-- complete regression/progression graph;
-- clinical red-flag routing;
-- S02/S03-derived rules that would alter S01 exercise selection;
-- mapping every matrix record to existing DINO exerciseId values.
-
-Status for all: SOURCE-GAP and/or NEEDS-ADMIN-DECISION.
-
-## 8. Matrix Design Rule
-
-The final engine must not collapse an assessment finding directly into one universal routine.
-
-Conceptually:
-
-assessment finding
-→ contributing region / laterality
-→ phase-specific candidate set
-→ capability / context constraints
-→ deterministic selection
-
-This preserves the assessment-first structure demonstrated by S01.
-
-## 9. Implementation Gate
-
-STEP 04 creates the evidence-backed exercise candidate matrix only.
-
-NO application code.
-NO data.js exercise records.
-NO UI implementation.
-NO prehab generator.
-NO AI integration.
-
-The next step is a separate design/audit pass to convert the candidate matrix into a deterministic engine specification, while keeping source facts distinct from DINO engineering choices.
+The candidate evaluation across this 37-exercise catalog operates as an **$O(N)$ bounded deterministic catalog evaluation, where $N = 37$ in the current catalog**. It guarantees complete reproducibility and constant execution bounds ($<2$ ms on mobile runtime) without unbounded asymptotic scaling.

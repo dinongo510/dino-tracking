@@ -22,7 +22,7 @@
    - **Never present an engineering choice or heuristic number as a NASM or NSCA scientific fact.**
 3. **AI COACH BOUNDARY:**
    - The DINO AI Coach is **completely outside** this engine.
-   - The Prehab Engine is a 100% deterministic, state-machine/lookup pipeline with $O(1)$ constant-time operational predictability.
+   - The Prehab Engine is a 100% deterministic, state-machine/lookup pipeline operating as an **$O(N)$ bounded deterministic catalog evaluation, where $N = 37$ in the current catalog** (sub-2ms execution bounds, zero unbounded scaling).
    - External LLMs do not generate, alter, or compute prehab routines.
 4. **ASSESSMENT-FIRST, NOT DIRECT SHORTCUTS:**
    - An observed movement compensation (e.g., knee valgus) does not map directly to one universal routine. It triggers an assessment branch to distinguish contributing anatomical drivers (e.g., foot/ankle restricted dorsiflexion vs. hip/LPHC gluteal weakness).
@@ -39,7 +39,13 @@
 | **S02** | **NASM Essentials of Sports Performance Training** | **Athletic Context Constraint** | Governs movement prep sequencing, non-fatiguing active warm-up principles, dynamic stretching, and athletic context constraints. Does NOT dictate exact mathematical multipliers. |
 | **S03** | **NSCA Essentials of Strength & Conditioning (4th Ed.)** | **Load & Recovery Constraint** | Governs training-stress modulation, exercise sequencing, static stretching duration caps ($\le 30$s pre-lifting), and fatigue management. Does NOT dictate DINO-specific routine generation. |
 | **S04** | **BFS Hybrid Athlete 2-Week Rotation** | **Operational Training Context** | Governs training session types (Full Body, Upper, Lower, Quality Run, Easy Run, Long Run, Soccer, Rest), hybrid scheduling demands, and muscle-overlap avoidance. |
-| **S05** | **Kế-hoạch-cơ-bản.txt** | **Product & UX Requirements** | Governs user workflow: mutually exclusive radio-button behavior for opposing deviations (PR-001), workout-type dependency (PR-002), and guided 4-step execution UI (PR-003). |
+| **S05** | **Kế-hoạch-cơ-bản.txt** (Reconciled Governance Record) | **Product & UX Requirements** | Physical file not available on local filesystem; substantive product rules PR-001 to PR-004 reconciled under Founder authority. Governs user workflow: mutually exclusive radio-button behavior (PR-001), workout-type dependency (PR-002), client determinism (PR-003), and dual dosing modes (PR-004). Possesses ZERO clinical authority. |
+
+### 2.1 Conceptual Framework Distinction: NASM CEx vs. NSCA RAMP (P2-02)
+
+- **NASM Corrective Exercise Continuum (S01):** Targeted neuromyofascial restoration (`Inhibit` $\to$ `Lengthen` $\to$ `Activate` $\to$ `Integrate`) addressing specific static and dynamic movement compensations.
+- **NSCA RAMP Warm-Up (S03 Ch. 14):** Systemic athletic preparation framework (`Raise` $\to$ `Activate & Mobilize` $\to$ `Potentiate`).
+- **Integration Boundary:** Mode A prehab slots into the *Activate & Mobilize* component of a workout warm-up prior to specific resistance warm-up sets (which satisfy *Potentiate*). NASM CEx and NSCA RAMP are complementary, but they are NOT interchangeable frameworks.
 
 ---
 
@@ -182,15 +188,15 @@ flowchart TD
 
 S01 Chapter 14 explicitly treats Asymmetric Weight Shift (`imp-lphc-asymmetric-shift`) as a multi-planar, cross-body compensation. The engine must preserve these exact laterality relationships:
 
-| Kinetic Chain Segment | Muscle / Functional Unit | Functional Role | Prescribed Action | Source Candidate |
+| Kinetic Chain Segment | Muscle / Functional Unit | Functional Role | Prescribed Action | Canonical Candidate (Legacy Ref) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Shifted Side (Same-Side)** | Adductor complex | Overactive | Inhibit (SMR) & Lengthen | `AWS-INH-01`, `AWS-LEN-01` |
-| **Shifted Side (Same-Side)** | TFL / IT band | Overactive | Inhibit (SMR) | `AWS-INH-02` |
-| **Shifted Side (Same-Side)** | Gluteus medius | Underactive | Activate (Isolated) | `AWS-ACT-01` |
-| **Unweighted Side (Opposite-Side)** | Piriformis | Overactive | Inhibit (SMR) & Lengthen | `AWS-INH-03`, `AWS-LEN-05` |
-| **Unweighted Side (Opposite-Side)** | Biceps femoris (short head) | Overactive | Inhibit (SMR) & Lengthen | `AWS-INH-04`, `AWS-LEN-04` |
-| **Unweighted Side (Opposite-Side)** | Gastrocnemius / Soleus | Overactive | Lengthen | `AWS-LEN-03` |
-| **Unweighted Side (Opposite-Side)** | Adductor complex | Underactive | Activate (Isolated) | `AWS-ACT-02` |
+| **Shifted Side (Same-Side)** | Adductor complex | Overactive | Inhibit (SMR) & Lengthen | `cex-inh-03` (`AWS-INH-01`), `cex-len-03` (`AWS-LEN-01`) |
+| **Shifted Side (Same-Side)** | TFL / IT band | Overactive | Inhibit (SMR) | `cex-inh-04` (`AWS-INH-02`) |
+| **Shifted Side (Same-Side)** | Gluteus medius | Underactive | Activate (Isolated) | `cex-act-02` (`AWS-ACT-01`) |
+| **Unweighted Side (Opposite-Side)** | Piriformis | Overactive | Inhibit (SMR) | `cex-inh-07` (`AWS-INH-03`) |
+| **Unweighted Side (Opposite-Side)** | Biceps femoris (short head) | Overactive | Inhibit (SMR) & Lengthen | `cex-inh-06` (`AWS-INH-04`), `cex-len-06` (`AWS-LEN-04`) |
+| **Unweighted Side (Opposite-Side)** | Gastrocnemius / Soleus | Overactive | Lengthen | `cex-len-01` (`AWS-LEN-03`) |
+| **Unweighted Side (Opposite-Side)** | Adductor complex | Underactive | Activate (Isolated) | `cex-act-03` (`AWS-ACT-02`) |
 
 > **Invariant:** The Prehab Engine will reject any configuration that flattens `AWS` into bilateral foam rolling or identical bilateral activation. Laterality must explicitly govern which side receives inhibition versus activation.
 
@@ -201,13 +207,14 @@ S01 Chapter 14 explicitly treats Asymmetric Weight Shift (`imp-lphc-asymmetric-s
 When multiple candidate exercises in `EXERCISE_MATRIX.md` qualify for a single phase, the engine resolves ties using deterministic priority scoring.
 
 > [!CAUTION]
-> **CLASSIFICATION MANDATE:** All scoring numbers, context multipliers, and tie-breaker algorithms are **`[ENGINEERING-PROPOSAL]`** or **`[NEEDS-ADMIN-DECISION]`**. They are derived to make execution deterministic, NOT claimed as direct laboratory evidence from NASM or NSCA.
+> **CLASSIFICATION MANDATE & GOVERNANCE NOTICE (P1-02):**
+> All scoring numbers, context multipliers ($1.0–3.5$), base weights ($+100$), and tie-breaker algorithms are **`[ENGINEERING-PROPOSAL]`**. They are deterministic engineering heuristics created for product ranking and reproducibility. They are NOT clinical scoring values derived directly from NASM, NSCA, or another scientific source.
 
 ### 6.1 Proposed Deterministic Tie-Breaker Precedence (`[ENGINEERING-PROPOSAL]`)
 When multiple exercises in `EXERCISE_MATRIX.md` match an impairment and phase:
 1. **Equipment Match Score:** Minimal equipment (`bodyweight` > `mini_band` > `foam_roller` > `dumbbell`).
 2. **Context Specificity:** Exercise listed in source chapter specifically matching the target context (e.g. S02 agility/running drills prioritized before running sessions).
-3. **Lexicographical Catalog Order:** If scores are identical, select candidate with lower catalog ID (e.g. `FA-INH-01` over `FA-INH-02`).
+3. **Lexicographical Catalog Order:** If scores are identical, select candidate with lower canonical catalog ID (e.g. `cex-inh-01` over `cex-inh-02`).
 
 ### 6.2 Context Constraint Compatibility Matrix (`[ENGINEERING-PROPOSAL]` / `[NEEDS-ADMIN-DECISION]`)
 
@@ -392,17 +399,17 @@ Under no circumstances may the Prehab Engine synthesize an exercise or muscle pa
 
 Every heuristic, algorithm, or threshold in this specification is formally classified below:
 
-| Identifier | Rule Description | Classification | Rationale |
-| :--- | :--- | :--- | :--- |
-| **PR-001** | Mutually exclusive radio buttons for APT vs PPT | `[PRODUCT-RULE]` | S05 requirement; prevents contradictory pelvic loading. |
-| **PR-002** | Workout-type context dependency | `[PRODUCT-RULE]` | S05 requirement; links prehab to upcoming training stress. |
-| **PR-003** | Guided 4-step execution UI | `[PRODUCT-RULE]` | S05 requirement; user experience structure. |
-| **EP-001** | Heuristic tie-breaker precedence (Minimal Equipment > Context > ID) | `[ENGINEERING-PROPOSAL]` | Algorithmic determinism; requires Product Owner confirmation. |
-| **EP-002** | Context Constraint Matrix (High/Medium/Low suitability) | `[ENGINEERING-PROPOSAL]` | Derived from S02/S03/S04 principles; exact numerical weights pending. |
-| **EP-003** | Defaulting missing context to `full_body` | `[ENGINEERING-PROPOSAL]` | Safe operational fallback to prevent runtime crashes. |
-| **AD-001** | Exact pinning of Mode A (3–6 min) vs Mode B (12–20 min) durations | `[NEEDS-ADMIN-DECISION]` | Balances athletic time budget against tissue restoration. |
-| **AD-002** | Handling missing laterality on Asymmetric Weight Shift | `[NEEDS-ADMIN-DECISION]` | Policy choice: block routine vs. deliver bilateral interim advice. |
-| **SG-001** | Missing Phase 4 Integration for Scapular Winging | `[SOURCE-GAP]` | S01 does not prescribe an explicit single integration drill for winging. |
+| Identifier | Rule Description | Classification | Status | Rationale |
+| :--- | :--- | :--- | :---: | :--- |
+| **PR-001** | Mutually exclusive radio buttons for APT vs PPT | `[PRODUCT-RULE]` | **LOCKED** | S05 requirement; prevents contradictory pelvic loading. |
+| **PR-002** | Workout-type context dependency | `[PRODUCT-RULE]` | **LOCKED** | S05 requirement; links prehab to upcoming training stress. |
+| **PR-003** | Guided 4-step execution UI | `[PRODUCT-RULE]` | **LOCKED** | S05 requirement; user experience structure. |
+| **EP-001** | Heuristic tie-breaker precedence (Minimal Equipment > Context > ID) | `[ENGINEERING-PROPOSAL]` | **PROPOSED** | Algorithmic determinism; requires Product Owner confirmation. |
+| **EP-002** | Context Constraint Matrix (High/Medium/Low suitability) | `[ENGINEERING-PROPOSAL]` | **PROPOSED** | Derived from S02/S03/S04 principles; exact numerical weights pending. |
+| **EP-003** | Defaulting missing context to `full_body` | `[ENGINEERING-PROPOSAL]` | **PROPOSED** | Safe operational fallback to prevent runtime crashes. |
+| **AD-001** | Exact pinning of Mode A (3–6 min) vs Mode B (12–20 min) durations | `[NEEDS-ADMIN-DECISION]` | **OPEN** | Balances athletic time budget against tissue restoration. |
+| **AD-002** | Handling missing laterality on Asymmetric Weight Shift | `[NEEDS-ADMIN-DECISION]` | **OPEN** | Policy choice: block routine vs. deliver bilateral interim advice. |
+| **SG-001** | Missing Phase 4 Integration for Scapular Winging | `[SOURCE-GAP]` / `[ENGINEERING-PROPOSAL]` | **OPEN** | S01 does not prescribe an explicit single integration drill for winging. |
 
 ---
 

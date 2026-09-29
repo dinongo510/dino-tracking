@@ -1,6 +1,6 @@
 # DINO SESSION STATE
 
-> **Purpose:** Real-time tracking of active development session, current Change Set, system state, and historical change logs.  
+> **Purpose:** Real-time tracking of active development session, current Change Set, system state, and historical change logs.
 > **Maintained by:** Antigravity (Implementation Agent), ChatGPT (AI Auditor), and DINO (Project Owner).
 
 ---
@@ -9,24 +9,24 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-005A` LOCKED / `DINO-005B` RUNTIME (`STEP_07_RUNTIME_IMPLEMENTATION_COMPLETE`) |
-| **Active Change Set** | `DINO-005B` (Runtime Implementation) |
-| **Current State** | `STEP_07_RUNTIME_IMPLEMENTATION_COMPLETE` |
+| **Session State** | `DINO-005A` LOCKED / `DINO-005B` SPECIFICATION REMEDIATED (`STEP_07A_COMPLETE`) |
+| **Active Change Set** | `DINO-005B` (Step 07A — Specification Remediation) |
+| **Current State** | `SPECIFICATION_REMEDIATED` / `AUDIT_REMEDIATED` |
 | **Dino AUT** | `DINO-005A APPROVED` |
-| **Active Branch** | `feature/dino-005b-step07-runtime` |
-| **Current Baseline HEAD** | `9a58c3188bc2e56855cc5adb321973aef0b8d2dd` |
+| **Active Branch** | `feature/dino-005b-step07a-spec-remediation` |
+| **Current Baseline HEAD** | `50f95f0` (`docs(dino-005b): comprehensive pre-implementation specification audit`) |
 | **Last Updated** | `2026-09-29` |
-| **Active Blockers** | None |
+| **Active Blockers** | None (All 7 audit findings remediated in specification; awaiting Project Owner authorization for Step 07 Runtime) |
 
 ---
 
 ## 2. Completed / Active Change Set Details
 
-### `DINO-005B` (Prehab / Corrective Engine — Runtime Implementation)
+### `DINO-005B` (Prehab / Corrective Engine — Specification Remediation)
 
-- **Objective:** Implement the deterministic client-side Prehab & Corrective recommendation engine, 37-exercise database, and 14-stage scoring pipeline based on NASM CEx (S01), NASM PES (S02), NSCA 4th Ed. (S03), and BFS Hybrid 2-Week Rotation (S04).
-- **Current Step:** `STEP_07_RUNTIME_IMPLEMENTATION_COMPLETE`
-- **State:** `IMPLEMENTED` / `AUTO_VERIFIED` (Automated verification complete: 31/31 Step 07 tests passing; 18/18 DINO-005A regression tests passing).
+- **Objective:** Remediate all 7 specification audit findings identified in `DINO_005B_FULL_AUDIT.md` (P0-01 Canonical Exercise IDs, P0-02 SOURCE-05 Reconciled Status, P1-01 Open Admin Decisions, P1-02 Heuristic Scoring Weights Provenance, P2-01 Bounded $O(N)$ Catalog Complexity, P2-02 NASM CEx vs NSCA RAMP Framework Separation) without touching runtime code.
+- **Current Step:** `STEP_07A_COMPLETE`
+- **State:** `SPECIFICATION_REMEDIATED` (Audit blockers cleared; ready for DINO Product Owner Step 07 Runtime Authorization).
 - **Completed Steps:**
   - `STEP 01`: Source Ingestion & Inventory Register (`00_SYSTEM/SOURCES/DINO-005B/SOURCE_REGISTER.md`)
   - `STEP 02`: Source Domain Mapping & Provenance Tiers (`00_SYSTEM/SOURCES/DINO-005B/SOURCE_MAP.md`)
@@ -34,33 +34,27 @@
   - `STEP 04`: Exercise Database & Candidate Matrix (`00_SYSTEM/SOURCES/DINO-005B/EXERCISE_MATRIX.md`)
   - `STEP 05`: Deterministic Engine Architecture & Permutation Matrix (`00_SYSTEM/SOURCES/DINO-005B/PREHAB_ENGINE_DESIGN.md` & `PREHAB_RULE_MATRIX.md`, Commit: `9838ebe`)
   - `STEP 06`: 37-Exercise Database & Deterministic Scoring Pipeline Specification (`00_SYSTEM/SOURCES/DINO-005B/EXERCISE_DATABASE_SPECIFICATION.md` & `DETERMINISTIC_SCORING_SPECIFICATION.md`, Commit: `9a58c31`)
-  - `STEP 07`: Runtime Implementation (`js/prehab_data.js`, `js/prehab_engine.js`, `index.html`, `js/app.js`, `scratch/test_dino_005b_step07.js`)
-- **Authorized Files Created:**
-  - `js/prehab_data.js` (37 exercises catalog)
-  - `js/prehab_engine.js` (14-stage deterministic engine)
-  - `scratch/test_dino_005b_step07.js` (31 automated tests)
-  - `00_SYSTEM/SOURCES/DINO-005B/EXERCISE_DATABASE_SPECIFICATION.md` (Authoritative exercise database)
+  - `STEP 06A`: Comprehensive Pre-Implementation Specification Audit (`00_SYSTEM/SOURCES/DINO-005B/DINO_005B_FULL_AUDIT.md`, Commit: `50f95f0`)
+  - `STEP 07A`: Specification Remediation (All 7 audit findings resolved across all 00_SYSTEM documentation files)
+- **Authorized Files Modified in Step 07A:**
   - `00_SYSTEM/SOURCES/DINO-005B/SOURCE_REGISTER.md`
-  - `00_SYSTEM/SOURCES/DINO-005B/PREHAB_ENGINE_AUDIT.md`
-- **Authorized Files Modified:**
-  - `index.html` (Script tags for prehab_data.js and prehab_engine.js)
-  - `js/app.js` (Wired window.PREHAB_ENGINE into generateNASMPrehabRoutine())
-  - `00_SYSTEM/DINO-005B_SPECIFICATION.md` (Updated status)
-  - `00_SYSTEM/DINO_SESSION_STATE.md` (Updated status)
-- **Protected Areas (100% Untouched):**
-  - `js/data.js` (UNTOUCHED)
-  - `js/storage.js` (UNTOUCHED)
-  - `js/ai_coach.js` (UNTOUCHED)
-  - `js/charts.js` (UNTOUCHED)
-  - `js/audio.js` (UNTOUCHED)
-  - `js/timer.js` (UNTOUCHED)
-  - `js/supabase_sync.js` (UNTOUCHED)
-  - `css/*` (UNTOUCHED)
-  - `package.json` (UNTOUCHED)
-  - `vercel.json` (UNTOUCHED)
-  - `sw.js` (UNTOUCHED)
-  - `manifest.json` (UNTOUCHED)
-- **Implementation Status:** STEP_07_RUNTIME_IMPLEMENTATION_COMPLETE. DINO-005B is NOT marked complete. Pending DINO AUT.
+  - `00_SYSTEM/SOURCES/DINO-005B/SOURCE_MAP.md`
+  - `00_SYSTEM/SOURCES/DINO-005B/EXTRACTED_RULES.md`
+  - `00_SYSTEM/SOURCES/DINO-005B/EXERCISE_MATRIX.md`
+  - `00_SYSTEM/SOURCES/DINO-005B/PREHAB_RULE_MATRIX.md`
+  - `00_SYSTEM/SOURCES/DINO-005B/PREHAB_ENGINE_DESIGN.md`
+  - `00_SYSTEM/SOURCES/DINO-005B/DETERMINISTIC_SCORING_SPECIFICATION.md`
+  - `00_SYSTEM/DINO-005B_SPECIFICATION.md`
+  - `00_SYSTEM/DINO_SESSION_STATE.md`
+- **Protected Areas (100% Untouched on this branch):**
+  - `js/*` (100% UNTOUCHED — NO RUNTIME CODE MODIFIED OR CREATED)
+  - `css/*` (100% UNTOUCHED)
+  - `index.html` (100% UNTOUCHED)
+  - `package.json` (100% UNTOUCHED)
+  - `vercel.json` (100% UNTOUCHED)
+  - `sw.js` (100% UNTOUCHED)
+  - `manifest.json` (100% UNTOUCHED)
+- **Implementation Status:** STEP_07A_COMPLETE. Specification is fully consistent, canonicalized, and aligned. Step 07 Runtime Implementation is NOT started on this branch. Awaiting DINO Project Owner authorization.
 
 ### `DINO-005A`
 

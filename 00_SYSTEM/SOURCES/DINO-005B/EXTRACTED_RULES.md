@@ -1,8 +1,8 @@
 # DINO-005B — EXTRACTED RULES
 
-> Step 03 — Source-grounded corrective rules  
-> Status: INITIAL EXTRACTION REGISTERED  
-> Implementation: NOT STARTED  
+> Step 03 — Source-grounded corrective rules
+> Status: INITIAL EXTRACTION REGISTERED
+> Implementation: NOT STARTED
 > Rule: No application logic may be implemented from an unverified or inferred rule.
 
 ---
@@ -11,12 +11,14 @@
 
 Every rule below is traceable to an authorized source. The source text is preserved by citation in the working record; this repository document records the normalized rule without reproducing textbook prose.
 
-Status meanings:
+Provenance classifications:
 
-- **LOCKED-SOURCE** — explicitly supported by the cited source.
-- **SOURCE-GAP** — required for the product but not yet sufficiently supported by the retrieved source material.
-- **PRODUCT-RULE** — comes from BFS/DINO requirements rather than textbook evidence.
-- **NEEDS-ADMIN-DECISION** — requires a product decision before becoming engine behavior.
+- **[LOCKED-SOURCE]** — explicitly supported by the cited authorized textbook source (S01, S02, S03, S04).
+- **[SOURCE-GAP]** — required for the product but not yet sufficiently supported by the retrieved source material.
+- **[PRODUCT-RULE] / [DINO BUSINESS RULE]** — originates from BFS/DINO founder requirements (S05 reconciled governance record) rather than textbook clinical evidence. Zero clinical authority.
+- **[DINO DESIGN DECISION]** — product architectural choices authorized by DINO Project Owner.
+- **[ENGINEERING-PROPOSAL]** — deterministic engineering heuristics (e.g. scoring weights, tie-breakers) created for algorithm reproducibility. Not clinical science.
+- **[NEEDS-ADMIN-DECISION]** — administrative decision requiring explicit Project Owner decision (e.g., AD-001, AD-002, SG-001).
 
 Important: the textbook describes potential associations and corrective strategies. DINO must not turn these into a diagnosis engine.
 
@@ -35,7 +37,7 @@ NASM defines corrective exercise as a systematic process of identifying a neurom
 
 **Source:** S01, Section 1 / Corrective Exercise Continuum, around printed pp. 5–6; retrieved text explicitly describes the four phases. fileciteturn130file3
 
-**Engine status:** LOCKED-SOURCE.
+**Engine status:** [LOCKED-SOURCE].
 
 ### Rule CEX-002
 
@@ -43,7 +45,7 @@ The continuum is not a diagnosis by itself. NASM frames corrective exercise arou
 
 **Source:** S01, same continuum discussion. fileciteturn130file3
 
-**Engine status:** LOCKED-SOURCE.
+**Engine status:** [LOCKED-SOURCE].
 
 ### Rule CEX-003
 
@@ -51,7 +53,19 @@ Integration exercise selection depends on assessment findings and the individual
 
 **Source:** S01, foot/ankle and knee corrective strategy tables. fileciteturn130file1 fileciteturn130file2
 
-**Engine status:** LOCKED-SOURCE.
+**Engine status:** [LOCKED-SOURCE].
+
+### Rule CEX-004 — Conceptual Separation: NASM CEx vs. NSCA RAMP
+
+NASM Corrective Exercise Continuum (Inhibit → Lengthen → Activate → Integrate) and NSCA RAMP Warm-Up (Raise → Activate → Mobilize → Potentiate) serve distinct, complementary training purposes and must NOT be conflated or used interchangeably:
+
+- **NASM CEx Continuum:** Targeted neuromyofascial correction addressing specific static postural deviations, muscle imbalances, and joint dysfunctions.
+- **NSCA RAMP Warm-Up:** Systemic athletic preparation raising body temperature, activating musculature, mobilizing dynamic ROM, and potentiating the nervous system for high-load/high-velocity sport performance.
+- In DINO, prehab routines may coordinate with session warm-ups, but the corrective 4-phase continuum is strictly governed by NASM CEx principles.
+
+**Source:** S01 (NASM Corrective Exercise Training) vs S03 (NSCA Essentials of Strength Training & Conditioning, 4th Ed.).
+
+**Engine status:** [LOCKED-SOURCE] / Governance Architecture Boundary.
 
 ---
 
@@ -263,7 +277,7 @@ S01 sample tables provide acute variables such as approximately 30-second inhibi
 
 **Source:** S01 sample foot/ankle and knee tables. fileciteturn130file1 fileciteturn130file2
 
-**Engine status:** LOCKED-SOURCE as **sample acute variables only**.
+**Engine status:** [LOCKED-SOURCE] as **sample acute variables only**.
 
 ### Rule VAR-002
 
@@ -271,35 +285,48 @@ The application must NOT hard-code these sample variables as universal prescript
 
 **Source:** S01 notes accompanying the corrective strategy tables. fileciteturn130file1 fileciteturn130file2
 
-**Engine status:** LOCKED-SOURCE.
+**Engine status:** [LOCKED-SOURCE].
+
+### Rule VAR-003 — Dosage Pinning Governance (AD-001)
+
+A strict distinction is maintained between **source-supported dosage ranges** (e.g., S01: 30–60s SMR holds, 20–30s static stretches, 10–15 activation reps) and **DINO proposed operational profiles** (e.g., 30–45s Pre-Workout, 10–12 reps). The pinned operational profiles are engineering proposals and must not be presented as direct textbook mandates.
+
+**Administrative Decision AD-001 Status:** **`STATUS = OPEN`** (Awaiting explicit DINO Project Owner decision).
+
+**Engine status:** [NEEDS-ADMIN-DECISION] / [ENGINEERING-PROPOSAL].
 
 ---
 
 # 7. Product Requirements Already Explicitly Supported by BFS/DINO Source
 
+> **Governance Notice on SOURCE-05 (`Kế-hoạch-cơ-bản.txt`):**
+> Physical Source Status: **NOT AVAILABLE** on local filesystem.
+> Governance Record Status: **RECONCILED / PROJECT-OWNER-AUTHORIZED** (PR-001 to PR-004 preserved).
+> Scientific Authority: **NONE**. The requirements represent founder business rules and UI workflows, not clinical evidence.
+
 ### Rule UX-001
 
 Opposing postural-deviation selections must be mutually exclusive at the UI/data-model level. The existing DINO requirement explicitly states radio-button behavior for opposing deviations and gives Anterior Pelvic Tilt vs Posterior Pelvic Tilt as the example.
 
-**Source:** S05, Prehab & Corrective Logic requirements. fileciteturn128file0
+**Source:** S05 reconciled governance record (PR-001), Prehab & Corrective Logic requirements.
 
-**Engine status:** PRODUCT-RULE.
+**Engine status:** [DINO BUSINESS RULE].
 
 ### Rule UX-002
 
 The existing product specification requires a Prehab/Corrective workflow based on the NASM four-phase sequence and a workout-type selector.
 
-**Source:** S05 and existing architecture documentation. fileciteturn128file0 fileciteturn128file2
+**Source:** S05 reconciled governance record (PR-002) and existing architecture documentation.
 
-**Engine status:** PRODUCT-RULE.
+**Engine status:** [DINO BUSINESS RULE] / [DINO DESIGN DECISION].
 
 ### Rule UX-003
 
 The current product architecture describes a Prehab tab containing a postural-deviation selector, workout-type selector, four-step protocol generator, guided countdown timer, and 2-week muscle-frequency matrix.
 
-**Source:** Existing DINO architecture documentation. fileciteturn128file2
+**Source:** Existing DINO architecture documentation (PR-003, PR-004).
 
-**Engine status:** PRODUCT-RULE / existing architecture target.
+**Engine status:** [DINO BUSINESS RULE] / [DINO DESIGN DECISION].
 
 ---
 
@@ -309,27 +336,30 @@ The product requirement establishes the need for mutually exclusive opposing dev
 
 Therefore:
 
-- Anterior Pelvic Tilt ↔ Posterior Pelvic Tilt: **PRODUCT-RULE, mutually exclusive**.
-- Any other opposing pair: **SOURCE-GAP until explicitly mapped**.
+- Anterior Pelvic Tilt ↔ Posterior Pelvic Tilt: **[DINO BUSINESS RULE], mutually exclusive**.
+- Any other opposing pair: **[SOURCE-GAP] until explicitly mapped**.
 - Do not assume that every biomechanically opposite-looking label is mutually exclusive without defining the domain and evidence.
 
-This is intentionally conservative so the engine does not silently invent incompatibility rules.
+### Asymmetric Weight Shift Laterality (AD-002)
+
+When an assessment records an Asymmetric Weight Shift (AWS) without specifying a side (e.g. Left vs Right):
+- S01 establishes that lateral shift requires asymmetric corrective targeting (calves/TFL/piriformis on shift side; gluteus medius on opposite side).
+- If laterality is absent, candidate behaviors (e.g., prompting laterality, bilateral fallback, or conservative neutral prescription) are documented as proposals only.
+- **Administrative Decision AD-002 Status:** **`STATUS = OPEN`** (Awaiting explicit DINO Project Owner policy decision).
+
+This is intentionally conservative so the engine does not silently invent incompatibility or laterality rules.
 
 ---
 
-# 9. Workout-Type Dependency — Not Yet a Corrective Rule
+# 9. Workout-Type Dependency — Scoring & Context Heuristics
 
 The product intent requires different preparation/corrective outputs for different session types (for example upper, lower, running, circuit, and off-day). The current source extraction establishes that corrective exercise must be individualized and that integration depends on assessment findings and physical capability.
 
-However, the exact DINO mapping:
+The scoring weights defined in `DETERMINISTIC_SCORING_SPECIFICATION.md` (e.g., $W_{\text{impairment}} = 100$, $W_{\text{context}} = 60/20$, $W_{\text{phase}} = 50$, etc.):
+- **MUST NOT** be presented as NASM/NSCA textbook formulas or clinical scoring metrics.
+- Are strictly classified as **`[ENGINEERING-PROPOSAL]`** deterministic heuristics designed for predictable, explainable ranking across the 37 canonical exercises.
 
-`sessionType → warm-up profile → corrective volume → exercise selection → order`
-
-has **not yet been established as a source-grounded rule**.
-
-Status: **SOURCE-GAP / NEEDS-ADMIN-DECISION**.
-
-Do not implement it yet.
+Status: **[ENGINEERING-PROPOSAL] / [DINO DESIGN DECISION]**.
 
 ---
 
@@ -341,7 +371,7 @@ The source material itself indicates that some assessment procedures are beyond 
 
 **Source:** S01 cervical assessment discussion explicitly limits certain manual muscle testing to qualified licensed professionals. fileciteturn130file0
 
-**Engine status:** LOCKED-SOURCE safety boundary.
+**Engine status:** [LOCKED-SOURCE] safety boundary.
 
 ### Rule SAFE-002
 
@@ -349,20 +379,20 @@ Where movement dysfunction persists or produces pain, the source recommends a mo
 
 **Source:** S01 summary for shoulder/elbow/wrist corrective exercise. fileciteturn130file6
 
-**Engine status:** LOCKED-SOURCE safety boundary.
+**Engine status:** [LOCKED-SOURCE] safety boundary.
 
 ---
 
 # 11. Rules Deliberately NOT Locked Yet
 
-The following are intentionally left open until deeper extraction/cross-source verification:
+The following are intentionally left open until deeper extraction/cross-source verification or explicit administrative decision:
 
 1. Complete DINO deviation taxonomy.
 2. Complete opposing-deviation compatibility matrix.
 3. Complete muscle-by-muscle corrective matrix for all deviations.
 4. Complete exercise-level mapping for every corrective phase.
 5. Upper/lower/running/circuit/off-day session profiles.
-6. Warm-up duration and exact set/rep logic by session type.
+6. Warm-up duration and exact set/rep logic by session type (AD-001: **`STATUS = OPEN`**).
 7. Frequency rules for repeated corrective exposures.
 8. 2-week muscle-frequency matrix generation logic.
 9. Regression/progression rules across user capability levels.
@@ -370,8 +400,10 @@ The following are intentionally left open until deeper extraction/cross-source v
 11. How S02 performance preparation modifies S01 corrective selection.
 12. How S03 load/fatigue principles modify corrective volume.
 13. How S04 BFS hybrid scheduling modifies placement and volume.
+14. Asymmetric Weight Shift laterality policy (AD-002: **`STATUS = OPEN`**).
+15. Scapular Winging Phase 4 integration fallback (SG-001: **`STATUS = OPEN`**).
 
-These are **not missing because of a lack of effort**; they are deliberately uncommitted until the source material is extracted and compared.
+These are **not missing because of a lack of effort**; they are deliberately uncommitted until the source material is extracted and compared or explicitly authorized.
 
 ---
 
