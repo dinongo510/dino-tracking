@@ -9,18 +9,44 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-005A` LOCKED |
-| **Active Change Set** | `DINO-005A` |
-| **Current State** | `LOCKED` |
-| **Dino AUT** | `APPROVED` |
-| **Active Branch** | `main` |
-| **Current Baseline HEAD** | `d54b6b2d6493452ca4b22641d6d45067be7d2218` |
-| **Last Updated** | `2026-09-28` |
+| **Session State** | `DINO-005A` LOCKED / `DINO-005B` SPECIFICATION (`STEP_06_SCORING_SPEC_COMPLETE`) |
+| **Active Change Set** | `DINO-005B` (Specification Only) |
+| **Current State** | `STEP_06_SCORING_SPEC_COMPLETE` |
+| **Dino AUT** | `DINO-005A APPROVED` |
+| **Active Branch** | `feature/dino-005b-step06-scoring-spec` |
+| **Current Baseline HEAD** | `9838ebef2eb1087415bf96543e9154e11b941e97` |
+| **Last Updated** | `2026-09-29` |
 | **Active Blockers** | None |
 
 ---
 
 ## 2. Completed / Active Change Set Details
+
+### `DINO-005B` (Prehab / Corrective Engine — Specification Phase)
+
+- **Objective:** Design and specify the deterministic Prehab / Corrective recommendation engine, exercise candidate matrix, and deterministic scoring pipeline based on NASM CEx (S01), NASM PES (S02), NSCA 4th Ed. (S03), and BFS Hybrid 2-Week Rotation (S04).
+- **Current Step:** `STEP_06_SCORING_SPEC_COMPLETE`
+- **State:** `SPECIFICATION_IN_PROGRESS` (Zero application code modified; pure governance/specification artifacts).
+- **Completed Steps:**
+  - `STEP 01`: Source Ingestion & Inventory Register (`00_SYSTEM/SOURCES/DINO-005B/SOURCE_REGISTER.md`)
+  - `STEP 02`: Source Domain Mapping & Provenance Tiers (`00_SYSTEM/SOURCES/DINO-005B/SOURCE_MAP.md`)
+  - `STEP 03`: Extracted Rules Register (`00_SYSTEM/SOURCES/DINO-005B/EXTRACTED_RULES.md`)
+  - `STEP 04`: Exercise Database & Candidate Matrix (`00_SYSTEM/SOURCES/DINO-005B/EXERCISE_MATRIX.md`)
+  - `STEP 05`: Deterministic Engine Architecture & Permutation Matrix (`00_SYSTEM/SOURCES/DINO-005B/PREHAB_ENGINE_DESIGN.md` & `PREHAB_RULE_MATRIX.md`, Commit: `9838ebe`)
+  - `STEP 06`: Deterministic Scoring & Pipeline Specification (`00_SYSTEM/SOURCES/DINO-005B/DETERMINISTIC_SCORING_SPECIFICATION.md`)
+- **Authorized Files Changed:**
+  - `00_SYSTEM/SOURCES/DINO-005B/DETERMINISTIC_SCORING_SPECIFICATION.md` (Created)
+  - `00_SYSTEM/DINO-005B_SPECIFICATION.md` (Updated)
+  - `00_SYSTEM/DINO_SESSION_STATE.md` (Updated)
+- **Protected Areas (100% Untouched):**
+  - `js/*` (`js/data.js`, `js/storage.js`, `js/app.js`, `js/ai_coach.js`, `js/charts.js`, `js/audio.js`, `js/timer.js`, `js/supabase_sync.js`)
+  - `css/*` (`css/style.css`)
+  - `index.html`
+  - `package.json`
+  - `vercel.json`
+  - `sw.js`
+  - `manifest.json`
+- **Implementation Status:** NOT AUTHORIZED. DINO-005B is NOT marked complete.
 
 ### `DINO-005A`
 
