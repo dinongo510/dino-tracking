@@ -409,7 +409,7 @@ Every heuristic, algorithm, or threshold in this specification is formally class
 | **EP-003** | Defaulting missing context to `full_body` | `[ENGINEERING-PROPOSAL]` | **PROPOSED** | Safe operational fallback to prevent runtime crashes. |
 | **AD-001** | Exact pinning of Mode A (3–6 min) vs Mode B (12–20 min) durations | `[NEEDS-ADMIN-DECISION]` | **OPEN** | Balances athletic time budget against tissue restoration. |
 | **AD-002** | Handling missing laterality on Asymmetric Weight Shift | `[NEEDS-ADMIN-DECISION]` | **OPEN** | Policy choice: block routine vs. deliver bilateral interim advice. |
-| **SG-001** | Missing Phase 4 Integration for Scapular Winging | `[SOURCE-GAP]` / `[ENGINEERING-PROPOSAL]` | **OPEN** | S01 does not prescribe an explicit single integration drill for winging. |
+| **SG-001** | Phase 4 Integration for Scapular Winging | `[LOCKED-SOURCE]` | **RESOLVED (SOURCE-VERIFIED)** | S01 Ch. 15 explicitly prescribes Standing One-Arm Cable Chest Press (requires cable). |
 
 ---
 

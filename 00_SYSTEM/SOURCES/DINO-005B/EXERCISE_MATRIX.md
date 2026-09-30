@@ -65,7 +65,7 @@ Every corrective exercise record possesses exactly **one canonical identifier**:
 | `cex-int-04` | `KV-INT-01`, `FA-INT-04` | Lateral Skater Hop with Stabilization | Integrate | `knee` / `lphc` | **VERIFIED** |
 | `cex-int-05` | `FA-INT-03` | A-Skip & Ankling Dynamic Prep | Integrate | `foot_ankle` / `lphc` | **VERIFIED** |
 | `cex-int-06` | `SE-INT-01` | Overhead Band Walk / Carry | Integrate | `shoulder` | **VERIFIED** |
-| `cex-int-07` | `SW-ACT-01`, `SW-INT-01` | Push-Up Plus (Serratus Anterior) | Integrate | `shoulder` | **VERIFIED** |
+| `cex-int-07` | `SW-INT-01` | Standing One-Arm Cable Chest Press | Integrate | `shoulder` / `kinetic_chain` | **VERIFIED** |
 | `cex-int-08` | `EFL-INT-01`, `LBR-INT-01`, `FH-INT-01` | Squat to Overhead Press Integration | Integrate | `lphc` / `shoulder` | **VERIFIED** |
 
 ---
@@ -199,9 +199,9 @@ Every corrective exercise record possesses exactly **one canonical identifier**:
 | `cex-len-07` | `SW-LEN-01` | Lengthen | Static Kneeling lat stretch | `[LOCKED-SOURCE]` | S01 Ch. 15 |
 | `cex-len-08` | `SW-LEN-02` | Lengthen | Static Doorway pectoral stretch | `[LOCKED-SOURCE]` | S01 Ch. 15 |
 | `cex-act-07` | `SW-ACT-02` | Activate | Prone cobra (Rhomboids / Lower Trap) | `[LOCKED-SOURCE]` | S01 Ch. 15 |
-| `cex-int-07` | `SW-ACT-01` / `SW-INT-01` | Integrate | Push-Up Plus (Serratus anterior protraction) | `[ENGINEERING-PROPOSAL]` (SG-001) | S01 Ch. 11/15 |
+| `cex-int-07` | `SW-INT-01` | Integrate | Standing One-Arm Cable Chest Press | `[LOCKED-SOURCE]` | S01 Ch. 15 |
 
-*Note on Scapular Winging Phase 4 (`SG-001`):* S01 omits a dedicated Phase 4 dynamic integration drill for serratus anterior; `cex-int-07` (Push-Up Plus) is proposed as Level 3 fallback (`[ENGINEERING-PROPOSAL]`). Status remains `OPEN`.
+*Note on Scapular Winging Phase 4 (`SG-001`):* **SOURCE-VERIFIED**. S01 Chapter 15 explicitly specifies Standing One-Arm Cable Chest Press as the Step 4 dynamic integration exercise for Scapular Winging. Requires cable equipment (`cable`). Prior `[SOURCE-GAP]` / synthetic fallback proposal is formally resolved.
 
 ---
 
@@ -233,9 +233,9 @@ The following administrative decisions belong exclusively to DINO (Project Owner
 
 | Decision ID | Domain | Open Question | Proposed Engineering Baseline | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| **`AD-001`** | Dosage Pinning | Finalize exact second/rep durations for Mode A (3–6 min) vs Mode B (12–20 min). | Mode A: 45s SMR, 25s stretch, 10 reps activate, 8 reps integrate. Mode B: 60s SMR, 35s stretch, 12 reps, 10 reps. | **OPEN** |
+| **`AD-001`** | Dosage Pinning | Finalize exact second/rep durations for Mode A (3–6 min) vs Mode B (12–20 min). | Mode A: 45s SMR, 25s stretch, 10 reps activate, 10 reps integrate. Mode B: 60s SMR, 30s stretch, 12 reps, 10 reps. | **OPEN** |
 | **`AD-002`** | Missing AWS Laterality | Policy when user selects Asymmetric Weight Shift without declaring shifted side. | Halt unilateral routine, flag `PARTIAL_NEEDS_LATERALITY`, deliver bilateral posterior chain relief, prompt for shifted side. | **OPEN** |
-| **`SG-001`** | Scapular Winging P4 | S01 omits dedicated Phase 4 integration drill for serratus anterior. | Authorize `cex-int-07` (Push-Up Plus) or `cex-int-01` (Pause Squat) as Level 3 fallback. | **OPEN** |
+| **`SG-001`** | Scapular Winging P4 | Resolved via NASM CEx Chapter 15 source verification. | Standing One-Arm Cable Chest Press (requires cable equipment). | **RESOLVED (SOURCE-VERIFIED)** |
 
 ---
 

@@ -9,14 +9,14 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-005A` LOCKED / `DINO-005B` SPECIFICATION REMEDIATED (`STEP_07A_COMPLETE`) |
-| **Active Change Set** | `DINO-005B` (Step 07A — Specification Remediation) |
-| **Current State** | `SPECIFICATION_REMEDIATED` / `AUDIT_REMEDIATED` |
+| **Session State** | `DINO-005A` LOCKED / `DINO-005B` STEP 08E REMEDIATED |
+| **Active Change Set** | `DINO-005B` (Step 08E — Remediate DF-07 & Final Commit Readiness) |
+| **Current State** | `STEP_08E_REMEDIATED_PENDING_FINAL_VERIFICATION` |
 | **Dino AUT** | `DINO-005A APPROVED` |
 | **Active Branch** | `feature/dino-005b-step07a-spec-remediation` |
-| **Current Baseline HEAD** | `50f95f0` (`docs(dino-005b): comprehensive pre-implementation specification audit`) |
-| **Last Updated** | `2026-09-29` |
-| **Active Blockers** | None (All 7 audit findings remediated in specification; awaiting Project Owner authorization for Step 07 Runtime) |
+| **Current Baseline HEAD** | `5797567` (`docs(dino-005b): remediate specification audit blockers`) |
+| **Last Updated** | `2026-09-30` |
+| **Active Blockers** | None for runtime engine; Browser QA blocked by Playwright CDN 404 (Environment Limitation) |
 
 ---
 

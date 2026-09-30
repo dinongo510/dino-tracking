@@ -42,7 +42,7 @@ All 7 audit findings from `DINO_005B_FULL_AUDIT.md` have been formally remediate
 3. **P1-01 — Open Administrative Decisions Register:**
    - **`AD-001` (Exact Dosage Pinning):** `STATUS = OPEN`. Clear distinction maintained between source-supported ranges (S01: 30–60s SMR, 20–30s static stretches, 10–15 activation reps) and DINO operational proposals (30–45s Pre-Workout, 10–12 reps).
    - **`AD-002` (AWS Missing Laterality):** `STATUS = OPEN`. Candidate behaviors documented as proposals only; no unilateral decision forced.
-   - **`SG-001` (Scapular Winging Phase 4 Fallback):** `STATUS = OPEN`. Documented as `[ENGINEERING-PROPOSAL]` fallback (`cex-int-07` or `cex-int-01`).
+   - **`SG-001` (Scapular Winging Phase 4 Integration):** `STATUS = RESOLVED / SOURCE-VERIFIED`. Authoritative exercise: **Standing One-Arm Cable Chest Press** (`cex-int-07`, NASM CEx Chapter 15). Requires cable equipment. Replaces prior `[SOURCE-GAP]` / synthetic fallback proposal.
 
 4. **P1-02 — Scoring Weights Provenance:**
    - Numerical weights ($W_{\text{impairment}} = 100$, $W_{\text{context}} = 60/20$, $W_{\text{phase}} = 50$, multipliers $1.0–3.5$) explicitly classified as **`[ENGINEERING-PROPOSAL]`** deterministic heuristics.

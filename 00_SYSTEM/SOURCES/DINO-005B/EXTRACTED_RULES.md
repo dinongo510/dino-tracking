@@ -18,7 +18,7 @@ Provenance classifications:
 - **[PRODUCT-RULE] / [DINO BUSINESS RULE]** — originates from BFS/DINO founder requirements (S05 reconciled governance record) rather than textbook clinical evidence. Zero clinical authority.
 - **[DINO DESIGN DECISION]** — product architectural choices authorized by DINO Project Owner.
 - **[ENGINEERING-PROPOSAL]** — deterministic engineering heuristics (e.g. scoring weights, tie-breakers) created for algorithm reproducibility. Not clinical science.
-- **[NEEDS-ADMIN-DECISION]** — administrative decision requiring explicit Project Owner decision (e.g., AD-001, AD-002, SG-001).
+- **[NEEDS-ADMIN-DECISION]** — administrative decision requiring explicit Project Owner decision (e.g., AD-001, AD-002).
 
 Important: the textbook describes potential associations and corrective strategies. DINO must not turn these into a diagnosis engine.
 
@@ -401,7 +401,7 @@ The following are intentionally left open until deeper extraction/cross-source v
 12. How S03 load/fatigue principles modify corrective volume.
 13. How S04 BFS hybrid scheduling modifies placement and volume.
 14. Asymmetric Weight Shift laterality policy (AD-002: **`STATUS = OPEN`**).
-15. Scapular Winging Phase 4 integration fallback (SG-001: **`STATUS = OPEN`**).
+15. Scapular Winging Phase 4 integration (SG-001: **`STATUS = RESOLVED / SOURCE-VERIFIED`** — Standing One-Arm Cable Chest Press, NASM CEx Ch. 15).
 
 These are **not missing because of a lack of effort**; they are deliberately uncommitted until the source material is extracted and compared or explicitly authorized.
 

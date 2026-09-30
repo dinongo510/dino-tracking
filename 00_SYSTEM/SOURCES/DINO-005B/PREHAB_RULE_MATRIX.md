@@ -17,7 +17,7 @@
    - `[LOCKED-SOURCE]`: Exercise selection directly derived from S01 chapter protocols.
    - `[PRODUCT-RULE]`: Workflow rules derived from reconciled S05 governance records (`Kế-hoạch-cơ-bản.txt`). Physical S05 file is NOT available on disk; rules possess zero clinical authority.
    - `[ENGINEERING-PROPOSAL]`: Specific context pairings, heuristic ranking weights (+100, +50, etc.), and tie-breakers proposed to achieve software determinism.
-   - `[NEEDS-ADMIN-DECISION]`: Formal decisions requiring DINO Project Owner policy approval (`AD-001`, `AD-002`, `SG-001`), currently **STATUS = OPEN**.
+   - `[NEEDS-ADMIN-DECISION]`: Formal decisions requiring DINO Project Owner policy approval (`AD-001`, `AD-002`), currently **STATUS = OPEN**.
    - `[SOURCE-GAP]`: Omissions in source literature where an explicit product policy must be established.
 3. **PRESERVATION OF ASSESSMENT BRANCHING & LATERALITY:**
    - Asymmetric Weight Shift (`AWS`) is explicitly indexed by side (`shifted_side` vs. `opposite_side`).
@@ -46,7 +46,7 @@ The table below defines the deterministic mapping from `(ObservedImpairment, Ass
 | **11** | `AWS-02`: Asymmetric Weight Shift | Laterality: **Unweighted (Opposite-Side)**| `lower` / `offday` | `cex-inh-07` (`AWS-INH-03` Opp Piriformis)| `cex-len-06` (`AWS-LEN-04` Opp Hamstrings)| `cex-act-03` (`AWS-ACT-02` Opp Band Walk)| `cex-int-08` (`AWS-INT-01` Squat to Press) | `[LOCKED-SOURCE]` S01 Ch. 14 (Laterality preserved)|
 | **12** | `SE-01`: Shoulders Elevate | Cervicothoracic compensation | `upper` | `cex-inh-10` (`SE-INH-02` Upper Trap) | `cex-len-09` (`SE-LEN-02` Upper Trap) | `cex-act-07` (`SE-ACT-01` Prone Cobra) | `cex-int-02` (`SE-INT-01` Single-Leg RDL/PNF) | `[LOCKED-SOURCE]` S01 Ch. 15 + `[ENGINEERING-PROPOSAL]` |
 | **13** | `SE-02`: Shoulders Elevate | Cervicothoracic compensation | `full_body` / `offday` | `cex-inh-10` (`SE-INH-03` Levator) | `cex-len-09` (`SE-LEN-03` Levator) | `cex-act-08` (`SE-ACT-01` Band Pull-Apart) | `cex-int-06` (`SE-INT-01` Overhead Band Walk)| `[LOCKED-SOURCE]` S01 Ch. 15 + `[ENGINEERING-PROPOSAL]` |
-| **14** | `SW-01`: Scapular Winging | Scapulothoracic instability | `upper` | `cex-inh-08` (`SW-INH-01` Latissimus) | `cex-len-08` (`SW-LEN-02` Pectorals) | `cex-act-07` (`SW-ACT-02` Prone Cobra) | `cex-int-07` (`SW-ACT-01` Push-Up Plus) | `[LOCKED-SOURCE]` P1-P3; P4 is `[ENGINEERING-PROPOSAL]` (SG-001: OPEN) |
+| **14** | `SW-01`: Scapular Winging | Scapulothoracic instability | `upper` | `cex-inh-08` (`SW-INH-01` Latissimus) | `cex-len-08` (`SW-LEN-02` Pectorals) | `cex-act-07` (`SW-ACT-02` Prone Cobra) | `cex-int-07` (`SW-INT-01` Standing One-Arm Cable Chest Press) | `[LOCKED-SOURCE]` P1-P4 (S01 Ch. 15; SG-001 SOURCE-VERIFIED) |
 | **15** | `FH-01`: Forward Head Posture | Cervical spine compensation | `upper` / `offday` | `cex-inh-10` (`FH-INH-04` Upper Trap) | `cex-len-09` (`FH-LEN-02` Levator) | `cex-act-09` (`FH-ACT-01` Chin Tuck) | `cex-int-08` (`FH-INT-01` Squat to Press) | `[LOCKED-SOURCE]` S01 Ch. 16 + `[ENGINEERING-PROPOSAL]` |
 | **16** | `FH-02`: Forward Head Posture | Cervical spine compensation | `full_body` | `cex-inh-09` (`FH-INH-01` Thoracic SMR) | `cex-len-09` (`FH-LEN-03` Upper Trap) | `cex-act-07` (`FH-ACT-03` Prone Cobra) | `cex-int-08` (`FH-INT-01` Squat to Press) | `[LOCKED-SOURCE]` S01 Ch. 16 + `[ENGINEERING-PROPOSAL]` |
 
@@ -107,9 +107,9 @@ The following administrative decisions remain **`STATUS = OPEN`** pending Projec
 
 | Decision ID | Domain | Open Question | Proposed Engineering Baseline | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| **`AD-001`** | Dosage Pinning | Finalize exact second/rep durations for Mode A (3–6 min) vs Mode B (12–20 min). | Mode A: 45s SMR, 25s stretch, 10 reps activate, 8 reps integrate. Mode B: 60s SMR, 35s stretch, 12 reps, 10 reps. | **OPEN** |
+| **`AD-001`** | Dosage Pinning | Finalize exact second/rep durations for Mode A (3–6 min) vs Mode B (12–20 min). | Mode A: 45s SMR, 25s stretch, 10 reps activate, 10 reps integrate. Mode B: 60s SMR, 30s stretch, 12 reps, 10 reps. | **OPEN** |
 | **`AD-002`** | Missing AWS Laterality | Policy when user selects Asymmetric Weight Shift without declaring shifted side. | Halt unilateral routine, flag `PARTIAL_NEEDS_LATERALITY`, deliver bilateral posterior chain relief, prompt for shifted side. | **OPEN** |
-| **`SG-001`** | Scapular Winging P4 | S01 omits dedicated Phase 4 integration drill for serratus anterior. | Authorize `cex-int-07` (Push-Up Plus) or `cex-int-01` (Pause Squat) as Level 3 fallback. | **OPEN** |
+| **`SG-001`** | Scapular Winging P4 | Resolved via NASM CEx Chapter 15 source verification. | Standing One-Arm Cable Chest Press (requires cable equipment). | **RESOLVED (SOURCE-VERIFIED)** |
 
 ---
 

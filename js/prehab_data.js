@@ -2559,60 +2559,58 @@ const PREHAB_EXERCISES = [
   },
   {
     "exerciseId": "cex-int-07",
-    "matrixId": "SW-ACT-01",
+    "matrixId": "SW-INT-01",
     "aliases": [
-      "SW-ACT-01",
       "SW-INT-01"
     ],
-    "nameEn": "Push-Up Plus (Serratus Anterior)",
-    "name": "Hít Đất Nhô Xương Bả Vai (Push-Up Plus Scapular Retract)",
+    "nameEn": "Standing One-Arm Cable Chest Press",
+    "name": "Đẩy Ngực Một Tay Với Dây Cáp (Standing One-Arm Cable Chest Press)",
     "phase": "integrate",
     "category": "Corrective",
     "trainingType": "CORRECTIVE",
     "movementPattern": "PUSH",
     "kineticChainCheckpoint": "shoulder",
     "addressedImpairments": [
+      "imp-scap-wing",
       "imp-shldr-round",
-      "imp-shldr-elev",
-      "imp-neck-fwd",
-      "default_general"
+      "imp-shldr-fall"
     ],
     "primaryMuscles": [
-      "Serratus anterior"
+      "Serratus anterior",
+      "Pectoralis major",
+      "Core rotators / stabilizers"
     ],
     "secondaryMuscles": [
-      "Pectoralis minor",
       "Anterior deltoid",
       "Triceps brachii",
-      "Core abdominals"
+      "Gluteus medius/maximus (anti-rotation)"
     ],
     "equipment": [
-      "bodyweight",
-      "mat"
+      "cable"
     ],
     "rawEquipment": [
-      "Mat / Bodyweight"
+      "Cable Machine / Resistance Cable"
     ],
     "formCues": [
-      "Vào tư thế chống đẩy (plank đỉnh cao), hai bàn tay đặt thẳng dưới vai, thân người tạo thành một đường thẳng.",
-      "Giữ hai khuỷu tay thẳng tuyệt đối trong toàn bộ chuyển động.",
-      "Chủ động đẩy sàn nhà ra xa bằng cách mở rộng hai xương bả vai ra hai bên (scapular protraction) nhấc lưng trên lên cao, giữ 2 giây ở đỉnh trước khi hạ nhẹ về trung tính."
+      "Đứng vào tư thế so le (staggered stance) trước máy kéo cáp, tay cùng bên chân sau cầm tay cầm cáp ở độ cao ngang ngực.",
+      "Giữ trục cột sống thẳng, siết chặt cơ bụng và mông để chống xoay thân người.",
+      "Đẩy tay cầm cáp ra phía trước thành một chuyển động kiểm soát, chủ động vươn bả vai (protraction) ở cuối tầm, sau đó kiểm soát đưa tay về vị trí ban đầu."
     ],
     "commonErrors": [
-      "Gập khuỷu tay biến thành động tác hít đất thông thường",
-      "võng thắt lưng chùng hông",
-      "gục đầu rụt cổ xuống sàn."
+      "Xoay vặn thân người mất kiểm soát khi đẩy cáp",
+      "nhún vai về phía tai",
+      "ưỡn thắt lưng bù trừ."
     ],
-    "cautions": "Giữ khuỷu tay thẳng tự nhiên nhưng không khóa khớp giật cục; duy trì cơ bụng siết chặt bảo vệ thắt lưng.",
-    "regression": "Chống hai gối xuống sàn (Kneeling push-up plus) hoặc chống hai tay lên tường/ghế bục cao.",
-    "progression": "Đặt hai chân lên bục cao (feet-elevated) hoặc thực hiện ở tư thế plank cẳng tay (Dolphin push-up plus).",
+    "cautions": "Đây là bài tập liên kết toàn bộ chuỗi động lực (neuromuscular integration), sử dụng mức kháng lực nhẹ để ưu tiên độ vững trục và kích hoạt serratus anterior.",
+    "regression": "Giảm mức kháng lực cáp hoặc thực hiện ở tư thế hai chân song song hẹp (bilateral stance).",
+    "progression": "Tăng khoảng cách bước so le hoặc kết hợp bước chân luân phiên (step and press).",
     "preWorkout": {
-      "raw": "1 set × 10–12 reps | Tempo: 4/2/1 | Hold: 2s at full protraction | Intent: ZERO FATIGUE",
+      "raw": "1 set × 8–10 reps per arm | Tempo: 2/1/2 | Hold: 1s at full extension | Intent: ZERO FATIGUE",
       "sets": 1,
       "fatigueIntent": "ZERO FATIGUE"
     },
     "offDay": {
-      "raw": "2–3 sets × 12–15 reps | Tempo: 4/2/1 | Hold: 2s at full protraction | Intent: TISSUE RESTORATION",
+      "raw": "2 sets × 10–12 reps per arm | Tempo: 2/1/2 | Hold: 1s at full extension | Intent: TISSUE RESTORATION",
       "sets": 2,
       "fatigueIntent": "TISSUE RESTORATION"
     },
@@ -2622,13 +2620,13 @@ const PREHAB_EXERCISES = [
       "offday"
     ],
     "sourceProvenance": {
-      "raw": "SOURCE-01: NASM Essentials of Corrective Exercise Training, Chapter 11, p. 220",
+      "raw": "SOURCE-01: NASM Essentials of Corrective Exercise Training, Chapter 15",
       "sourceId": "SOURCE-01"
     },
     "provenanceClassification": {
       "physiologicalFacts": "SOURCE-VERIFIED",
       "operationalParameters": "DINO DESIGN DECISION",
-      "raw": "Serratus anterior protraction mechanics: [SOURCE-VERIFIED]. DINO dosage: [DINO DESIGN DECISION]."
+      "raw": "Dynamic multi-joint integration: [SOURCE-VERIFIED]. DINO dosage: [DINO DESIGN DECISION]."
     }
   },
   {

@@ -1039,30 +1039,30 @@ interface CorrectiveExerciseRecord {
 
 ---
 
-#### 36. `cex-int-07` — Push-Up Plus (Serratus Anterior)
-- **English Name:** Push-Up Plus (Serratus Anterior)
-- **Vietnamese Display Name:** Hít Đất Nhô Xương Bả Vai (Push-Up Plus Scapular Retract)
+#### 36. `cex-int-07` — Standing One-Arm Cable Chest Press
+- **English Name:** Standing One-Arm Cable Chest Press
+- **Vietnamese Display Name:** Đẩy Ngực Một Tay Với Dây Cáp (Standing One-Arm Cable Chest Press)
 - **Phase:** `integrate`
 - **Category / Training Type:** `Corrective` / `CORRECTIVE`
-- **Movement Pattern:** `PUSH`
-- **Kinetic Chain Checkpoint:** `shoulder`
-- **Addressed Impairments:** `imp-shldr-round`, `imp-shldr-elev`, `imp-neck-fwd`, `default_general`
-- **Primary Muscles:** Serratus anterior
-- **Secondary Muscles:** Pectoralis minor, Anterior deltoid, Triceps brachii, Core abdominals
-- **Equipment:** `Mat` / `Bodyweight`
+- **Movement Pattern:** `PUSH` / `INTEGRATION`
+- **Kinetic Chain Checkpoint:** `shoulder` / `kinetic_chain`
+- **Addressed Impairments:** `imp-scap-wing`, `imp-shldr-round`, `imp-shldr-fall`
+- **Primary Muscles:** Serratus anterior, Pectoralis major, Core rotators / stabilizers
+- **Secondary Muscles:** Anterior deltoid, Triceps brachii, Gluteus medius/maximus (anti-rotation)
+- **Equipment:** `cable` (Cable Machine / Resistance Cable)
 - **Form Cues:**
-  1. Vào tư thế chống đẩy (plank đỉnh cao), hai bàn tay đặt thẳng dưới vai, thân người tạo thành một đường thẳng.
-  2. Giữ hai khuỷu tay thẳng tuyệt đối trong toàn bộ chuyển động.
-  3. Chủ động đẩy sàn nhà ra xa bằng cách mở rộng hai xương bả vai ra hai bên (scapular protraction) nhấc lưng trên lên cao, giữ 2 giây ở đỉnh trước khi hạ nhẹ về trung tính.
-- **Common Errors:** Gập khuỷu tay biến thành động tác hít đất thông thường; võng thắt lưng chùng hông; gục đầu rụt cổ xuống sàn.
-- **Cautions:** Giữ khuỷu tay thẳng tự nhiên nhưng không khóa khớp giật cục; duy trì cơ bụng siết chặt bảo vệ thắt lưng.
-- **Regression:** Chống hai gối xuống sàn (Kneeling push-up plus) hoặc chống hai tay lên tường/ghế bục cao.
-- **Progression:** Đặt hai chân lên bục cao (feet-elevated) hoặc thực hiện ở tư thế plank cẳng tay (Dolphin push-up plus).
-- **Pre-Workout Dosage (Mode A):** 1 set × 10–12 reps | Tempo: 4/2/1 | Hold: 2s at full protraction | Intent: ZERO FATIGUE
-- **Off-Day Dosage (Mode B):** 2–3 sets × 12–15 reps | Tempo: 4/2/1 | Hold: 2s at full protraction | Intent: TISSUE RESTORATION
+  1. Đứng vào tư thế so le (staggered stance) trước máy kéo cáp, tay cùng bên chân sau cầm tay cầm cáp ở độ cao ngang ngực.
+  2. Giữ trục cột sống thẳng, siết chặt cơ bụng và mông để chống xoay thân người.
+  3. Đẩy tay cầm cáp ra phía trước thành một chuyển động kiểm soát, chủ động vươn bả vai (protraction) ở cuối tầm, sau đó kiểm soát đưa tay về vị trí ban đầu.
+- **Common Errors:** Xoay vặn thân người mất kiểm soát khi đẩy cáp; nhún vai về phía tai; ưỡn thắt lưng bù trừ.
+- **Cautions:** Đây là bài tập liên kết toàn bộ chuỗi động lực (neuromuscular integration), sử dụng mức kháng lực nhẹ để ưu tiên độ vững trục và kích hoạt serratus anterior.
+- **Regression:** Giảm mức kháng lực cáp hoặc thực hiện ở tư thế hai chân song song hẹp (bilateral stance).
+- **Progression:** Tăng khoảng cách bước so le hoặc kết hợp bước chân luân phiên (step and press).
+- **Pre-Workout Dosage (Mode A):** 1 set × 8–10 reps per arm | Tempo: 2/1/2 | Hold: 1s at full extension | Intent: ZERO FATIGUE
+- **Off-Day Dosage (Mode B):** 2 sets × 10–12 reps per arm | Tempo: 2/1/2 | Hold: 1s at full extension | Intent: TISSUE RESTORATION
 - **Compatible Workout Contexts:** `upper`, `full_body`, `offday`
-- **Source Provenance:** `SOURCE-01`: NASM Essentials of Corrective Exercise Training, Chapter 11, p. 220
-- **Provenance Classification:** Serratus anterior protraction mechanics: `[SOURCE-VERIFIED]`. DINO dosage: `[DINO DESIGN DECISION]`.
+- **Source Provenance:** `SOURCE-01`: NASM Essentials of Corrective Exercise Training, Chapter 15
+- **Provenance Classification:** Dynamic multi-joint integration: `[SOURCE-VERIFIED]`. DINO dosage: `[DINO DESIGN DECISION]`.
 
 ---
 
@@ -1134,7 +1134,7 @@ interface CorrectiveExerciseRecord {
 | **33** | `cex-int-04` | Integrate | `knee` / `lphc` | `imp-knee-valgus`, `imp-field-soccer`, `imp-lphc-apt` | `soccer`, `quality_run`, `lower`, `offday` | Rows 05, 09, 18 |
 | **34** | `cex-int-05` | Integrate | `foot_ankle` | `imp-run-quality`, `imp-foot-turnout`, `imp-lphc-apt` | `quality_run`, `easy_run`, `soccer` | Rows 03, 10, 17 |
 | **35** | `cex-int-06` | Integrate | `shoulder` | `imp-shldr-fall`, `imp-shldr-round` | `upper`, `full_body`, `offday` | Row 11 |
-| **36** | `cex-int-07` | Integrate | `shoulder` | `imp-shldr-round`, `imp-shldr-elev`, `imp-neck-fwd`, `default_general` | `upper`, `full_body`, `offday` | Rows 12, 13, 14, 15 |
+| **36** | `cex-int-07` | Integrate | `shoulder` / `kinetic_chain` | `imp-scap-wing`, `imp-shldr-round`, `imp-shldr-fall` | `upper`, `full_body`, `offday` | Row 14 |
 | **37** | `cex-int-08` | Integrate | `lphc` / `shoulder` | `imp-lphc-apt`, `imp-shldr-fall`, `default_general` | `full_body`, `lower`, `upper`, `offday` | Row 02 |
 
 ### 4.2 Cross-Verification Checklist

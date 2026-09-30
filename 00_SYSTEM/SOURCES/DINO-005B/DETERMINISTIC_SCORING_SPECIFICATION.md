@@ -138,7 +138,7 @@ The scoring engine executes through 14 sequential, deterministic stages:
 | **06** | **Context Filtering** | Ranked impairments | Scoped candidates | Look up context multiplier $W_{\text{context}} \in [1.0, 3.5]$ for current `workoutContext`. | If context missing, default to `full_body` ($W=1.0$). | `[ENGINEERING-PROPOSAL]` EP-002 |
 | **07** | **Equipment Filter** | Available gear | Eligible candidates | Eliminate candidates requiring equipment absent from `availableEquipment`. | If all eliminated, flag for Stage 14 fallback. | `[ENGINEERING-PROPOSAL]` |
 | **08** | **Candidate Retrieval**| Top impairment | Phase candidate sets | Query `EXERCISE_MATRIX.md` for candidates matching impairment in P1, P2, P3, P4. | If a phase has 0 candidates, flag phase gap. | `[LOCKED-SOURCE]` S01 |
-| **09** | **Candidate Scoring** | Eligible candidates | Scored candidates | Calculate `candidateScore` using the 6-factor additive formula. | Zero score candidates eliminated. | `[ENGINEERING-PROPOSAL]` |
+| **09** | **Candidate Scoring** | Eligible candidates | Scored candidates | Calculate `candidateScore` using the 7-factor additive formula. | Zero score candidates eliminated. | `[ENGINEERING-PROPOSAL]` |
 | **10** | **Tie-Breaking** | Scored candidates | Selected $[P_1, P_2, P_3, P_4]$ | Select highest score per phase. Tie-break: Gear > Specificity > Catalog ID. | Deterministic: same input = same winner. | `[ENGINEERING-PROPOSAL]` EP-001 |
 | **11** | **Capability Audit** | Selected tuple | Regressed tuple | If `canPerformSingleLegBalance == false`, regress P4 single-leg to 2-leg drill. | Regress only to source-verified regression. | `[LOCKED-SOURCE]` S01 Ch. 11 |
 | **12** | **Dosage Assignment** | Mode + Valid tuple | Dosed routine | Assign Mode A (1 set, $\le 30$s hold) or Mode B (2–3 sets) sample acute variables. | Missing mode defaults to Mode A (pre-workout safe).| `[PRODUCT-RULE]` / AD-001 |
@@ -151,7 +151,7 @@ The scoring engine executes through 14 sequential, deterministic stages:
 
 The engine computes a deterministic numerical score for every eligible candidate exercise:
 
-$$\text{candidateScore} = S_{\text{impairment}} + S_{\text{context}} + S_{\text{phase}} + S_{\text{equipment}} + S_{\text{specificity}} + S_{\text{laterality}}$$
+$$\text{candidateScore} = S_{\text{impairment}} + S_{\text{context}} + S_{\text{phase}} + S_{\text{equipment}} + S_{\text{specificity}} + S_{\text{laterality}} + S_{\text{alignment}}$$
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -183,8 +183,23 @@ $$\text{candidateScore} = S_{\text{impairment}} + S_{\text{context}} + S_{\text{
 │ 6. S_laterality (Side-Specific Alignment):                             │
 │    • Exact unilateral side match on AWS                 =  +25 pts     │
 │    • Bilateral on bilateral condition                   =  +10 pts     │
+│                                                                        │
+│ 7. S_alignment (Checkpoint & Context Alignment Bonus):                 │
+│    • Candidate checkpoint matches regional kinetic focus =  +10 pts     │
+│    • Running prep bonus (quality/easy run + imp-run-quality) = +50 pts │
+│    • Matrix code prefix match (e.g. SE, SW, KV, FA, etc.) =  +25 pts   │
+│    • Full-body Phase 4 linkage (full_body + integrate + cex-int-08) = +25 pts │
 └────────────────────────────────────────────────────────────────────────┘
 ```
+
+### 5.1 Checkpoint & Context Alignment Factor ($S_{\text{alignment}}$) (`[ENGINEERING-PROPOSAL]`)
+- **Purpose & Scope:** $S_{\text{alignment}}$ is a deterministic tie-breaking and kinetic continuity bonus ($+10$ to $+50$ pts cumulative) applied in Stage 09. It refines candidate selection when multiple exercises qualify for the same phase slot.
+- **Deterministic Award Rules:**
+  1. **Checkpoint Continuity ($+10$ pts):** Awarded if `candidate.kineticChainCheckpoint` contains the primary impairment's anatomical region (`lphc`, `knee`, `foot_ankle`, `shoulder`, `cervical_spine`).
+  2. **Running Dynamic Prep ($+50$ pts):** Awarded if `workoutContext` is `quality_run` or `easy_run` and `candidate.addressedImpairments` contains `imp-run-quality` (incorporates S02 running kinetic chain preparation).
+  3. **Matrix Impairment Prefix Match ($+25$ pts):** Awarded if candidate's `matrixId` or `aliases` begins with the impairment family prefix (`SE`, `SW`, `FH`, `KV`, `FA`, `LBR`, `EFL`, `AWS`), preserving source-matrix checkpoint affinity.
+  4. **Full-Body Global Linkage ($+25$ pts):** Awarded if `workoutContext` is `full_body`, `phase` is `integrate`, and candidate is `cex-int-08` (Squat to Overhead Press Integration).
+- **Clinical Governance Warning:** $S_{\text{alignment}}$ is strictly an `[ENGINEERING-PROPOSAL]` deterministic heuristic to guarantee algorithmic reproducibility. It is NOT a clinical scoring formula derived from NASM or NSCA textbooks.
 
 > [!IMPORTANT]
 > **Mandatory Governance Notice on Scoring Weights (P1-02):**
@@ -296,7 +311,7 @@ Every generated routine must satisfy the 4-phase continuum:
 1. **Zero Exercise Fabrication:** If no source-verified exercise in `EXERCISE_MATRIX.md` matches an eligible candidate for a phase, the engine **must not invent a placeholder**.
 2. **Phase Gap Handling:**
    - If Phase 1, 2, or 3 is missing: Apply Tier 2 compatible candidate from the same kinetic checkpoint.
-   - If Phase 4 is missing (e.g. Scapular Winging `SG-001: OPEN`): Apply Tier 3 general movement integration drill (`cex-int-07` Push-Up Plus or `cex-int-01` Pause Squat) and mark status `FALLBACK_APPLIED`.
+   - If Phase 4 Integration candidate is missing: In general, apply Tier 3 general movement integration drill (`cex-int-08` Squat to Overhead Press or `cex-int-01` Pause Squat) and mark status `FALLBACK_APPLIED`. Note: Scapular Winging Phase 4 (`SG-001`) is **SOURCE-VERIFIED** as Standing One-Arm Cable Chest Press (`cex-int-07`, NASM CEx Ch. 15), which requires cable equipment.
    - If zero compatible candidates exist across all tiers: Return `INSUFFICIENT_SUPPORTED_DATA` and safely halt.
 
 ---
@@ -343,7 +358,7 @@ const DINO_DOSING_PROFILES = {
     phase1_inhibit:  { sets: 1, durationSeconds: 45, holdSeconds: 30, tempo: "Sustained pressure" },
     phase2_lengthen: { sets: 1, durationSeconds: 25, holdSeconds: 25, tempo: "Static hold capped" },
     phase3_activate: { sets: 1, reps: 10, holdSeconds: 2, tempo: "4/2/1" },
-    phase4_integrate:{ sets: 1, reps: 8,  holdSeconds: 1, tempo: "Controlled dynamic" },
+    phase4_integrate:{ sets: 1, reps: 10, holdSeconds: 1, tempo: "Controlled dynamic" },
     totalTargetDurationMinutes: "3–6 minutes",
     fatigueConstraint: "ZERO_FATIGUE"
   },
@@ -351,7 +366,7 @@ const DINO_DOSING_PROFILES = {
   // Mode B: Off-Day Corrective (Tissue restoration & remodeling)
   mode_b_off_day: {
     phase1_inhibit:  { sets: 2, durationSeconds: 60, holdSeconds: 60, tempo: "Sustained pressure" },
-    phase2_lengthen: { sets: 2, durationSeconds: 35, holdSeconds: 35, tempo: "Static hold" },
+    phase2_lengthen: { sets: 2, durationSeconds: 30, holdSeconds: 30, tempo: "Static hold" },
     phase3_activate: { sets: 2, reps: 12, holdSeconds: 2, tempo: "4/2/1" },
     phase4_integrate:{ sets: 2, reps: 10, holdSeconds: 2, tempo: "Controlled dynamic" },
     totalTargetDurationMinutes: "12–20 minutes",
@@ -542,7 +557,7 @@ The following test matrix defines the expected programmatic behavior across all 
 | **20** | **Zero Impairments**| `findings: []` | Stage 01 detects empty findings; queries general athletic prep | S02 general warm-up routine generated | Empty state renders safe athletic prep routine. |
 | **21** | **Conflicting Payload**| Both `APT` and `PPT` selected | Stage 03 enforces PR-001; retains primary, discards opposing | Valid routine for primary; logs conflict warning | Engine validates and resolves invalid UI payload. |
 | **22** | **Candidate Absent** | Target candidate lacks equipment | Stage 14 invokes Level 2 compatible same-checkpoint candidate | Level 2 alternative selected; status logged | Transparent fallback without invented exercises. |
-| **23** | **Phase Gap** | Phase 4 has no source drill (Winging) | Stage 14 invokes Level 3 general movement drill (`cex-int-07` or `cex-int-08`) | Routine completed with Tier 3 fallback marker | SG-001 source gap handled deterministically. |
+| **23** | **Phase 4 Integration Verification** | Scapular Winging P4 with cable | Stage 08 retrieves Standing One-Arm Cable Chest Press (`cex-int-07`) | Verified integration exercise delivered without synthetic fallback | SG-001 resolved as SOURCE-VERIFIED (NASM CEx Ch. 15). |
 | **24** | **Safety Block** | `painLevel: 6`, sharp pain | Stage 13 triggers immediate abort; clears exercise array | Status: `SAFETY_BLOCKED`; output medical notice | Clinical red flag prevents loading damaged tissue. |
 | **25** | **Score Tie** | Two candidates have identical 250 score | Stage 10 applies tie-breaker: Gear > Specificity > Catalog ID | Deterministic winner selected (lower canonical ID: e.g. `cex-inh-01` over `cex-inh-02`) | Zero random selection under identical math. |
 
@@ -554,9 +569,9 @@ The following decisions remain formally **`STATUS = OPEN`** and will be finalize
 
 | Decision ID | Domain | Open Question | Current Proposed Baseline | Status | Authority Required |
 | :--- | :--- | :--- | :--- | :---: | :--- |
-| **`AD-001`** | Dosage Pinning | Finalize exact second/rep durations for Mode A (3–6 min) vs Mode B (12–20 min). | Mode A: 45s SMR, 25s stretch, 10 reps activate, 8 reps integrate. Mode B: 60s SMR, 35s stretch, 12 reps, 10 reps. | **OPEN** | DINO / Founder Approval |
+| **`AD-001`** | Dosage Pinning | Finalize exact second/rep durations for Mode A (3–6 min) vs Mode B (12–20 min). | Mode A: 45s SMR, 25s stretch, 10 reps activate, 10 reps integrate. Mode B: 60s SMR, 30s stretch, 12 reps, 10 reps. | **OPEN** | DINO / Founder Approval |
 | **`AD-002`** | Missing Laterality on AWS | Should unspecified laterality block routine generation or provide bilateral safe guidance? | Block unilateral routine, prompt for shifted side, deliver interim bilateral posterior chain relief. | **OPEN** | DINO / Founder Approval |
-| **`SG-001`** | Scapular Winging P4 Gap | S01 omits a dedicated Phase 4 integration drill for scapular winging. | Authorize `cex-int-07` (Push-Up Plus) or `cex-int-01` (Pause Squat) as official Level 3 fallback. | **OPEN** | DINO / Product Architect |
+| **`SG-001`** | Scapular Winging P4 | S01 Chapter 15 explicitly specifies Standing One-Arm Cable Chest Press. | Standing One-Arm Cable Chest Press (`cex-int-07`, requires cable equipment). | **RESOLVED (SOURCE-VERIFIED)** | DINO / S01 Ch. 15 |
 
 ---
 

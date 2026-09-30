@@ -47,7 +47,7 @@ console.log("==================================================");
 // =========================================================================
 suite("Step 06 Test Matrix (25 Cases)");
 
-it("Test 01: APT Only (lower, Mode A) selects LPHC anterior tilt corrective protocol", () => {
+it("Test 01: APT Only (lower, Mode A) selects LPHC anterior tilt protocol & verifies Founder-authorized Mode A Integrate dosage (reps = 10)", () => {
   const routine = prehabEngine.generatePrehabRoutine(
     { findings: [{ impairmentKey: "imp-lphc-apt", userPriority: false }] },
     "lower",
@@ -59,6 +59,8 @@ it("Test 01: APT Only (lower, Mode A) selects LPHC anterior tilt corrective prot
   assert.strictEqual(routine.phases.phase2_lengthen.exerciseId, "cex-len-05"); // Kneeling Hip Flexor (EFL-LEN-02)
   assert.strictEqual(routine.phases.phase3_activate.exerciseId, "cex-act-04"); // Floor Glute Bridge (EFL-ACT-02)
   assert(routine.phases.phase4_integrate.exerciseId === "cex-int-01" || routine.phases.phase4_integrate.exerciseId === "cex-int-08");
+  assert.strictEqual(routine.phases.phase4_integrate.dosage.sets, 1);
+  assert.strictEqual(routine.phases.phase4_integrate.dosage.reps, 10);
 });
 
 it("Test 02: PPT Only (lower, Mode A) selects posterior pelvic tilt corrective protocol", () => {
@@ -195,7 +197,7 @@ it("Test 12: Full Body with APT -> Global kinetic chain linkage in Phase 4", () 
   assert(routine.phases.phase4_integrate.exerciseId === "cex-int-08" || routine.phases.phase4_integrate.exerciseId === "cex-int-01");
 });
 
-it("Test 13: Off-Day Mode (APT, Mode B) -> Assigns Mode B restoration volume (sets: 2, holds >= 35s)", () => {
+it("Test 13: Off-Day Mode (APT, Mode B) -> Assigns Mode B restoration volume (sets: 2, hold = 30s)", () => {
   const routine = prehabEngine.generatePrehabRoutine(
     { findings: [{ impairmentKey: "imp-lphc-apt", userPriority: false }] },
     "offday",
@@ -203,7 +205,10 @@ it("Test 13: Off-Day Mode (APT, Mode B) -> Assigns Mode B restoration volume (se
   );
   assert.strictEqual(routine.contextSnapshot.sessionMode, "off_day");
   assert.strictEqual(routine.phases.phase1_inhibit.dosage.sets, 2);
+  assert.strictEqual(routine.phases.phase1_inhibit.dosage.holdSeconds, 60);
   assert.strictEqual(routine.phases.phase2_lengthen.dosage.sets, 2);
+  assert.strictEqual(routine.phases.phase2_lengthen.dosage.holdSeconds, 30);
+  assert.strictEqual(routine.phases.phase2_lengthen.dosage.durationSeconds, 30);
   assert.strictEqual(routine.phases.phase1_inhibit.dosage.fatigueIntent, "TISSUE RESTORATION");
 });
 
@@ -316,16 +321,20 @@ it("Test 22: Candidate Absent (Gear constraint) -> Applies Level 2 same-checkpoi
   assert(routine.status === "SAFE" || routine.status === "FALLBACK_APPLIED");
 });
 
-it("Test 23: Phase Gap (Scapular Winging P4) -> Applies Level 3 general movement drill (SG-001)", () => {
+it("Test 23: Scapular Winging P4 -> Resolves to Standing One-Arm Cable Chest Press (cex-int-07)", () => {
   const routine = prehabEngine.generatePrehabRoutine(
     { findings: [{ impairmentKey: "imp-scap-wing" }] },
     "upper",
     "pre_workout"
   );
-  // Scapular winging P4 uses approved Level 3 general integration fallback
+  // Scapular winging P4 resolves to source-verified Standing One-Arm Cable Chest Press (cex-int-07)
   assert.ok(routine.phases.phase4_integrate);
-  assert.strictEqual(routine.status, "FALLBACK_APPLIED");
-  assert.strictEqual(routine.phases.phase4_integrate.audit.fallbackLevel, 3);
+  assert.strictEqual(routine.phases.phase4_integrate.exerciseId, "cex-int-07");
+  assert.strictEqual(routine.phases.phase4_integrate.nameEn, "Standing One-Arm Cable Chest Press");
+  assert.strictEqual(routine.phases.phase4_integrate.phase, "integrate");
+  assert(routine.phases.phase4_integrate.equipment.includes("cable"));
+  // Invariant: Zero synthetic SG-001 Level 3 fallback is used for Phase 4
+  assert.notStrictEqual(routine.phases.phase4_integrate.audit.fallbackLevel, 3);
 });
 
 it("Test 24: Pre-Output Safety Gate -> Pain level >= 4 blocks routine with SAFETY_BLOCKED", () => {

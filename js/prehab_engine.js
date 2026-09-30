@@ -15,7 +15,7 @@
  * - Kinetic Chain Precedence Hierarchy (LPHC > Knee > Foot > Shoulder > Cervical): [ENGINEERING-PROPOSAL]
  * - AD-001 (Exact Dosage Pinning): [NEEDS-ADMIN-DECISION] / TEMPORARY_OPERATIONAL_DEFAULT
  * - AD-002 (AWS Missing Laterality): [NEEDS-ADMIN-DECISION] / POLICY_AD002_AWS_MISSING_LATERALITY
- * - SG-001 (Scapular Winging Phase 4 Gap): [NEEDS-ADMIN-DECISION] / Level 3 Fallback
+ * - SG-001 (Scapular Winging Phase 4 Integration): [LOCKED-SOURCE] / Standing One-Arm Cable Chest Press (cex-int-07)
  */
 
 (function (root, factory) {
@@ -54,12 +54,12 @@
       inhibit: { sets: 1, durationSeconds: 45, holdSeconds: 30, tempo: "Sustained pressure", intent: "ZERO FATIGUE" },
       lengthen: { sets: 1, durationSeconds: 25, holdSeconds: 25, tempo: "Static hold capped", intent: "ZERO FATIGUE" }, // NSCA <=30s cap
       activate: { sets: 1, reps: 10, holdSeconds: 2, tempo: "4/2/1", intent: "ZERO FATIGUE" },
-      integrate: { sets: 1, reps: 8, holdSeconds: 1, tempo: "Controlled dynamic", intent: "ZERO FATIGUE" },
+      integrate: { sets: 1, reps: 10, holdSeconds: 1, tempo: "Controlled dynamic", intent: "ZERO FATIGUE" },
       totalTargetTime: "3–6 minutes"
     },
     modeB_offDay: {
       inhibit: { sets: 2, durationSeconds: 60, holdSeconds: 60, tempo: "Sustained pressure", intent: "TISSUE RESTORATION" },
-      lengthen: { sets: 2, durationSeconds: 35, holdSeconds: 35, tempo: "Static hold", intent: "TISSUE RESTORATION" },
+      lengthen: { sets: 2, durationSeconds: 30, holdSeconds: 30, tempo: "Static hold", intent: "TISSUE RESTORATION" },
       activate: { sets: 2, reps: 12, holdSeconds: 2, tempo: "4/2/1", intent: "TISSUE RESTORATION" },
       integrate: { sets: 2, reps: 10, holdSeconds: 2, tempo: "Controlled dynamic", intent: "TISSUE RESTORATION" },
       totalTargetTime: "12–20 minutes"
@@ -74,10 +74,10 @@
   const POLICY_AD002_AWS_MISSING_LATERALITY = "NEEDS_LATERALITY";
 
   /**
-   * SG-001: Scapular Winging Phase 4 Gap Policy
-   * Provenance: [NEEDS-ADMIN-DECISION] / LEVEL_3_FALLBACK
+   * SG-001: Scapular Winging Phase 4 Integration Policy
+   * Provenance: [LOCKED-SOURCE] / Standing One-Arm Cable Chest Press (cex-int-07) per NASM CEx Ch. 15
    */
-  const POLICY_SG001_SCAPULAR_WINGING_P4 = "LEVEL_3_FALLBACK";
+  const POLICY_SG001_SCAPULAR_WINGING_P4 = "SOURCE_VERIFIED_CEX_INT_07";
 
   // Context Suitability Multipliers [ENGINEERING-PROPOSAL]
   const CONTEXT_MULTIPLIERS = {
@@ -105,7 +105,8 @@
     "mini_band",
     "dumbbell",
     "mat",
-    "wall"
+    "wall",
+    "cable"
   ];
 
   // =========================================================================
@@ -633,19 +634,6 @@
    * STAGE 14: Fallback Resolution Hierarchy (Levels 1 to 4)
    */
   function stage14_resolveFallback(phase, primaryImpairment, workoutContext, availableEquipment, catalog) {
-    // Special handling for Scapular Winging P4 (SG-001)
-    if (primaryImpairment.includes("wing") && phase === "integrate") {
-      const p4Drill = catalog.find(ex => ex.exerciseId === "cex-int-07") || catalog.find(ex => ex.exerciseId === "cex-int-08");
-      if (p4Drill) {
-        return {
-          candidate: p4Drill,
-          totalScore: 150,
-          breakdown: { sImpairment: 50, sContext: 0, sPhase: 100, sEquipment: 0, sSpecificity: 0, sLaterality: 0 },
-          fallbackLevel: 3
-        };
-      }
-    }
-
     // LEVEL 2: Same checkpoint compatible candidate
     const region = getRegionFromImpairment(primaryImpairment);
     let level2Candidates = catalog.filter(ex =>
