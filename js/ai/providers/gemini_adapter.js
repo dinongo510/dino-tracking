@@ -36,8 +36,14 @@ class DinoGeminiAdapter {
       const data = await response.json().catch(() => ({}));
       const msg = data.error?.message || `HTTP ${response.status}`;
       const err = new Error(msg);
+      err.apiError = {
+        httpStatus: response.status,
+        status: data.error?.status || null,
+        reason: data.error?.details?.find?.(d => d.reason)?.reason || null
+      };
       err.httpStatus = response.status;
-      err.code = response.status === 429 ? "RATE_LIMIT" :
+      err.code = response.status === 401 ? "AUTHENTICATION" :
+        response.status === 429 ? "RATE_LIMIT" :
         response.status === 403 ? "FORBIDDEN" :
         response.status === 404 ? "MODEL_NOT_FOUND" :
         response.status === 400 ? "BAD_REQUEST" : "PROVIDER_ERROR";
