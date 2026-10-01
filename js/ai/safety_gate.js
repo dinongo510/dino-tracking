@@ -16,7 +16,7 @@ class DinoAISafetyGate {
   }
   after(text, context) {
     const answer = String(text || "");
-    const blockedMutation = /(đổi|sửa|thay đổi|override|ghi đè)\\s+(giáo án|prescription|dosage|liều|laterality|trái|phải)/i.test(answer);
+    const blockedMutation = /(đổi|sửa|thay đổi|override|ghi đè)\s+(giáo án|prescription|dosage|liều|laterality|trái|phải)/i.test(answer);
     return { valid: !blockedMutation, text: answer, reason: blockedMutation ? "POSSIBLE_AUTHORITY_VIOLATION" : "VALID" };
   }
 }
