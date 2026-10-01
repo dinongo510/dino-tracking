@@ -1,7 +1,7 @@
 # DINO-005C — AI Coach Intelligence Layer
 ## Phase 1 Specification / Implementation Record
 
-Status: IMPLEMENTED ON FEATURE BRANCH — awaiting independent audit and Founder UAT.
+Status: REMEDIATED ON FEATURE BRANCH — awaiting independent re-audit and Founder UAT.
 
 ### 1. Purpose
 DINO-005C turns the existing AI Coach into a governed conversational AI layer that:
@@ -18,7 +18,11 @@ Required future boundary: Authentication → Current User → User-scoped Data A
 
 A user's program, prescriptions, actual performance, history, prehab profile, preferences and AI chat context must never be supplied to another user's AI context.
 
-The Phase 1 browser-only fallback identity is device-local only. It is not presented as authentication and does not claim to solve production multi-user identity. A future authenticated backend/data layer is required for real multi-user isolation.
+Phase 1 has two explicit isolation modes:
+- AUTHENTICATED: an authoritative `dinoAuth.getCurrentUserId()` identity is required. The Context Engine is fail-closed and may read only an already user-scoped AI context supplied by the authenticated data layer or an exact user-scoped LocalStorage mirror. It MUST NOT fall back to legacy global program/history/prehab keys.
+- DEVICE_LOCAL: when no authentication provider exists, the app is treated as one local device user. Legacy local data may be mirrored into a device-user-scoped AI context. This mode is explicitly not authentication and is not a claim of multi-user security.
+
+A future authenticated data layer remains required for production account/session management, but the AI Context Engine now has a real fail-closed boundary: authenticated users cannot receive unscoped legacy data.
 
 ### 3. Three Knowledge Layers
 1. **General AI knowledge** — capabilities of the selected LLM.
@@ -56,7 +60,7 @@ A user may ask a free-form question even when it is not directly about training.
 The AI must state when required personal data is unavailable rather than inventing it.
 
 ### 8. Context Contract
-The request context includes, where available: current user scope identifier; current program/version/week/day; current prescription snapshot for the active day; recent completed training; aggregate training statistics; prehab profile; current user query and task.
+The request context is relevance-filtered at request time. Generic questions receive no personal training data. Personal/general coaching questions may receive a minimal relevant subset. Task-specific requests receive only the relevant categories: progression → prescription + matching history; log analysis → recent training + aggregate stats; form cue → current prescription/exercise context; prehab → prehab + relevant prescription; running → running history + aggregate stats; recovery → recent training + stats + prehab. PRESCRIPTION != ACTUAL remains explicit.
 
 PRESCRIPTION != ACTUAL remains explicit. Prescription is plan data; actual performance is completed-session data.
 
@@ -69,15 +73,17 @@ This is a Phase 1 compatibility decision, not a claim that browser LocalStorage 
 1. A general free-form question reaches the AI path when Gemini is connected.
 2. A personal training question receives current-user context.
 3. The context contains the active prescription without converting it into actual performance.
-4. No data from another user can be selected by the Context Engine.
-5. No global athlete memory is created.
-6. No AI response can mutate prescription/history/actual performance.
-7. NEEDS_LATERALITY and SAFETY_BLOCKED remain authoritative.
-8. No API-key/no-provider state is mislabeled as AI.
-9. Provider-specific transport remains behind the gateway/adapter boundary.
-10. Existing DINO-005A and DINO-005B behavior remains unchanged.
-11. The UI exposes AI_CONNECTED, AI_OFFLINE, AI_ERROR, or AI_BLOCKED.
-12. The Phase 1 implementation does not introduce a multi-user backend claim that is not actually implemented.
+4. In AUTHENTICATED mode, no legacy global program/history/prehab data can be selected by the Context Engine; missing scoped data results in no personal context rather than fallback leakage.
+5. In DEVICE_LOCAL mode, legacy data is explicitly treated as single-device-user data and mirrored under that device user ID.
+6. Generic questions do not receive private training context unless the query explicitly asks about the user's own data.
+7. No global athlete memory is created.
+8. No AI response can mutate prescription/history/actual performance.
+9. NEEDS_LATERALITY and SAFETY_BLOCKED remain authoritative.
+10. No API-key/no-provider state is mislabeled as AI.
+11. Provider-specific transport remains behind the gateway/adapter boundary.
+12. Existing DINO-005A and DINO-005B behavior remains unchanged.
+13. The UI exposes AI_CONNECTED, AI_OFFLINE, AI_ERROR, or AI_BLOCKED.
+14. The Phase 1 implementation does not introduce a multi-user backend claim that is not actually implemented.
 
 ### 11. Explicit Non-Goals
 - OpenAI implementation in Phase 1.
