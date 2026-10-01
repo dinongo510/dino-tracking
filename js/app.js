@@ -3080,6 +3080,8 @@ class DinoApp {
           const reply = await this.aiCoach.generateResponse(text);
           typingEl.remove();
           appendMessage("bot", reply);
+          const statusPill = document.getElementById("geminiKeyStatusPill");
+          if (statusPill) statusPill.textContent = "● " + (this.aiCoach.getCurrentAIStatus?.() || "AI_OFFLINE");
         } catch (err) {
           typingEl.remove();
           appendMessage("bot", "Lỗi phản hồi từ AI Coach: " + err.message);
@@ -3153,6 +3155,8 @@ class DinoApp {
             statusBox.innerHTML = "✓ <strong>Kết nối thành công!</strong> Mô hình đã sẵn sàng phản hồi.";
           }
           this.showToast("✓ Kết nối thành công tới Google Gemini API!");
+          const statusPill = document.getElementById("geminiKeyStatusPill");
+          if (statusPill) statusPill.textContent = "● AI_CONNECTED";
         } catch (err) {
           console.error("Gemini API Test Failed:", err);
           if (statusBox) {
