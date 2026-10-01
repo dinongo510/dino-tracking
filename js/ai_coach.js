@@ -61,6 +61,11 @@ class DinoAICoachEngine {
         systemInstruction: this.getSystemInstruction(task)
       });
       this.status = result.status;
+      const safetyChecked = this.safetyGate.after ? this.safetyGate.after(result.text, context) : { valid: true };
+      if (!safetyChecked.valid) {
+        this.status = "AI_BLOCKED";
+        return "AI Coach đã chặn phản hồi vì phát hiện nội dung có thể vượt quyền của AI đối với dữ liệu/giáo án.";
+      }
       const checked = this.validator.validate(result.text, context);
       if (!checked.valid) {
         this.status = "AI_BLOCKED";
