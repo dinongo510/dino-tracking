@@ -10,7 +10,7 @@ class DinoGeminiAdapter {
     if (!apiKey) throw Object.assign(new Error("API Key chưa được cấu hình."), { code: "NO_API_KEY" });
     const model = this.registry.resolve(modelAlias);
     const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/" +
-      encodeURIComponent(model.model) + ":generateContent?key=" + encodeURIComponent(apiKey);
+      encodeURIComponent(model.model) + ":generateContent";
 
     const prompt = [
       systemInstruction,
@@ -22,7 +22,10 @@ class DinoGeminiAdapter {
 
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 1200 }
