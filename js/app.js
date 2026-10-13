@@ -3102,7 +3102,7 @@ class DinoApp {
 
     // Initialize Default Greeting
     if (historyContainer && historyContainer.children.length === 0) {
-      appendMessage("bot", "Xin chào! Tôi là **Dino AI Coach**. Dữ liệu tập luyện của bạn đã được kết nối sẵn sàng. Hãy chọn câu hỏi gợi ý hoặc hỏi tôi bất cứ điều gì!");
+      appendMessage("bot", "Xin chào! Tôi là **Dino AI Coach**. Hãy hỏi tôi bất cứ điều gì. Trạng thái Gemini sẽ được hiển thị trong phần Settings sau khi kiểm tra kết nối.");
     }
   }
 
@@ -3143,7 +3143,7 @@ class DinoApp {
         if (statusBox) {
           statusBox.style.display = "block";
           statusBox.style.color = "var(--color-gold)";
-          statusBox.innerHTML = "⏳ Đang kiểm tra kết nối tới Gemini API (gemini-2.5-flash)...";
+          statusBox.innerHTML = "⏳ Đang kiểm tra kết nối tới Gemini API (gemini-3.8-flash / Interactions API)...";
         }
 
         try {
