@@ -8,7 +8,7 @@ class DinoAIModelRegistry {
       "dino-default": {
         alias: "dino-default",
         provider: "gemini",
-        model: "gemini-2.5-flash",
+        model: "gemini-3.8-flash",
         capabilities: ["general", "coaching", "analysis"]
       }
     };
