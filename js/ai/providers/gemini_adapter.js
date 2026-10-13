@@ -1,5 +1,6 @@
 /**
  * DINO-005C Phase 1 — Gemini Provider Adapter
+ * Uses Google's current Interactions API and Gemini 3.8 Flash.
  */
 class DinoGeminiAdapter {
   constructor(modelRegistry) {
@@ -9,9 +10,7 @@ class DinoGeminiAdapter {
   async generate({ apiKey, modelAlias = "dino-default", systemInstruction, userQuery, context }) {
     if (!apiKey) throw Object.assign(new Error("API Key chưa được cấu hình."), { code: "NO_API_KEY" });
     const model = this.registry.resolve(modelAlias);
-    const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/" +
-      encodeURIComponent(model.model) + ":generateContent";
-
+    const endpoint = "https://generativelanguage.googleapis.com/v1beta2/interactions";
     const prompt = [
       systemInstruction,
       "CURRENT USER CONTEXT (PRIVATE, USER-SCOPED; DO NOT MIX WITH OTHER USERS):",
@@ -27,14 +26,14 @@ class DinoGeminiAdapter {
         "x-goog-api-key": apiKey
       },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 1200 }
+        model: model.model,
+        input: prompt
       })
     });
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      const msg = data.error?.message || `HTTP ${response.status}`;
+      const msg = data.error?.message || data.message || `HTTP ${response.status}`;
       const err = new Error(msg);
       err.apiError = {
         httpStatus: response.status,
@@ -51,9 +50,20 @@ class DinoGeminiAdapter {
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw Object.assign(new Error("Gemini không trả về phản hồi văn bản hợp lệ."), { code: "EMPTY_RESPONSE" });
-    return text;
+    const outputText = data.output_text ||
+      (Array.isArray(data.steps) ? data.steps
+        .filter(step => step.type === "model_output")
+        .flatMap(step => step.content || [])
+        .filter(item => item.type === "text" && typeof item.text === "string")
+        .map(item => item.text)
+        .join("\n") : "");
+    if (!outputText.trim()) {
+      const err = new Error("Gemini không trả về phản hồi văn bản. Trạng thái: " + (data.status || "unknown"));
+      err.code = "EMPTY_RESPONSE";
+      err.apiError = { status: data.status || null };
+      throw err;
+    }
+    return outputText.trim();
   }
 }
 if (typeof window !== "undefined") window.DinoGeminiAdapter = DinoGeminiAdapter;
