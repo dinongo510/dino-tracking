@@ -65,7 +65,7 @@ The request context is relevance-filtered at request time. Generic questions rec
 PRESCRIPTION != ACTUAL remains explicit. Prescription is plan data; actual performance is completed-session data.
 
 ### 9. Current Provider Decision
-Phase 1 retains the existing browser-direct Gemini integration and gemini-2.5-flash model through a provider adapter. API-key storage remains the existing LocalStorage mechanism.
+Phase 1 retains browser-direct Gemini integration and the existing LocalStorage API-key mechanism, but uses Gemini 3.8 Flash through Google’s Interactions API (`/v1beta2/interactions`) because the previous `gemini-2.5-flash` GenerateContent route is rejected for new users. API key is sent via `x-goog-api-key` header.
 
 This is a Phase 1 compatibility decision, not a claim that browser LocalStorage is the final production security architecture.
 
