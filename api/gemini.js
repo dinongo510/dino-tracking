@@ -52,7 +52,7 @@ module.exports = async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 45_000);
 
   try {
-    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta2/interactions", {
+    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
