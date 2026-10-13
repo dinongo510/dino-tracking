@@ -65,9 +65,9 @@ The request context is relevance-filtered at request time. Generic questions rec
 PRESCRIPTION != ACTUAL remains explicit. Prescription is plan data; actual performance is completed-session data.
 
 ### 9. Current Provider Decision
-Phase 1 retains browser-direct Gemini integration and the existing LocalStorage API-key mechanism, but uses Gemini 3.8 Flash through Google’s Interactions API (`/v1beta2/interactions`) because the previous `gemini-2.5-flash` GenerateContent route is rejected for new users. API key is sent via `x-goog-api-key` header.
+Phase 1 uses a same-origin Vercel Node function (`/api/gemini`) as a transport proxy to Gemini 3.8 Flash through Google’s Interactions API (`/v1beta2/interactions`). The browser sends the user's existing LocalStorage key to the same-origin proxy via `x-gemini-api-key`; the proxy forwards it to Google via `x-goog-api-key` for that request only and does not persist or intentionally log it. The proxy enforces same-origin requests, allowlists the model, validates input size, applies a timeout, and normalizes provider errors. This removes the browser-to-Google CORS preflight path.
 
-This is a Phase 1 compatibility decision, not a claim that browser LocalStorage is the final production security architecture.
+Security limitation: the key remains stored in the user's browser and is visible to that user/browser environment. The proxy does not provide user authentication, per-user authorization, abuse quotas, or a secret vault. Do not treat this as a fully secured multi-user backend; those remain separate future requirements.
 
 ### 10. Acceptance Criteria
 1. A general free-form question reaches the AI path when Gemini is connected.
