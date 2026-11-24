@@ -81,6 +81,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   const url = new URL(request.url);
+  if (url.pathname.startsWith('/coach')) return;
 
   // 2. Only handle HTTP/HTTPS schemes (ignore chrome-extension, data:, etc.)
   if (!url.protocol.startsWith('http')) {
