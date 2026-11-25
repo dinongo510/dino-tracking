@@ -1,7 +1,7 @@
 // DINO Coach — điểm khởi động (DINO-006)
 import { route, start, go } from './router.js';
-import { watchOnline, render, esc } from './ui.js';
-import { linkType, onAuthChange, getSession, getProfile, homeFor } from './auth.js';
+import { watchOnline, render, esc, toast } from './ui.js';
+import { linkType, linkError, onAuthChange, getSession, getProfile, homeFor } from './auth.js';
 import { loginView, forgotView, setPasswordView } from './views/auth.js';
 import { coachHomeView } from './views/coach/home.js';
 import { clientHomeView } from './views/client/home.js';
@@ -30,6 +30,12 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/coach/sw.js
     await getSession();
     await onAuthChange((event) => { if (event === 'PASSWORD_RECOVERY') go('#/set-password'); });
     if (linkType === 'invite' || linkType === 'recovery') { history.replaceState(null, '', location.pathname); location.hash = '#/set-password'; }
+    if (linkError) {
+      history.replaceState(null, '', location.pathname); location.hash = '#/login';
+      await start();
+      toast(linkError === 'otp_expired' ? 'Link đã hết hạn hoặc đã được dùng. Nhờ Coach gửi lại link mời, hoặc bấm "Quên mật khẩu?".' : 'Link không hợp lệ. Nhờ Coach gửi lại link mời.', 'error');
+      return;
+    }
     await start();
   } catch (err) {
     console.error(err);

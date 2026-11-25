@@ -4,6 +4,9 @@ import { APP_BASE } from './config.js';
 // Đọc loại link TRƯỚC khi supabase-js xóa hash (invite | recovery | signup | magiclink)
 const rawHash = new URLSearchParams(location.hash.replace(/^#/, ''));
 export const linkType = rawHash.get('access_token') ? rawHash.get('type') : null;
+// Link mời / đặt lại mật khẩu hỏng hoặc đã dùng: Supabase trả về #error=...&error_code=otp_expired
+const rawQuery = new URLSearchParams(location.search);
+export const linkError = rawHash.get('error_code') || rawQuery.get('error_code') || rawHash.get('error') || null;
 
 let cachedProfile = null;
 
