@@ -9,18 +9,50 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-005A` LOCKED / `DINO-005B` STEP 08E REMEDIATED |
-| **Active Change Set** | `DINO-005B` (Step 08E — Remediate DF-07 & Final Commit Readiness) |
-| **Current State** | `STEP_08E_REMEDIATED_PENDING_FINAL_VERIFICATION` |
-| **Dino AUT** | `DINO-005A APPROVED` |
-| **Active Branch** | `feature/dino-005b-step07a-spec-remediation` |
-| **Current Baseline HEAD** | `5797567` (`docs(dino-005b): remediate specification audit blockers`) |
-| **Last Updated** | `2026-09-30` |
-| **Active Blockers** | None for runtime engine; Browser QA blocked by Playwright CDN 404 (Environment Limitation) |
+| **Session State** | `DINO-006` DINO_AUT_APPROVED / `DINO-007` PARTIAL |
+| **Active Change Set** | `DINO-006` (Coach Platform Foundation) / `DINO-007` (Client Intake & Body - Partial) |
+| **Current State** | `DINO_AUT_APPROVED` (DINO-006) / `PARTIAL` (DINO-007) |
+| **Dino AUT** | `DINO-006 APPROVED` (UAT 26/11/2026 trên Supabase dino-coach) |
+| **Active Branch** | `feature/dino-coach-006` |
+| **Current Baseline HEAD** | `7f03c78` (`fix(coach): auto-reload once when a new service worker takes over; SW v5`) |
+| **Last Updated** | `2026-11-26` |
+| **Active Blockers** | None |
 
 ---
 
 ## 2. Completed / Active Change Set Details
+
+### `DINO-006` (Coach Platform Foundation)
+
+- **Objective:** Establish the foundational architecture for DINO Coach Online under `/coach/` in `dino-tracking` repo: authentication, coach/client role-based routing, independent PWA manifest & service worker (`dcoach-v5`), Supabase integration with Postgres RLS, and Vercel routing/headers configuration while preserving 100% of the personal tracking application at root `/`.
+- **Dino AUT:** `DINO_AUT_APPROVED` (UAT executed and approved by DINO on 26/11/2026 against live Supabase project `dino-coach`).
+- **State:** `DINO_AUT_APPROVED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `PREVIEW_VERIFIED` → `DINO_AUT_APPROVED`).
+- **Automated Tests:**
+  - `formulas.test.mjs`: 13/13 passing.
+  - `e2e_dino007.py`: 15/15 passing.
+  - `e2e_goal.py`: 5/5 passing.
+- **Authorized Files Changed:**
+  - `coach/*` (`index.html`, `manifest.json`, `sw.js`, `css/coach.css`, `js/*`, `icons/*`)
+  - `supabase/migrations/0001_dino_coach_schema.sql`, `0001b_grants_authenticated.sql`, `0002_exercise_library_seed.sql`, `0003_dino_core_exercises.sql`, `0004_nutrition_library.sql`, `0006_program_templates.sql`
+  - `docs/dino-coach/*`
+  - `tests/coach/*`
+  - `tools/dino-coach/*`
+  - `sw.js` (added route bypass `if (url.pathname.startsWith('/coach')) return;`)
+  - `vercel.json` (added header rules for `/coach/sw.js` with `Service-Worker-Allowed: /coach` and `/coach/manifest.json`)
+  - `.vercelignore` (added `docs`, `supabase`, `tests`, `tools` to prevent public deployment)
+  - `00_SYSTEM/DINO_SESSION_STATE.md`
+- **Protected Areas (100% Untouched):**
+  - Personal tracking application at `/` (`index.html`, `js/*`, `css/*`, `manifest.json`, `server.js`, `package.json`).
+- **Data-Model Impact:** Isolated Postgres tables in Supabase with RLS; local storage isolated under `dcoach_*` keys. No impact on personal app data.
+
+### `DINO-007` (Client Intake & Body Management — Partial)
+
+- **Objective:** Client onboarding wizard (5 steps) adhering to BFS intake sheet & 7 PAR-Q screening questions, activity factor calculation, automatic goal derivation with coach tie-breaker override, body measurements and InBody metric tracking with delta comparison, OHSA 5 compensation assessment with corrective suggestions, and confidential coach notes.
+- **Dino AUT:** `PARTIAL` (Approved alongside DINO-006 foundation).
+- **State:** `PARTIAL` (Core intake, measurements, OHSA, and coach notes implemented and tested; progress photos and InBody scan images deferred to next iteration).
+- **Remaining Scope for Completion:**
+  - Progress photos (3 angles: front, side, back with client-side WebP compression and side-by-side comparison).
+  - InBody scan sheet photo upload.
 
 ### `DINO-005B` (Prehab / Corrective Engine — Specification Remediation)
 
