@@ -8,6 +8,8 @@ import { clientHomeView } from './views/client/home.js';
 import { intakeView } from './views/client/intake.js';
 import { clientBodyView, clientProfileView } from './views/client/body.js';
 import { coachClientView } from './views/coach/client.js';
+import { coachLibraryView } from './views/coach/library.js';
+import { exerciseView } from './views/shared/exercise.js';
 
 route('/', async () => { const s = await getSession(); go(s ? homeFor(await getProfile()) : '#/login'); }, 'public');
 route('/login', loginView, 'public');
@@ -20,6 +22,8 @@ route('/client/intake/:step', intakeView, 'client');
 route('/client/body', clientBodyView, 'client');
 route('/client/profile', clientProfileView, 'client');
 route('/coach/client/:id', coachClientView, 'coach');
+route('/coach/library', coachLibraryView, 'coach');
+route('/exercise/:id', exerciseView, 'auth');
 
 watchOnline();
 if ('serviceWorker' in navigator) {

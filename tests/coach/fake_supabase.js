@@ -14,7 +14,8 @@ function canSee(t,row,me){const prof=DB.profiles.find(p=>p.id===me);
   const c=DB.profiles.find(p=>p.id===row.client_id);return row.client_id===me||c?.coach_id===me;}
 function Q(t){DB[t]||=[];const me=sess()?.user.id;let f=[],ords=[],lim=null,op='select',payload=null,conf=null;
  const rows=()=>{let r=DB[t].filter(x=>canSee(t,x,me)&&f.every(fn=>fn(x)));r.sort((a,b)=>{for(const o of ords){if(a[o.k]===b[o.k])continue;return (a[o.k]>b[o.k]?1:-1)*(o.asc?1:-1)}return 0});if(lim)r=r.slice(0,lim);return r;};
- const exec=()=>{ if(op==='insert'){const r={id:uid(),created_at:new Date().toISOString(),entered_by:me,measured_on:new Date().toISOString().slice(0,10),scanned_on:new Date().toISOString().slice(0,10),...payload};DB[t].push(r);persist();return{data:r,error:null};}
+ const exec=()=>{ if(op!=='select'&&['exercises','foods','meal_templates','day_plan_templates'].includes(t)&&DB.profiles.find(p=>p.id===me)?.role!=='coach') return {data:null,error:{message:'new row violates row-level security policy'}};
+  if(op==='insert'){const r={id:uid(),created_at:new Date().toISOString(),entered_by:me,measured_on:new Date().toISOString().slice(0,10),scanned_on:new Date().toISOString().slice(0,10),...payload};DB[t].push(r);persist();return{data:r,error:null};}
   if(op==='upsert'){const ex=DB[t].find(x=>x[conf]===payload[conf]);if(ex)Object.assign(ex,payload);else DB[t].push({id:uid(),entered_by:me,...payload});persist();return{error:null};}
   if(op==='update'){rows().forEach(x=>Object.assign(x,payload));persist();return{error:null};}
   if(op==='delete'){const del=new Set(rows());DB[t]=DB[t].filter(x=>!del.has(x));persist();return{error:null};}

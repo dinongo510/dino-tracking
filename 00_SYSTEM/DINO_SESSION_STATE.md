@@ -9,18 +9,48 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-006` DINO_AUT_APPROVED / `DINO-007` DINO_AUT_APPROVED |
-| **Active Change Set** | `DINO-007` (Client Intake, Body & Progress Photos) |
+| **Session State** | `DINO-006` DINO_AUT_APPROVED / `DINO-007` DINO_AUT_APPROVED / `DINO-008` DINO_AUT_APPROVED |
+| **Active Change Set** | `DINO-008` (Exercise Library V2) |
 | **Current State** | `DINO_AUT_APPROVED` |
-| **Dino AUT** | `DINO-006 APPROVED` / `DINO-007 APPROVED` (UAT 26/11/2026 trên Supabase dino-coach) |
-| **Active Branch** | `feature/dino-coach-007-photos` |
-| **Current Baseline HEAD** | `0d52865` (`feat(coach): progress photos (3 angles, compare, delete) + InBody sheet photo (DINO-007)`) |
+| **Dino AUT** | `DINO-008 APPROVED` (UAT 26/11/2026 trên Supabase dino-coach) |
+| **Active Branch** | `feature/dino-coach-008-library` |
+| **Current Baseline HEAD** | `07827af` (`fix(db): featured = coach-picked only (DINO-008)`) |
 | **Last Updated** | `2026-11-26` |
 | **Active Blockers** | None |
 
 ---
 
 ## 2. Completed / Active Change Set Details
+
+### `DINO-008` (Exercise Library V2)
+
+- **Objective:** Upgrade the exercise system for DINO Coach Online: instant unaccented search (`norm`), multi-facet filtering (category, muscle, equipment, tag, featured), pagination (40 items + load more), exercise detail view (`#/exercise/:id`) with 2 free-exercise-db demonstration images & privacy-enhanced YouTube embed, coach-only exercise edit & custom exercise creation, bulk TSV/semicolon paste import with preview/validation, reset featured to coach-picked only (`0005b`), cache in `sessionStorage` with on-demand invalidation, and service worker `dcoach-v7`.
+- **Dino AUT:** `DINO_AUT_APPROVED` (UAT executed and approved by DINO on 26/11/2026 against live Supabase project `dino-coach`).
+- **State:** `DINO_AUT_APPROVED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `PREVIEW_VERIFIED` → `DINO_AUT_APPROVED`).
+- **Automated Tests:**
+  - `formulas.test.mjs`: 13/13 passing.
+  - `exercises.test.mjs`: 6/6 passing.
+  - `e2e_dino007.py`: 15/15 passing.
+  - `e2e_goal.py`: 5/5 passing.
+  - `e2e_photos.py`: 17/17 passing.
+  - `e2e_library.py`: 16/16 passing.
+  - Total: 72/72 assertions passing across all suites.
+- **Authorized Files Changed:**
+  - `coach/js/lib/exercises.js` (unaccented search, filters, YouTube embed, bulk parser, cache)
+  - `coach/js/views/coach/library.js` (coach exercise list, filters, add modal, edit modal, bulk import)
+  - `coach/js/views/shared/exercise.js` (exercise detail view: 2 demo images, YouTube embed, cues, metadata)
+  - `coach/js/app.js` (routes `#/coach/library` and `#/exercise/:id`)
+  - `coach/js/views/coach/home.js` (enabled tab Thư viện)
+  - `coach/sw.js` (bumped to `dcoach-v7`, added new static files to `SHELL`)
+  - `supabase/migrations/0005_exercise_images.sql` (mapped 118 exercises to free-exercise-db images)
+  - `supabase/migrations/0005b_reset_featured.sql` (reset featured to coach-picked with valid video only)
+  - `tests/coach/exercises.test.mjs` (unit test suite for exercise library logic)
+  - `tests/coach/e2e_library.py` (16-scenario Playwright E2E test suite)
+  - `tests/coach/fake_supabase.js` (mock exercises, permissions, storage)
+  - `00_SYSTEM/DINO_SESSION_STATE.md`
+- **Protected Areas (100% Untouched):**
+  - Personal tracking application at `/` (`index.html`, `js/*`, `css/*`, `manifest.json`, `server.js`, `package.json`, `vercel.json`).
+- **Data-Model Impact:** `exercises` table populated with `image_urls`, `featured` flags reconciled, RLS ensures clients have read-only access while coaches can insert/update/delete. Local storage isolated under `dcoach_*` keys. No impact on personal app data.
 
 ### `DINO-006` (Coach Platform Foundation)
 

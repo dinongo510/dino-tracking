@@ -7,7 +7,7 @@ const STATUS = { active: ['Đang tập', 'badge--ok'], paused: ['Tạm dừng', 
 
 export const coachTabs = () => tabbar([
   { href: '#/coach', label: 'Khách' },
-  { href: '#/coach/library', label: 'Thư viện', disabled: true }, // DINO-008
+  { href: '#/coach/library', label: 'Thư viện' },
   { href: '#/coach/inbox', label: 'Hộp việc', disabled: true },   // DINO-010
 ]);
 
