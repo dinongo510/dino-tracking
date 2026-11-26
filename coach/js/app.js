@@ -10,6 +10,9 @@ import { clientBodyView, clientProfileView } from './views/client/body.js';
 import { coachClientView } from './views/coach/client.js';
 import { coachLibraryView } from './views/coach/library.js';
 import { exerciseView } from './views/shared/exercise.js';
+import { coachPlanView } from './views/coach/plan.js';
+import { coachSessionView } from './views/coach/session.js';
+import { clientPlanView, clientSessionView } from './views/client/plan.js';
 
 route('/', async () => { const s = await getSession(); go(s ? homeFor(await getProfile()) : '#/login'); }, 'public');
 route('/login', loginView, 'public');
@@ -24,6 +27,10 @@ route('/client/profile', clientProfileView, 'client');
 route('/coach/client/:id', coachClientView, 'coach');
 route('/coach/library', coachLibraryView, 'coach');
 route('/exercise/:id', exerciseView, 'auth');
+route('/coach/client/:id/plan', coachPlanView, 'coach');
+route('/coach/session/:id', coachSessionView, 'coach');
+route('/client/plan', clientPlanView, 'client');
+route('/client/session/:id', clientSessionView, 'auth');
 
 watchOnline();
 if ('serviceWorker' in navigator) {
