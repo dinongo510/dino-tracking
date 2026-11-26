@@ -1,5 +1,6 @@
 import { render, $ } from '../../ui.js';
 import { renderBody } from '../shared/body.js';
+import { renderPhotos } from '../shared/photos.js';
 import { clientTabs } from './home.js';
 import { loadIntake } from './intake.js';
 import { esc } from '../../ui.js';
@@ -7,8 +8,9 @@ import { STEPS, getVal } from '../../lib/intake.js';
 
 export async function clientBodyView({ profile }) {
   clientTabs();
-  render(`<h1>Cơ thể</h1><p class="muted small">Cân vào buổi sáng, sau khi đi vệ sinh, trước khi ăn. Đo vòng eo ngang rốn.</p><div id="body"></div>`);
+  render(`<h1>Cơ thể</h1><p class="muted small">Cân vào buổi sáng, sau khi đi vệ sinh, trước khi ăn. Đo vòng eo ngang rốn.</p><div id="body"></div><div id="photos"></div>`);
   await renderBody($('#body'), profile.id, profile.id);
+  await renderPhotos($('#photos'), profile.id, profile.id);
 }
 
 export async function clientProfileView({ profile }) {

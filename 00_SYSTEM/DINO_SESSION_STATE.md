@@ -9,12 +9,12 @@
 
 | Parameter | Current Value |
 | :--- | :--- |
-| **Session State** | `DINO-006` DINO_AUT_APPROVED / `DINO-007` PARTIAL |
-| **Active Change Set** | `DINO-006` (Coach Platform Foundation) / `DINO-007` (Client Intake & Body - Partial) |
-| **Current State** | `DINO_AUT_APPROVED` (DINO-006) / `PARTIAL` (DINO-007) |
-| **Dino AUT** | `DINO-006 APPROVED` (UAT 26/11/2026 trên Supabase dino-coach) |
-| **Active Branch** | `feature/dino-coach-006` |
-| **Current Baseline HEAD** | `7f03c78` (`fix(coach): auto-reload once when a new service worker takes over; SW v5`) |
+| **Session State** | `DINO-006` DINO_AUT_APPROVED / `DINO-007` DINO_AUT_APPROVED |
+| **Active Change Set** | `DINO-007` (Client Intake, Body & Progress Photos) |
+| **Current State** | `DINO_AUT_APPROVED` |
+| **Dino AUT** | `DINO-006 APPROVED` / `DINO-007 APPROVED` (UAT 26/11/2026 trên Supabase dino-coach) |
+| **Active Branch** | `feature/dino-coach-007-photos` |
+| **Current Baseline HEAD** | `0d52865` (`feat(coach): progress photos (3 angles, compare, delete) + InBody sheet photo (DINO-007)`) |
 | **Last Updated** | `2026-11-26` |
 | **Active Blockers** | None |
 
@@ -45,14 +45,30 @@
   - Personal tracking application at `/` (`index.html`, `js/*`, `css/*`, `manifest.json`, `server.js`, `package.json`).
 - **Data-Model Impact:** Isolated Postgres tables in Supabase with RLS; local storage isolated under `dcoach_*` keys. No impact on personal app data.
 
-### `DINO-007` (Client Intake & Body Management — Partial)
+### `DINO-007` (Client Intake & Body Management — Hoàn chỉnh)
 
-- **Objective:** Client onboarding wizard (5 steps) adhering to BFS intake sheet & 7 PAR-Q screening questions, activity factor calculation, automatic goal derivation with coach tie-breaker override, body measurements and InBody metric tracking with delta comparison, OHSA 5 compensation assessment with corrective suggestions, and confidential coach notes.
-- **Dino AUT:** `PARTIAL` (Approved alongside DINO-006 foundation).
-- **State:** `PARTIAL` (Core intake, measurements, OHSA, and coach notes implemented and tested; progress photos and InBody scan images deferred to next iteration).
-- **Remaining Scope for Completion:**
-  - Progress photos (3 angles: front, side, back with client-side WebP compression and side-by-side comparison).
-  - InBody scan sheet photo upload.
+- **Objective:** Client onboarding wizard (5 steps) adhering to BFS intake sheet & 7 PAR-Q screening questions, activity factor calculation, automatic goal derivation with coach tie-breaker override, body measurements and InBody metric tracking with delta comparison, OHSA 5 compensation assessment with corrective suggestions, progress photos (3 angles with client-side WebP compression $\le$ 250 KB, side-by-side comparison, deletion), InBody scan sheet photo upload, and confidential coach notes.
+- **Dino AUT:** `DINO_AUT_APPROVED` (UAT đạt ngày 26/11/2026 trên Supabase thật: 7 file WebP 46–55 KB, đúng thư mục khách).
+- **State:** `DINO_AUT_APPROVED` (`PROPOSED` → `AUTHORIZED` → `IMPLEMENTING` → `IMPLEMENTED` → `AUTO_VERIFIED` → `PREVIEW_VERIFIED` → `DINO_AUT_APPROVED`).
+- **Automated Tests:**
+  - `formulas.test.mjs`: 13/13 passing.
+  - `e2e_dino007.py`: 15/15 passing.
+  - `e2e_goal.py`: 5/5 passing.
+  - `e2e_photos.py`: 17/17 passing.
+- **Authorized Files Changed:**
+  - `coach/js/lib/image.js` (client-side WebP compression $\le$ 250 KB)
+  - `coach/js/lib/files.js` (Supabase Storage integration under `progress` bucket, RLS folder structure `client_id/*`)
+  - `coach/js/views/shared/photos.js` (progress photos UI, 3 angles, comparison, delete)
+  - `coach/js/views/shared/body.js` (InBody photo upload & viewer integration)
+  - `coach/js/views/client/body.js` (wire photos into client body view)
+  - `coach/js/views/coach/client.js` (wire photos into coach client view)
+  - `coach/sw.js` (bumped cache version to `dcoach-v6`, updated `SHELL`)
+  - `tests/coach/e2e_photos.py` (17-test end-to-end suite with Pillow mock images)
+  - `tests/coach/fake_supabase.js` (mock storage & progress photos table support)
+  - `00_SYSTEM/DINO_SESSION_STATE.md`
+- **Protected Areas (100% Untouched):**
+  - Personal tracking application at `/` (`index.html`, `js/*`, `css/*`, `manifest.json`, `server.js`, `package.json`).
+- **Data-Model Impact:** Postgres table `progress_photos`, column `sheet_photo_path` in `inbody_scans`, private Supabase Storage bucket `progress` with client-level RLS. Local storage uses `dcoach_*`. No impact on personal app data.
 
 ### `DINO-005B` (Prehab / Corrective Engine — Specification Remediation)
 
