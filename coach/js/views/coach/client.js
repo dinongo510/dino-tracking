@@ -43,7 +43,7 @@ export async function coachClientView({ params, profile }) {
   const hints = h ? coachHints(h) : [];
   const summary = h ? [
     ['Tuổi', h.dob ? ageFromDob(h.dob) : '—'], ['Giới tính', h.sex === 'male' ? 'Nam' : h.sex === 'female' ? 'Nữ' : '—'],
-    ['Chiều cao', h.height_cm ? h.height_cm + ' cm' : '—'], ['Mục tiêu', GOAL_VI[h.goal] || 'Coach chọn (điểm bằng nhau)'],
+    ['Chiều cao', h.height_cm ? h.height_cm + ' cm' : '—'], ['Mục tiêu', GOAL_VI[h.goal] || 'Chưa chốt — chọn bên dưới'],
     ['Hệ số vận động gợi ý', h.activity_factor ?? suggestActivityFactor(h)], ['Liên hệ khẩn cấp', h.emergency_contact || '—'],
     ['Chấn thương', h.injuries || '—'], ['Bệnh lý / thuốc', [h.medical, h.medications].filter(Boolean).join(' · ') || '—'],
   ] : [];
@@ -61,6 +61,10 @@ export async function coachClientView({ params, profile }) {
         return `<li style="display:block"><div class="muted">${esc(f.label)}</div><div>${esc(v)}</div></li>`; }).join('')}</ul>`).join('')}
         <p class="no-print"><button class="btn small" onclick="print()">In phiếu</button></p></details></div>` : ''}
 
+    ${h ? `<h2>Mục tiêu (Coach chốt)</h2><form id="gf" class="card">
+      <p class="small muted">Khách tự chấm (0–10): ${['fat_loss','muscle_gain','performance','health'].map((k) => `${esc({fat_loss:'Giảm cân',muscle_gain:'Tăng cơ',performance:'Thành tích',health:'Sức khỏe'}[k])} ${esc(h.goal_ratings?.[k] ?? '–')}`).join(' · ')}</p>
+      <div class="row"><select name="goal" style="flex:1"><option value="">— Chọn mục tiêu —</option>${Object.entries(GOAL_VI).map(([k, l]) => `<option value="${k}"${h.goal === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>
+      <button class="btn btn--primary">Lưu</button></div></form>` : ''}
     ${hints.length ? `<h2>Gợi ý từ hồ sơ</h2><div class="card"><ul class="small">${hints.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
 
     <h2>Ghi chú nội bộ <span class="badge">Khách không thấy</span></h2>
@@ -76,6 +80,17 @@ export async function coachClientView({ params, profile }) {
     <div id="corr"></div>
 
     <div id="body"></div>`);
+
+  $('#gf')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const goal = e.target.goal.value || null;
+    if (!goal) return toast('Chọn một mục tiêu.', 'error');
+    await busy(e.submitter, async () => {
+      const { error: err } = await db.from('health_intakes').update({ goal }).eq('client_id', id);
+      if (err) return toast(viError(err), 'error');
+      toast('Đã chốt mục tiêu.'); coachClientView({ params, profile });
+    });
+  });
 
   $('#nf').addEventListener('submit', async (e) => {
     e.preventDefault();
