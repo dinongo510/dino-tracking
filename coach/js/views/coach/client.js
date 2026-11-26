@@ -3,6 +3,7 @@ import { render, $, esc, toast, busy, fmtDate } from '../../ui.js';
 import { sb, viError } from '../../supabaseClient.js';
 import { coachTabs } from './home.js';
 import { renderBody } from '../shared/body.js';
+import { renderPhotos } from '../shared/photos.js';
 import { STEPS, getVal, deriveFlag, coachHints, suggestActivityFactor } from '../../lib/intake.js';
 import { ageFromDob } from '../../lib/formulas.js';
 
@@ -79,7 +80,8 @@ export async function coachClientView({ params, profile }) {
     </form>
     <div id="corr"></div>
 
-    <div id="body"></div>`);
+    <div id="body"></div>
+    <div id="photos"></div>`);
 
   $('#gf')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -124,4 +126,5 @@ export async function coachClientView({ params, profile }) {
   });
 
   await renderBody($('#body'), id, profile.id);
+  await renderPhotos($('#photos'), id, profile.id);
 }
