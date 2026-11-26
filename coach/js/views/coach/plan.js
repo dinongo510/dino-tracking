@@ -86,6 +86,12 @@ export async function coachPlanView({ params, profile }) {
       <div class="row"><button type="button" class="btn btn--ghost" data-close>Hủy</button><button class="btn btn--primary" style="flex:1">Lưu</button></div>
     </form></dialog>
 
+    <dialog id="dtp"><form method="dialog" id="ftp">
+      <h2>Lưu tuần 1 thành mẫu</h2>
+      <label class="field"><span>Tên mẫu (trùng tên mẫu cũ sẽ ghi đè)</span><input class="input" name="name" required></label>
+      <div class="row"><button type="button" class="btn btn--ghost" data-close>Hủy</button><button class="btn btn--primary" style="flex:1">Lưu mẫu</button></div>
+    </form></dialog>
+
     <dialog id="dss"><form method="dialog" id="fss">
       <h2>Thêm buổi — tuần <span id="sw"></span></h2>
       <label class="field"><span>Ngày</span><select name="day">${DAY_VI.map((d, i) => `<option value="${i + 1}">${d}</option>`).join('')}</select></label>
@@ -207,13 +213,18 @@ export async function coachPlanView({ params, profile }) {
       catch (err) { toast(viError(err), 'error'); }
     });
   });
-  $('#tplSave')?.addEventListener('click', async (e) => {
+  $('#tplSave')?.addEventListener('click', () => {
     const w1 = phase.sessions.filter((s) => s.week_no === 1);
     if (!w1.length) return toast('Tuần 1 chưa có buổi.', 'error');
-    const name = prompt('Tên mẫu (trùng tên sẽ ghi đè mẫu cũ):', phase.name);
-    if (!name) return;
-    await busy(e.currentTarget, async () => {
-      try { await saveTemplate(profile.id, { ...treeToTemplate({ ...phase, name }, program.model, w1, new Map(exList.map((x) => [x.id, x]))) }); toast('Đã lưu mẫu.'); }
+    ftp.name.value = phase.name; dtp.showModal(); ftp.name.select();
+  });
+  const dtp = $('#dtp'), ftp = $('#ftp');
+  ftp?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = ftp.name.value.trim(); if (!name) return;
+    const w1 = phase.sessions.filter((s) => s.week_no === 1);
+    await busy(e.submitter, async () => {
+      try { await saveTemplate(profile.id, treeToTemplate({ ...phase, name }, program.model, w1, new Map(exList.map((x) => [x.id, x])))); dtp.close(); toast(`Đã lưu mẫu "${name}".`); }
       catch (err) { toast(viError(err), 'error'); }
     });
   });

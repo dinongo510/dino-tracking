@@ -86,7 +86,7 @@ try:
   pg.click('[data-copy="3"]');pg.wait_for_selector('text=Đã chép tuần 2 sang tuần 3');d=D(pg)
   ok('16 chép tuần 2 → 3 (vẫn 8 buổi, ngày tuần 3 đúng)', len(d['sessions'])==8 and all(s['scheduled_on']==(monday+datetime.timedelta(days=14+s['day_no']-1)).isoformat() for s in d['sessions'] if s['week_no']==3))
   # 7. Lưu thành mẫu
-  pg.click('#tplSave');pg.wait_for_selector('text=Đã lưu mẫu.');d=D(pg)
+  pg.click('#tplSave');pg.wait_for_selector('#dtp[open]');pg.click('#ftp .btn--primary');pg.wait_for_selector('text=Đã lưu mẫu');d=D(pg)
   nt=[t for t in d['program_templates'] if t['name']==ph['name'] or t['name']=='Mẫu thử 4 tuần']
   ok('17 lưu thành mẫu (ghi đè trùng tên, có khối corrective)', len(d['program_templates'])==1 and len([x for x in d['program_templates'][0]['payload']['sessions'] if x['title']=='Lower'][0]['blocks'])==3)
   # 8. Phát hành → khách thấy
