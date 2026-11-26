@@ -1,0 +1,157 @@
+# Kho thực phẩm & món Việt — giá trị THAM KHẢO (ước tính từ Bảng thành phần thực phẩm VN / USDA
+# và khẩu phần quán phổ biến TP.HCM). Món nấu sẵn dao động ±20% tùy quán — Dino đối chiếu trước khi chốt.
+# Cột: name_vi, group, serving, grams, kcal, protein, carb, fat
+# group: protein | carb | veg | fruit | fat | dairy | dish | drink
+
+F = [
+# ---------- ĐẠM ----------
+("Ức gà luộc/áp chảo (bỏ da)", "protein", "100 g chín", 100, 165, 31, 0, 3.6),
+("Đùi gà bỏ da (chín)", "protein", "100 g chín", 100, 180, 25, 0, 8.5),
+("Thăn bò (chín)", "protein", "100 g chín", 100, 200, 29, 0, 9),
+("Bò xay nạc 90% (chín)", "protein", "100 g chín", 100, 217, 26, 0, 12),
+("Thăn heo nạc (chín)", "protein", "100 g chín", 100, 145, 26, 0, 4),
+("Thịt ba chỉ heo (sống)", "protein", "100 g sống", 100, 260, 16.5, 0, 21.5),
+("Sườn non heo nướng", "protein", "100 g chín", 100, 280, 22, 3, 20),
+("Cá hồi áp chảo", "protein", "100 g chín", 100, 206, 22, 0, 12),
+("Cá basa/cá tra hấp", "protein", "100 g chín", 100, 120, 18, 0, 5),
+("Cá thu (chín)", "protein", "100 g chín", 100, 160, 24, 0, 6.5),
+("Tôm luộc", "protein", "100 g chín", 100, 99, 24, 0.2, 0.3),
+("Mực luộc/hấp", "protein", "100 g chín", 100, 100, 18, 3, 1.5),
+("Trứng gà (luộc)", "protein", "1 quả 50 g", 50, 72, 6.3, 0.4, 4.8),
+("Lòng trắng trứng", "protein", "1 quả 33 g", 33, 17, 3.6, 0.2, 0.1),
+("Đậu hũ trắng", "protein", "100 g", 100, 95, 10.9, 0.7, 5.4),
+("Đậu hũ chiên", "protein", "100 g", 100, 270, 17, 10, 20),
+("Chả lụa (giò lụa)", "protein", "100 g", 100, 136, 21.5, 0, 5.5),
+("Cá ngừ hộp ngâm nước (ráo)", "protein", "100 g", 100, 116, 26, 0, 0.8),
+("Whey protein", "protein", "1 muỗng 30 g", 30, 120, 24, 3, 1.5),
+# ---------- SỮA ----------
+("Sữa chua Hy Lạp không đường", "dairy", "100 g", 100, 73, 10, 4, 2),
+("Sữa chua có đường (hũ)", "dairy", "1 hũ 100 g", 100, 100, 3.5, 15, 3),
+("Sữa tươi không đường", "dairy", "1 hộp 180 ml", 180, 110, 5.8, 8.5, 6),
+("Sữa đậu nành không đường", "dairy", "1 ly 200 ml", 200, 80, 6.5, 4, 4),
+("Phô mai lát", "dairy", "1 lát 20 g", 20, 60, 3.5, 1, 4.8),
+# ---------- TINH BỘT ----------
+("Cơm trắng", "carb", "1 chén 150 g", 150, 195, 4, 42, 0.4),
+("Cơm gạo lứt", "carb", "1 chén 150 g", 150, 185, 4, 38, 1.5),
+("Bún tươi", "carb", "100 g", 100, 110, 1.7, 25.7, 0),
+("Bánh phở tươi", "carb", "100 g", 100, 141, 3.2, 32, 0),
+("Bánh mì (ổ)", "carb", "1 ổ 80 g", 80, 200, 6.5, 41, 1),
+("Bánh mì sandwich nguyên cám", "carb", "1 lát 30 g", 30, 75, 3.6, 12.5, 1),
+("Khoai lang luộc", "carb", "100 g", 100, 86, 1.6, 20, 0.1),
+("Khoai tây luộc", "carb", "100 g", 100, 87, 1.9, 20, 0.1),
+("Yến mạch (khô)", "carb", "40 g", 40, 152, 5.3, 27, 2.7),
+("Bắp luộc", "carb", "1 trái (~100 g hạt)", 100, 96, 3.4, 21, 1.5),
+("Mì gói", "carb", "1 gói 75 g", 75, 350, 7, 48, 14),
+("Bánh tráng (mỏng)", "carb", "1 cái 10 g", 10, 33, 0.4, 8, 0),
+# ---------- RAU ----------
+("Rau xanh luộc (cải, muống, bí)", "veg", "1 đĩa 150 g", 150, 38, 3.5, 6, 0.3),
+("Bông cải xanh luộc", "veg", "100 g", 100, 35, 2.4, 7, 0.4),
+("Salad (xà lách, cà chua, dưa leo) không sốt", "veg", "1 đĩa 150 g", 150, 25, 1.3, 5, 0.2),
+("Canh rau (1 chén)", "veg", "1 chén 250 ml", 250, 30, 1.5, 5, 0.5),
+# ---------- TRÁI CÂY ----------
+("Chuối", "fruit", "1 trái 100 g", 100, 89, 1.1, 23, 0.3),
+("Táo", "fruit", "1 trái 150 g", 150, 78, 0.4, 21, 0.3),
+("Cam", "fruit", "1 trái 150 g", 150, 70, 1.4, 18, 0.2),
+("Đu đủ", "fruit", "150 g", 150, 65, 0.7, 16, 0.4),
+("Thanh long", "fruit", "150 g", 150, 85, 1.8, 20, 0.6),
+("Xoài chín", "fruit", "150 g", 150, 90, 1.2, 22, 0.6),
+("Dưa hấu", "fruit", "200 g", 200, 60, 1.2, 15, 0.3),
+("Ổi", "fruit", "1 trái 150 g", 150, 100, 3.8, 21, 1.4),
+# ---------- CHẤT BÉO ----------
+("Dầu ăn", "fat", "1 muỗng canh 9 g", 9, 81, 0, 0, 9),
+("Bơ đậu phộng", "fat", "1 muỗng canh 16 g", 16, 94, 3.5, 3.2, 8),
+("Đậu phộng rang", "fat", "30 g", 30, 170, 7.7, 4.8, 14.6),
+("Hạt điều", "fat", "30 g", 30, 165, 5.5, 9, 13),
+("Hạnh nhân", "fat", "30 g", 30, 174, 6.4, 6.5, 15),
+("Quả bơ", "fat", "1/2 trái 100 g", 100, 160, 2, 8.5, 14.7),
+# ---------- MÓN VIỆT (1 phần quán) ----------
+("Phở bò tái", "dish", "1 tô thường", 550, 450, 25, 60, 12),
+("Phở gà", "dish", "1 tô thường", 550, 420, 27, 58, 9),
+("Bún bò Huế", "dish", "1 tô thường", 600, 550, 28, 65, 18),
+("Bún chả", "dish", "1 phần", 450, 600, 25, 70, 22),
+("Bún thịt nướng", "dish", "1 tô", 450, 550, 22, 70, 18),
+("Hủ tiếu Nam Vang", "dish", "1 tô", 550, 450, 22, 60, 12),
+("Mì Quảng", "dish", "1 tô", 500, 550, 26, 70, 18),
+("Cơm tấm sườn bì chả", "dish", "1 dĩa", 450, 750, 35, 90, 25),
+("Cơm tấm sườn", "dish", "1 dĩa", 380, 600, 30, 80, 17),
+("Cơm gà xối mỡ", "dish", "1 dĩa", 400, 700, 30, 80, 28),
+("Cơm gà luộc (Hải Nam)", "dish", "1 dĩa", 400, 600, 32, 75, 17),
+("Bánh mì thịt", "dish", "1 ổ", 180, 450, 18, 50, 20),
+("Bánh mì ốp la 2 trứng", "dish", "1 phần", 180, 400, 16, 44, 17),
+("Xôi mặn", "dish", "1 gói", 250, 450, 15, 65, 14),
+("Bánh cuốn", "dish", "1 dĩa", 350, 400, 15, 60, 10),
+("Gỏi cuốn tôm thịt", "dish", "1 cuốn", 70, 70, 5, 10, 1.5),
+("Cháo gà", "dish", "1 tô", 450, 300, 18, 40, 7),
+("Bò bít tết (150 g thịt + khoai + trứng)", "dish", "1 phần", 350, 650, 45, 35, 35),
+("Canh chua cá", "dish", "1 chén", 300, 120, 12, 8, 4),
+("Rau muống xào tỏi", "dish", "1 dĩa 150 g", 150, 120, 4, 7, 9),
+("Thịt kho trứng", "dish", "100 g thịt + 1 trứng", 160, 380, 22, 8, 28),
+("Cá kho tộ", "dish", "100 g cá", 120, 200, 18, 8, 10),
+("Đậu hũ sốt cà", "dish", "150 g đậu", 200, 200, 14, 8, 12),
+("Trứng chiên", "dish", "2 quả", 110, 200, 12.5, 1, 16),
+("Gà kho gừng", "dish", "120 g thịt", 150, 260, 26, 5, 15),
+("Bò xào rau củ", "dish", "100 g bò + rau", 220, 250, 24, 10, 13),
+("Ức gà nướng/áp chảo ướp sẵn", "dish", "150 g chín", 150, 260, 46, 2, 7),
+# ---------- ĐỒ UỐNG / ĂN VẶT ----------
+("Cà phê đen không đường", "drink", "1 ly", 200, 5, 0.3, 0, 0),
+("Cà phê sữa đá", "drink", "1 ly", 250, 150, 2, 25, 4.5),
+("Bạc xỉu", "drink", "1 ly", 300, 210, 5, 30, 7.5),
+("Trà sữa trân châu", "drink", "1 ly size M", 500, 400, 3, 65, 14),
+("Nước mía", "drink", "1 ly 300 ml", 300, 160, 0, 40, 0),
+("Sinh tố bơ (có sữa đặc)", "drink", "1 ly", 350, 350, 5, 40, 19),
+("Bia", "drink", "1 lon 330 ml", 330, 150, 1.5, 13, 0),
+("Bánh flan", "drink", "1 cái", 100, 130, 4, 20, 4),
+]
+
+# ---------- MẪU BỮA ĂN (meal templates) ----------
+# (tên mẫu, bữa, tags, [(tên món, số khẩu phần), ...])
+# bữa: sang | trua | toi | phu
+T = [
+# --- SÁNG ---
+("Yến mạch whey chuối", "sang", "fat_loss,muscle_gain,nau_nha", [("Yến mạch (khô)", 1), ("Whey protein", 1), ("Chuối", 1)]),
+("Bánh mì nguyên cám trứng sữa", "sang", "fat_loss,nau_nha", [("Bánh mì sandwich nguyên cám", 2), ("Trứng gà (luộc)", 2), ("Lòng trắng trứng", 2), ("Sữa tươi không đường", 1)]),
+("Sữa chua Hy Lạp yến mạch trái cây", "sang", "fat_loss,nau_nha", [("Sữa chua Hy Lạp không đường", 2), ("Yến mạch (khô)", 0.5), ("Thanh long", 1)]),
+("Khoai lang trứng sữa đậu nành", "sang", "fat_loss,nau_nha", [("Khoai lang luộc", 2), ("Trứng gà (luộc)", 2), ("Sữa đậu nành không đường", 1)]),
+("Phở gà + thêm trứng", "sang", "an_ngoai", [("Phở gà", 1), ("Trứng gà (luộc)", 1)]),
+("Bánh mì ốp la + sữa đậu nành", "sang", "an_ngoai", [("Bánh mì ốp la 2 trứng", 1), ("Sữa đậu nành không đường", 1)]),
+("Xôi mặn + cà phê đen", "sang", "an_ngoai,muscle_gain", [("Xôi mặn", 1), ("Cà phê đen không đường", 1)]),
+("Yến mạch bơ đậu phộng tăng cân", "sang", "muscle_gain,nau_nha", [("Yến mạch (khô)", 2), ("Whey protein", 1), ("Bơ đậu phộng", 1), ("Chuối", 1), ("Sữa tươi không đường", 1)]),
+# --- TRƯA ---
+("Cơm gạo lứt ức gà rau", "trua", "fat_loss,nau_nha", [("Cơm gạo lứt", 1), ("Ức gà luộc/áp chảo (bỏ da)", 1.5), ("Rau xanh luộc (cải, muống, bí)", 1)]),
+("Cơm cá hồi bông cải", "trua", "fat_loss,muscle_gain,nau_nha", [("Cơm trắng", 1), ("Cá hồi áp chảo", 1.5), ("Bông cải xanh luộc", 1.5)]),
+("Cơm bò xào rau củ canh rau", "trua", "muscle_gain,nau_nha", [("Cơm trắng", 1.5), ("Bò xào rau củ", 1), ("Canh rau (1 chén)", 1)]),
+("Cơm gà luộc (bỏ da, ít cơm)", "trua", "fat_loss,an_ngoai", [("Cơm gà luộc (Hải Nam)", 1)]),
+("Cơm tấm sườn (không bì chả) + rau", "trua", "an_ngoai,muscle_gain", [("Cơm tấm sườn", 1), ("Salad (xà lách, cà chua, dưa leo) không sốt", 1)]),
+("Bún thịt nướng (ít mỡ hành)", "trua", "an_ngoai", [("Bún thịt nướng", 1)]),
+("Cơm cá kho canh chua", "trua", "nau_nha", [("Cơm trắng", 1), ("Cá kho tộ", 1), ("Canh chua cá", 1)]),
+("Cơm đậu hũ sốt cà trứng (chay trứng)", "trua", "fat_loss,nau_nha,chay", [("Cơm gạo lứt", 1), ("Đậu hũ sốt cà", 1), ("Trứng gà (luộc)", 1), ("Rau xanh luộc (cải, muống, bí)", 1)]),
+("Cơm gà kho gừng rau muống", "trua", "muscle_gain,nau_nha", [("Cơm trắng", 1.5), ("Gà kho gừng", 1), ("Rau muống xào tỏi", 1)]),
+# --- TỐI ---
+("Khoai lang cá basa salad", "toi", "fat_loss,nau_nha", [("Khoai lang luộc", 2), ("Cá basa/cá tra hấp", 1.5), ("Salad (xà lách, cà chua, dưa leo) không sốt", 1)]),
+("Cơm tôm luộc rau", "toi", "fat_loss,nau_nha", [("Cơm trắng", 1), ("Tôm luộc", 1.5), ("Rau xanh luộc (cải, muống, bí)", 1)]),
+("Bò bít tết", "toi", "muscle_gain,an_ngoai", [("Bò bít tết (150 g thịt + khoai + trứng)", 1), ("Salad (xà lách, cà chua, dưa leo) không sốt", 1)]),
+("Phở bò tái + rau", "toi", "an_ngoai", [("Phở bò tái", 1)]),
+("Gỏi cuốn tôm thịt (4 cuốn) + đậu hũ", "toi", "fat_loss,an_ngoai", [("Gỏi cuốn tôm thịt", 4), ("Đậu hũ trắng", 1)]),
+("Cơm ức gà nướng bơ", "toi", "muscle_gain,nau_nha", [("Cơm trắng", 1.5), ("Ức gà nướng/áp chảo ướp sẵn", 1), ("Quả bơ", 0.5), ("Rau xanh luộc (cải, muống, bí)", 1)]),
+("Thăn heo khoai tây rau", "toi", "fat_loss,nau_nha", [("Thăn heo nạc (chín)", 1.5), ("Khoai tây luộc", 2), ("Bông cải xanh luộc", 1)]),
+("Cháo gà + trứng", "toi", "an_ngoai,nhe_bung", [("Cháo gà", 1), ("Trứng gà (luộc)", 1)]),
+# --- PHỤ ---
+("Whey + chuối", "phu", "fat_loss,muscle_gain", [("Whey protein", 1), ("Chuối", 1)]),
+("Sữa chua Hy Lạp + hạnh nhân", "phu", "fat_loss", [("Sữa chua Hy Lạp không đường", 1.5), ("Hạnh nhân", 0.5)]),
+("Trứng luộc + táo", "phu", "fat_loss", [("Trứng gà (luộc)", 2), ("Táo", 1)]),
+("Bánh mì nguyên cám bơ đậu phộng + sữa", "phu", "muscle_gain", [("Bánh mì sandwich nguyên cám", 2), ("Bơ đậu phộng", 1), ("Sữa tươi không đường", 1)]),
+("Sữa đậu nành + bắp", "phu", "fat_loss", [("Sữa đậu nành không đường", 1), ("Bắp luộc", 1)]),
+("Cá ngừ + bánh mì nguyên cám", "phu", "fat_loss,muscle_gain", [("Cá ngừ hộp ngâm nước (ráo)", 1), ("Bánh mì sandwich nguyên cám", 2)]),
+("Trái cây + hạt điều", "phu", "muscle_gain", [("Xoài chín", 1), ("Hạt điều", 1)]),
+]
+
+# ---------- THỰC ĐƠN MẪU CẢ NGÀY ----------
+# (tên, mục tiêu, [tên mẫu bữa theo thứ tự])
+D = [
+("Giảm mỡ (nấu nhà)", "fat_loss", ["Sữa chua Hy Lạp yến mạch trái cây", "Cơm gạo lứt ức gà rau", "Khoai lang cá basa salad", "Trứng luộc + táo"]),
+("Giảm mỡ (nấu nhà)", "fat_loss", ["Yến mạch whey chuối", "Cơm cá hồi bông cải", "Cơm tôm luộc rau", "Sữa chua Hy Lạp + hạnh nhân"]),
+("Giảm mỡ (ăn ngoài)", "fat_loss", ["Bánh mì ốp la + sữa đậu nành", "Cơm gà luộc (bỏ da, ít cơm)", "Gỏi cuốn tôm thịt (4 cuốn) + đậu hũ", "Whey + chuối"]),
+("Duy trì / recomp", "recomp", ["Khoai lang trứng sữa đậu nành", "Cơm tấm sườn (không bì chả) + rau", "Thăn heo khoai tây rau", "Cá ngừ + bánh mì nguyên cám"]),
+("Tăng cơ (nấu nhà)", "muscle_gain", ["Yến mạch bơ đậu phộng tăng cân", "Cơm gà kho gừng rau muống", "Cơm ức gà nướng bơ", "Bánh mì nguyên cám bơ đậu phộng + sữa", "Whey + chuối"]),
+("Tăng cơ (ăn ngoài)", "muscle_gain", ["Xôi mặn + cà phê đen", "Cơm bò xào rau củ canh rau", "Bò bít tết", "Trái cây + hạt điều", "Whey + chuối", "Bánh mì nguyên cám bơ đậu phộng + sữa"]),
+]

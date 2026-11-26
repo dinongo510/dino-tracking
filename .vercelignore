@@ -2,3 +2,7 @@ server.js
 *.docx
 *.log
 .git
+docs
+supabase
+tests
+tools
