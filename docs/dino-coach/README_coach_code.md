@@ -30,7 +30,7 @@ coach/
 - View mới: `js/views/<role>/<tên>.js`, export `xxxView({ params, profile })`, đăng ký trong `app.js` bằng `route(path, view, 'coach'|'client')`.
 - Mọi dữ liệu người dùng chèn vào HTML phải qua `esc()`.
 - Mọi lỗi Supabase hiển thị bằng `toast(viError(err), 'error')`.
-- Thêm file tĩnh mới → thêm vào mảng `SHELL` trong `sw.js` và tăng `VERSION`.
+- Mọi thay đổi file trong `/coach/` phải tăng `VERSION` trong `coach/sw.js` (thêm file tĩnh mới thì thêm vào mảng `SHELL`).
 - LocalStorage/SessionStorage: chỉ key tiền tố `dcoach_`.
 
 ## Đã kiểm thử (Chromium headless, viewport 390×844, Supabase giả lập)

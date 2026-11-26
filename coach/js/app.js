@@ -22,7 +22,17 @@ route('/client/profile', clientProfileView, 'client');
 route('/coach/client/:id', coachClientView, 'coach');
 
 watchOnline();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/coach/sw.js', { scope: '/coach' }).catch(console.warn);
+if ('serviceWorker' in navigator) {
+  // Khi có bản cập nhật, service worker mới chiếm quyền → tải lại trang 1 lần để chạy code mới ngay
+  // (không tải lại ở lần cài đầu tiên, khi trước đó chưa có service worker nào).
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    reloaded = true; location.reload();
+  });
+  navigator.serviceWorker.register('/coach/sw.js', { scope: '/coach' }).catch(console.warn);
+}
 
 (async () => {
   try {
