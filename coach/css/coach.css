@@ -1,10 +1,10 @@
 [hidden] { display: none !important; } /* thuộc tính hidden luôn thắng class (.badge, .card…) */
 /* =====================================================================
-   DINO Coach — giao diện "kính tối ánh màu" (DINO-011b)
-   Mọi màu suy ra từ 1 số: --h (sắc độ 0–359), người dùng chọn trong Hồ sơ.
+   DINOMET — giao diện "kính tối ánh màu" (DINO-011b, DINO-018)
+   Mọi màu suy ra từ 1 số: --h (sắc độ 0–359), mặc định 355 (đỏ DINOMET).
    ===================================================================== */
 :root {
-  --h: 25;
+  --h: 355;
   --a1: hsl(var(--h) 92% 62%);                    /* màu nhấn */
   --a2: hsl(calc(var(--h) + 38) 92% 62%);         /* màu anh em 1 */
   --a3: hsl(calc(var(--h) - 34) 70% 74%);         /* màu anh em 2 (nhạt) */

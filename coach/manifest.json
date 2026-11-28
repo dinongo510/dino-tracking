@@ -1,17 +1,17 @@
 {
-  "name": "DINO Coach",
-  "short_name": "DINO Coach",
-  "description": "Coaching online cùng Coach Dino",
-  "start_url": "/coach",
-  "scope": "/coach",
+  "name": "DINOMET",
+  "short_name": "DINOMET",
+  "description": "DINOMET — huấn luyện & theo dõi tập luyện cùng Coach Dino",
+  "start_url": "/coach/",
+  "scope": "/coach/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f1115",
-  "theme_color": "#0f1115",
+  "background_color": "#120306",
+  "theme_color": "#7a0c16",
   "lang": "vi",
   "icons": [
-    { "src": "/coach/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/coach/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/coach/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/coach/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/coach/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/coach/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

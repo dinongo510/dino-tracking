@@ -1,7 +1,7 @@
-// DINO-011b — Màu giao diện: 1 số sắc độ (0–359) lưu trên máy người dùng; CSS tự suy ra toàn bộ bảng màu.
+// DINO-011b, DINO-018 — Màu giao diện: 1 số sắc độ (0–359) lưu trên máy người dùng; CSS tự suy ra toàn bộ bảng màu.
 export const HUE_KEY = 'dcoach_hue';
-export const DEFAULT_HUE = 25; // cam
-export const PRESETS = [['Cam', 25], ['Hồng đỏ', 350], ['Xanh lá', 142], ['Xanh dương', 217], ['Tím', 271]];
+export const DEFAULT_HUE = 355; // Đỏ DINOMET
+export const PRESETS = [['Đỏ DINOMET', 355], ['Cam', 25], ['Hồng đỏ', 350], ['Xanh lá', 142], ['Xanh dương', 217], ['Tím', 271]];
 
 export function getHue() {
   try { const v = Number(localStorage.getItem(HUE_KEY)); return Number.isFinite(v) && localStorage.getItem(HUE_KEY) !== null ? clampHue(v) : DEFAULT_HUE; }
@@ -11,7 +11,7 @@ export const clampHue = (h) => ((Math.round(Number(h)) % 360) + 360) % 360;
 export function applyHue(h) {
   const v = clampHue(h);
   document.documentElement.style.setProperty('--h', String(v));
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#08080b');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#7a0c16');
   return v;
 }
 export function setHue(h) {

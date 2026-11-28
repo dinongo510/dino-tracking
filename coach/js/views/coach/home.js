@@ -37,7 +37,7 @@ export async function coachHomeView({ profile }) {
   const pct = (v) => (v == null ? '—' : `${v}%`);
   const dm = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : 'chưa');
   render(`
-    <div class="row row--between"><div><h1>Chào Coach ${esc(profile.full_name || '')}</h1>
+    <div class="row row--between"><div><h1 style="display:flex;align-items:center;gap:8px"><img src="/coach/icons/logo-mark.png" alt="DINOMET" style="width:24px;height:24px;vertical-align:middle;flex:none"><span>Chào Coach ${esc(profile.full_name || '')}</span></h1>
       <p class="muted">${active} khách đang tập · ${clients.length} tổng</p></div>
       <button id="out" class="btn btn--ghost small">Đăng xuất</button></div>
 

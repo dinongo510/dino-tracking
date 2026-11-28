@@ -156,3 +156,21 @@ Toàn bộ brief 006–013, migration 0001–0006, `formulas.js`, nội dung kh�
   * `tests/coach/adhoc.test.mjs`: unit test kiểm tra `dayNoFromDate`, `defaultAdhocTitle`, lọc adherence bỏ adhoc, `missedLastWeek` bỏ adhoc (81/81 test pass).
   * `tests/coach/e2e_adhoc.py` (cổng 8782): 20/20 checks PASS.
   * Hồi quy toàn bộ test suites: 81 unit tests + 11 test suites E2E đạt 100% PASS.
+
+
+## DINO-018 — Thương hiệu DINOMET (tên app + logo + icon điện thoại + màu đỏ mặc định) — Antigravity (28/11/2026, nhánh feature/dino-coach-017-adhoc, dcoach-v26)
+- Không migration, không đụng app cá nhân.
+- Tài sản thương hiệu trong `coach/icons/`:
+  * `icon-192.png`, `icon-512.png` (cập nhật), `icon-maskable-512.png`, `apple-touch-icon.png` (180px), `favicon-32.png`.
+  * `logo-mark.png` (logo D trắng trong suốt, 24px ở đầu trang khách & coach), `logo-wordmark.png`, `logo-full.png` (dùng ở trang Đăng nhập / Quên MK / Đặt MK).
+- Cấu hình & Giao diện:
+  * `coach/manifest.json`: `name` = "DINOMET", `short_name` = "DINOMET", `background_color` = "#120306", `theme_color` = "#7a0c16", 3 icons (192, 512, maskable 512).
+  * `coach/index.html`: `<title>DINOMET</title>`, favicon, apple-touch-icon, apple-mobile-web-app-title, theme-color `#7a0c16`, inline script áp hue mặc định 355.
+  * `coach/css/coach.css`: `:root { --h: 355; }`.
+  * `coach/js/lib/theme.js`: `DEFAULT_HUE = 355`, `PRESETS` có 'Đỏ DINOMET' đứng đầu (6 swatches).
+  * `coach/js/views/auth.js`: thay chữ "DINO Coach" bằng ảnh `logo-full.png` có `alt="DINOMET"`.
+  * `coach/js/views/client/home.js` & `coach/js/views/coach/home.js`: logo-mark 24px cạnh lời chào, văn bản hướng dẫn đổi thành "thêm DINOMET vào màn hình chính".
+  * `coach/sw.js`: nâng version lên `dcoach-v26`, thêm đầy đủ 8 file icon/logo vào SHELL cache.
+- Kiểm thử:
+  * `tests/coach/theme.test.mjs`: kiểm tra DEFAULT_HUE 355, 6 presets, clampHue, manifest.json và các file icon tồn tại (86/86 unit test pass).
+  * `tests/coach/e2e_theme.py`: kiểm tra logo login, manifest DINOMET, default hue 355, 6 swatches, logo-mark đầu trang (16/16 checks pass).

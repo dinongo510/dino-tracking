@@ -78,7 +78,7 @@ export async function clientHomeView({ profile }) {
 
   render(`
     <div class="row row--between" style="margin-top:4px">
-      <div><div class="muted" style="font-size:14px">${hi}</div><h1 style="margin:0">${esc(profile.full_name || 'bạn')}</h1>
+      <div><div class="muted" style="font-size:14px"><img src="/coach/icons/logo-mark.png" alt="DINOMET" style="width:24px;height:24px;vertical-align:middle;margin-right:6px">${hi}</div><h1 style="margin:0">${esc(profile.full_name || 'bạn')}</h1>
         <div class="small muted">Coach: ${esc(coach?.full_name || 'Dino')}</div></div>
       <div class="row" style="gap:6px">
         <a class="btn btn--ghost small" href="#/client/adhoc/new" id="btnNewAdhoc">+ Buổi tự do</a>
@@ -147,7 +147,7 @@ export async function clientHomeView({ profile }) {
 
     <div class="card" style="margin-top:10px"><a href="#/tools" style="color:var(--text);text-decoration:none" class="row row--between"><span><strong>🛠️ Công cụ hỗ trợ</strong> <span class="small muted">· Pace, 1RM, đĩa tạ, WOD</span></span><span>→</span></a></div>
 
-    <div class="card"><p class="small muted" style="margin:0">Mẹo: thêm DINO Coach vào màn hình chính để mở nhanh như một ứng dụng
+    <div class="card"><p class="small muted" style="margin:0">Mẹo: thêm DINOMET vào màn hình chính để mở nhanh như một ứng dụng
       (Safari: Chia sẻ → Thêm vào MH chính · Chrome: ⋮ → Cài đặt ứng dụng). Đổi màu giao diện ở tab Hồ sơ.</p></div>`);
   if (self) $('#back').onclick = () => { setSelfMode(false); go('#/coach'); };
   else $('#out').onclick = async () => { await signOut(); go('#/login'); };
