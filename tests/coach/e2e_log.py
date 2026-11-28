@@ -43,7 +43,7 @@ try:
   cl=ctx.new_page();cl.on('pageerror',lambda e:errs.append('client: '+str(e)))
   cl.goto(B);cl.evaluate("d=>{localStorage.clear();localStorage.setItem('fakedb',JSON.stringify(d))}",db)
   # 1. Khách: Hôm nay → phiếu
-  login(cl,A,'#/client');cl.wait_for_selector('main a.card:has-text("Buổi hôm nay")');cl.click('main a.card:has-text("Buổi hôm nay")')
+  login(cl,A,'#/client');cl.wait_for_selector('main .card--hi:has-text("Buổi hôm nay")');cl.click('main .card--hi >> text=Bắt đầu tập')
   cl.wait_for_selector('[data-item=i_sq] tr[data-set="3"]')
   ok('1 phiếu: điền sẵn 8 rep × 60 kg, 3 hiệp', cl.input_value('[data-item=i_sq] tr[data-set="1"] [data-k=reps]')=='8' and cl.input_value('[data-item=i_sq] tr[data-set="1"] [data-k=load_kg]')=='60')
   ok('2 circuit 2 vòng = 2 dòng; bài chạy có ô thời gian', cl.locator('[data-item=i_kb] tr[data-set]').count()==2 and cl.locator('[data-item=i_run] [data-k=duration]').count()==1)

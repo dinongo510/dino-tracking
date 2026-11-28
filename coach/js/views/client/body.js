@@ -1,3 +1,4 @@
+import { themePickerHtml, bindThemePicker } from '../../lib/theme.js';
 import { render, $ } from '../../ui.js';
 import { renderBody } from '../shared/body.js';
 import { renderPhotos } from '../shared/photos.js';
@@ -23,7 +24,9 @@ export async function clientProfileView({ profile }) {
     return `<li style="display:block"><div class="small muted">${esc(f.label)}</div><div>${esc(v)}</div></li>`;
   };
   render(`<h1>Hồ sơ của bạn</h1>
+    ${themePickerHtml()}
     ${h ? STEPS.map((s, i) => `<div class="row row--between"><h2>${esc(s.title)}</h2><a class="btn btn--ghost small" href="#/client/intake/${i}">Sửa</a></div>
       <div class="card"><ul class="list">${s.fields.filter((f) => f.key && !f.key.startsWith('parq.') && !f.key.startsWith('measure.')).map(show).join('') || '<li class="muted small">—</li>'}</ul></div>`).join('')
       : '<div class="card"><p>Bạn chưa điền hồ sơ.</p><a class="btn btn--primary" href="#/client/intake">Điền hồ sơ</a></div>'}`);
+  bindThemePicker();
 }

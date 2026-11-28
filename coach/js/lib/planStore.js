@@ -130,3 +130,13 @@ export async function sessionsOn(clientId, iso) {
   const ok = new Set(ph.filter((p) => p.status !== 'draft').map((p) => p.id));
   return ss.filter((s) => ok.has(s.phase_id));
 }
+
+/** Buổi đã phát hành của khách trong khoảng ngày [from, to] (DINO-011b: Buổi kế tiếp, % tập 7 ngày) */
+export async function publishedSessions(clientId, from, to) {
+  const db = await sb();
+  const ss = must(await db.from('sessions').select('id, title, session_type, phase_id, scheduled_on, week_no, day_no').eq('client_id', clientId).gte('scheduled_on', from).lte('scheduled_on', to).order('scheduled_on'));
+  if (!ss.length) return [];
+  const ph = must(await db.from('phases').select('id, status').in('id', [...new Set(ss.map((s) => s.phase_id))]));
+  const ok = new Set(ph.filter((p) => p.status !== 'draft').map((p) => p.id));
+  return ss.filter((s) => ok.has(s.phase_id));
+}

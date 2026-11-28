@@ -20,7 +20,7 @@ export async function renderChat(el, { clientId, sessionId, me, names }) {
     if (seen.has(m.id)) return; seen.add(m.id);
     const mine = m.author_id === me;
     box.querySelector('.empty')?.remove();
-    box.insertAdjacentHTML('beforeend', `<div data-msg="${esc(m.id)}" style="align-self:${mine ? 'flex-end' : 'flex-start'};max-width:85%;padding:8px 10px;border-radius:12px;background:${mine ? 'var(--accent)' : 'var(--bg)'};color:${mine ? '#fff' : 'var(--text)'}">
+    box.insertAdjacentHTML('beforeend', `<div data-msg="${esc(m.id)}" style="align-self:${mine ? 'flex-end' : 'flex-start'};max-width:85%;padding:8px 12px;border-radius:${mine ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};${mine ? 'border:1.5px solid transparent;background:linear-gradient(135deg,hsl(var(--h) 92% 62% / .22),hsl(calc(var(--h) + 38) 92% 62% / .07)) padding-box,linear-gradient(var(--solid),var(--solid)) padding-box,var(--grad) border-box;color:var(--text)' : 'background:rgba(255,255,255,.07);color:var(--text)'}">
       <div class="small" style="opacity:.8">${esc(names[m.author_id] || (mine ? 'Bạn' : ''))} · ${hhmm(m.created_at)}</div>${esc(m.body).replace(/\n/g, '<br>')}</div>`);
     box.scrollTop = box.scrollHeight;
   };

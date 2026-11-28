@@ -9,7 +9,7 @@ import { loadNutrition, loadBodyAndIntake, approveTarget, insertSlots, updateSlo
 import { signedUrls } from '../../lib/files.js';
 
 const GOAL_VI = { fat_loss: 'Giảm mỡ', recomp: 'Recomp / sức khỏe', muscle_gain: 'Tăng cơ', performance: 'Thành tích' };
-const LEVEL_COLOR = { on: '#2e7d32', near: '#f9a825', off: '#c62828' };
+const LEVEL_ICON = { on: '✓', near: '≈', off: '✕' };
 const dm = (iso) => iso.slice(8, 10) + '/' + iso.slice(5, 7);
 const fmtQty = (q) => String(q).replace('.', ',');
 
@@ -73,7 +73,7 @@ export async function coachNutritionView({ params, profile }) {
         <label class="small row" style="gap:4px">% kcal <input class="input" type="number" min="0" max="100" step="0.5" data-pct value="${s.kcal_pct}" style="width:70px;padding:4px"></label>
         <button class="btn btn--ghost small" data-delslot>✕</button></div>
       <ul class="list" style="margin-top:6px">${s.options.map((o) => { const tot = totalsOf(o.items, foodById), ok = fits(tot, t); return `<li>
-        <div style="flex:1"><strong>${esc(o.label || 'Phương án')}</strong> <span class="badge ${ok ? 'badge--ok' : ''}" style="${ok ? '' : 'background:#c62828;color:#fff'}">${ok ? '✓ vừa khung' : `✗ ${esc(fitReason(tot, t) || 'lệch khung')}`}</span>
+        <div style="flex:1"><strong>${esc(o.label || 'Phương án')}</strong> <span class="badge ${ok ? 'badge--ok' : 'lvl--off'}">${ok ? '✓ vừa khung' : `✗ ${esc(fitReason(tot, t) || 'lệch khung')}`}</span>
           <div class="small">${itemsText(o.items)}</div><div class="small muted">${totText(tot)}</div></div>
         <button class="btn btn--ghost small" data-delopt="${o.id}">✕</button></li>`; }).join('') || '<li class="small muted">Chưa có phương án.</li>'}</ul>
       <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">
@@ -89,7 +89,7 @@ export async function coachNutritionView({ params, profile }) {
     <div class="card"><ul class="list">${days.map((d) => { const cs = checks.filter((c) => c.check_date === d); return `<li style="align-items:flex-start">
       <strong style="width:52px">${dm(d)}</strong>
       <div style="flex:1">${N.slots.map((s) => { const c = cs.find((x) => x.slot_id === s.id); return `<div class="small" style="display:flex;gap:6px;align-items:center;margin:2px 0">
-        <span style="width:44px">${esc(s.name)}</span>${c ? `<span class="badge" style="background:${LEVEL_COLOR[c.level]};color:#fff">${LEVEL_VI[c.level]}</span>${c.note ? `<span class="muted">${esc(c.note)}</span>` : ''}
+        <span style="width:44px">${esc(s.name)}</span>${c ? `<span class="badge lvl--${c.level}">${LEVEL_ICON[c.level]} ${LEVEL_VI[c.level]}</span>${c.note ? `<span class="muted">${esc(c.note)}</span>` : ''}
         ${c.photo_path && urls[c.photo_path] ? `<a href="${urls[c.photo_path]}" target="_blank"><img src="${urls[c.photo_path]}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px"></a>` : ''}` : '<span class="muted">—</span>'}</div>`; }).join('') || '<span class="small muted">Chưa có bữa.</span>'}</div></li>`; }).join('')}</ul></div>
 
     <dialog id="dob"><form method="dialog" id="fob" class="stack" style="min-width:min(92vw,560px)">
@@ -160,7 +160,7 @@ export async function coachNutritionView({ params, profile }) {
     $('#obRows').innerHTML = rows.map((r, i) => `<div class="row" style="gap:6px"><span style="flex:1">${esc(foodById.get(r.food_id)?.name_vi)} <span class="small muted">(${esc(foodById.get(r.food_id)?.serving || '')})</span></span>
       <input class="input" type="number" min="0.5" step="0.5" value="${r.qty}" data-q="${i}" style="width:80px;padding:4px"> <button type="button" class="btn btn--ghost small" data-rm="${i}">✕</button></div>`).join('') || '<p class="small muted">Tìm và bấm vào món để thêm.</p>';
     const tot = totalsOf(rows, foodById);
-    $('#obTot').innerHTML = `Tổng: <strong>${totText(tot)}</strong> · khung ${bT.kcal} kcal ±10%, đạm ≥ ${Math.round(bT.proteinG * 0.8)} g → ${fits(tot, bT) ? '<strong style="color:#2e7d32">✓ vừa</strong>' : `<strong style="color:#c62828">✗ ${esc(fitReason(tot, bT) || 'lệch')}</strong>`}`;
+    $('#obTot').innerHTML = `Tổng: <strong>${totText(tot)}</strong> · khung ${bT.kcal} kcal ±10%, đạm ≥ ${Math.round(bT.proteinG * 0.8)} g → ${fits(tot, bT) ? '<strong style="color:var(--tint)">✓ vừa</strong>' : `<strong style="color:var(--danger)">✗ ${esc(fitReason(tot, bT) || 'lệch')}</strong>`}`;
   };
   const drawRes = () => {
     const q = norm($('#obQ').value);

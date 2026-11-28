@@ -181,3 +181,20 @@ export function interleaveCompromised(items, runExercise) {
   }
   return out.map((it, i) => ({ ...it, order_no: i + 1 }));
 }
+
+/**
+ * DINO-011b — Buổi nên tập tiếp theo cho trang "Hôm nay".
+ * sessions: [{id, scheduled_on, …}] đã phát hành; doneIds: Set id buổi đã hoàn thành.
+ * Ưu tiên: buổi hôm nay chưa tập → buổi lỡ trong tuần này (sớm nhất) → buổi sắp tới gần nhất.
+ */
+export function pickNext(sessions, doneIds, today) {
+  const wk = mondayOf(today);
+  const open = sessions.filter((s) => s.scheduled_on && !doneIds.has(s.id)).sort((a, b) => a.scheduled_on.localeCompare(b.scheduled_on));
+  const todays = open.filter((s) => s.scheduled_on === today);
+  const missed = open.filter((s) => s.scheduled_on >= wk && s.scheduled_on < today);
+  const upcoming = open.filter((s) => s.scheduled_on > today);
+  const doneToday = sessions.some((s) => s.scheduled_on === today && doneIds.has(s.id));
+  const main = todays[0] || missed[0] || upcoming[0] || null;
+  const kind = !main ? 'none' : main.scheduled_on === today ? 'today' : main.scheduled_on < today ? 'makeup' : 'upcoming';
+  return { main, kind, missed, todays, upcoming: upcoming[0] || null, doneToday };
+}
