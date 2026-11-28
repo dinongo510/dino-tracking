@@ -111,6 +111,10 @@ test('biểu đồ SVG: điểm mang số liệu thô, trục y tròn, rỗng th
   const h = lineChart({ id: 'w', title: 'Cân nặng', unit: 'kg', from: '2026-11-23', to: TODAY, series: [{ name: 'Cân', points: [{ x: '2026-11-24', y: 83.6 }, { x: '2026-11-26', y: 83.2 }] }], markers: [{ x: '2026-11-25', label: 'GĐ2' }] });
   assert.ok(h.includes('data-chart="w"') && h.includes('data-v="83.6"') && h.includes('data-v="83.2"') && h.includes('GĐ2'));
   assert.ok(lineChart({ title: 'X', series: [{ name: 'a', points: [] }] }).includes('Chưa có dữ liệu'));
+  // 1 điểm của đường không chấm (TB 7 ngày) vẫn hiện; 1 bài 1RM vẫn có chú thích tên bài
+  const one = lineChart({ title: 'C', series: [{ name: 'TB', points: [{ x: '2026-11-25', y: 83.5 }], dots: false }], legend: true });
+  assert.ok(/r="3"[^>]*data-v="83.5"/.test(one) && one.includes('class="legend"') && one.includes('TB'));
+  assert.ok(!lineChart({ title: 'C', series: [{ name: 'TB', points: [{ x: '2026-11-25', y: 1 }] }] }).includes('class="legend"'));
   const b = barChart({ id: 'ad', title: 'Tuân thủ', unit: '%', labels: ['2026-11-16', '2026-11-23'], series: [{ name: 'Buổi', values: [50, 100] }], max: 100 });
   assert.ok(b.includes('data-v="100"') && b.includes('>100</text>') && !b.includes('>125</text>'));
 });

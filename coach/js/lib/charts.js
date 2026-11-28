@@ -20,9 +20,9 @@ export function niceScale(min, max, ticks = 4, { zero = false } = {}) {
   return { lo, hi, step, ticks: out };
 }
 
-const frame = (title, unit, body, legend, attrs = '') => `<figure class="chart" ${attrs}>
+const frame = (title, unit, body, legend, attrs = '', force = false) => `<figure class="chart" ${attrs}>
   <figcaption><span>${esc(title)}</span>${unit ? `<span class="muted">${esc(unit)}</span>` : ''}</figcaption>
-  ${body}${legend.length > 1 ? `<div class="legend">${legend.map((s, i) => `<span><i style="background:${s.color || COLORS[i]}"></i>${esc(s.name)}</span>`).join('')}</div>` : ''}</figure>`;
+  ${body}${legend.length > 1 || (force && legend.length) ? `<div class="legend">${legend.map((s, i) => `<span><i style="background:${s.color || COLORS[i]}"></i>${esc(s.name)}</span>`).join('')}</div>` : ''}</figure>`;
 const empty = (title, unit, msg = 'Chưa có dữ liệu trong khoảng này.') => frame(title, unit, `<p class="small muted chart-empty">${esc(msg)}</p>`, [], 'data-empty="1"');
 
 const yAxis = (sc, y, fmt) => sc.ticks.map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="grid"/>
@@ -32,7 +32,7 @@ const yAxis = (sc, y, fmt) => sc.ticks.map((v) => `<line x1="${L}" x2="${W - R}"
  * Đường theo ngày. series: [{name, points:[{x:'YYYY-MM-DD', y}], line=true, dots=true, dash=false, color}]
  * markers: [{x, label}] (đường dọc mốc giai đoạn) · from/to: khoảng trục x · yFmt: định dạng số trục y
  */
-export function lineChart({ id = '', title, unit = '', series, markers = [], from, to, yFmt = (v) => fmtNum(v), zero = false }) {
+export function lineChart({ id = '', title, unit = '', series, markers = [], from, to, yFmt = (v) => fmtNum(v), zero = false, legend = false }) {
   const all = series.flatMap((s) => s.points.filter((p) => p.y != null));
   if (!all.length) return empty(title, unit);
   let x0 = ms(from || all.reduce((a, p) => (p.x < a ? p.x : a), all[0].x)), x1 = ms(to || all.reduce((a, p) => (p.x > a ? p.x : a), all[0].x));
@@ -48,12 +48,12 @@ export function lineChart({ id = '', title, unit = '', series, markers = [], fro
     const c = s.color || COLORS[i], pts = s.points.filter((p) => p.y != null).sort((a, b) => a.x.localeCompare(b.x));
     const path = s.line !== false && pts.length > 1 ? `<path d="${pts.map((p, j) => `${j ? 'L' : 'M'}${x(p.x)} ${y(p.y)}`).join(' ')}" style="stroke:${c}" class="ln${s.dash ? ' ln--dash' : ''}"/>` : '';
     // dots:false vẫn giữ điểm (bán kính 0) để đọc số liệu + tooltip; chỉ không vẽ chấm
-    const r = s.dots === false ? 0 : s.line === false ? 3 : 2.6;
+    const r = s.dots === false ? (pts.length < 2 ? 3 : 0) : s.line === false ? 3 : 2.6; // chỉ 1 điểm thì không có đường → vẫn vẽ chấm
     const dots = pts.map((p) => `<circle cx="${x(p.x)}" cy="${y(p.y)}" r="${r}" style="fill:${c}" data-s="${i}" data-x="${p.x}" data-v="${p.y}"><title>${dm(p.x)}: ${esc(yFmt(p.y))} ${esc(unit)}</title></circle>`).join('');
     return path + dots;
   }).join('');
   const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}" preserveAspectRatio="xMidYMid meet">${yAxis(sc, y, yFmt)}${xLabels}${mk}${lines}</svg>`;
-  return frame(title, unit, svg, series, `data-chart="${esc(id)}"`);
+  return frame(title, unit, svg, series, `data-chart="${esc(id)}"`, legend);
 }
 
 /**

@@ -67,7 +67,7 @@ export async function dashView({ params, profile }) {
       ${ib.smm.length || ib.ffm.length || ib.pbf.length ? `<div class="card">${L({ id: 'inbody', title: 'InBody: cơ (SMM) & khối không mỡ (FFM)', unit: 'kg', series: [{ name: 'SMM', points: ib.smm }, { name: 'FFM', points: ib.ffm }] })}
         ${L({ id: 'pbf', title: 'InBody: mỡ (PBF)', unit: '%', series: [{ name: 'PBF', points: ib.pbf, color: 'var(--a3)' }] })}</div>` : ''}
       <div class="row row--between"><h2>Sức mạnh</h2>${coach ? '<button class="btn btn--ghost small no-print" id="pick">Chọn bài theo dõi</button>' : ''}</div>
-      <div class="card">${L({ id: 'e1rm', title: '1RM ước tính (Epley) cao nhất mỗi tuần', unit: 'kg', series: lifts.map((s) => ({ name: exById.get(s.id)?.name_vi || 'Bài tập', points: s.points })) })}
+      <div class="card">${L({ id: 'e1rm', title: '1RM ước tính (Epley) cao nhất mỗi tuần', unit: 'kg', series: lifts.map((s) => ({ name: exById.get(s.id)?.name_vi || 'Bài tập', points: s.points })), legend: true })}
         ${!D.tracked.length && tracked.length ? '<p class="small muted" style="margin:6px 0 0">Đang tự lấy bài tập nhiều nhất' + (coach ? ' — bấm "Chọn bài theo dõi" để chọn.' : '.') + '</p>' : ''}</div>
       <div class="card">${barChart({ id: 'volume', title: 'Khối lượng tạ mỗi tuần theo nhóm cơ', unit: 'kg (rep × tạ)', labels: mondays, series: vol, stacked: true, markers })}</div>
       <h2>Chạy</h2>

@@ -1,6 +1,6 @@
 // DINO Coach service worker — scope /coach/ (tách hẳn khỏi sw.js của app cá nhân)
 // Chỉ cache vỏ app tĩnh của /coach/. KHÔNG cache request tới Supabase hay CDN dữ liệu.
-const VERSION = 'dcoach-v18';
+const VERSION = 'dcoach-v19';
 const SHELL = [
   '/coach', '/coach/', '/coach/index.html', '/coach/manifest.json', '/coach/css/coach.css',
   '/coach/js/app.js', '/coach/js/config.js', '/coach/js/supabaseClient.js', '/coach/js/auth.js',

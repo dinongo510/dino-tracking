@@ -85,10 +85,11 @@ Toàn bộ brief 006–013, migration 0001–0006, `formulas.js`, nội dung kh�
 - Kịch bản UAT brief đã test: cân đứng 2 tuần + ăn ≥ 80% → −150 kcal (1900 → 1750, C 191); ăn 70% → "Cần trao đổi", không đề xuất.
 - Test: checkin 4/4, e2e_checkin 24/24; toàn bộ 46 + 175 = 221/221.
 
-## DINO-013 — Dashboard + bảng tổng nhóm + xuất CSV (Claude viết 28/11/2026; chờ chạy 0009 + AG tạo nhánh SAU KHI 012 đã merge + UAT)
+## DINO-013 — Dashboard + bảng tổng nhóm + xuất CSV — Claude UAT trên Preview: đạt (28/11/2026, commit 13a5b18); migration 0009 đã chạy. DINO-012 DEPLOYED (merge c2d6db0, dcoach-v17)
 - Quyết định: biểu đồ SVG tự vẽ (`lib/charts.js`) thay Chart.js qua CDN — không phụ thuộc mạng/CDN (PWA chạy offline, test chạy offline), màu ăn theo `--h`, nhẹ hơn ~200 KB. Không tạo view/RPC: < 10 khách → tính phía máy từ các bảng có sẵn, RLS áp dụng bình thường (thay mục 5 của brief).
 - Migration `0009_tracked_lifts.sql` (test Postgres 16 local, chạy 2 lần không lỗi): bảng bài "theo dõi" — coach ghi, khách chỉ đọc, khách khác không thấy.
 - File mới: `lib/charts.js` (đường theo ngày + cột theo tuần, cộng dồn/cạnh nhau, đường dọc mốc giai đoạn, điểm mang số liệu thô `data-v`), `lib/dashboard.js` (hàm thuần: bộ lọc Giai đoạn này / 3 tháng / Toàn bộ, cân + TB 7 ngày, eo/mông, SMM/FFM/PBF, 1RM Epley cao nhất mỗi tuần, khối lượng tạ theo nhóm cơ, km + pace easy (vùng tim ≤ 2), % buổi + % ăn theo tuần, dòng bảng tổng nhóm + sắp "cần chú ý", CSV BOM UTF-8, zip không nén), `lib/dashboardStore.js`, `views/shared/dashboard.js` (`#/dash/:id` coach, `#/client/dash` khách).
 - Sửa: trang chủ coach thành bảng tổng nhóm (cảnh báo → tuân thủ < 70% → lâu chưa check-in; tạm dừng/kết thúc xuống cuối; mỗi dòng: giai đoạn + tuần, % tập/ăn 7 ngày, xu hướng cân 2 tuần ▲▼—, lý do cần chú ý, nút Tiến độ); trang khách của coach có "Tiến độ & biểu đồ"; tab Cơ thể của khách có "Xem biểu đồ tiến độ →"; `coach.css` thêm ô số / chip / biểu đồ; `sw.js` v18.
 - Coach: "Chọn bài theo dõi" (tối đa 5, chưa chọn thì tự lấy 3 bài có tạ được ghi nhiều nhất); "Xuất CSV (.zip)" = 23 bảng của 1 khách.
 - Test: dashboard 8/8, e2e_dash 27/27; toàn bộ 54 + 202 = 256/256.
+- Sau UAT (dữ liệu thật Khách A: cân 84/83 → TB 83,5; 1RM goblet squat 12×12 = 16,8; khối lượng 432; xuất 23 bảng; khách bị chặn ở dashboard khách khác + không tự sửa bài theo dõi): đường TB 7 ngày chỉ 1 điểm vẫn hiện chấm; biểu đồ 1RM luôn ghi tên bài kể cả khi chỉ 1 bài; `sw.js` v19.
