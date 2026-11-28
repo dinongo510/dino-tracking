@@ -174,3 +174,39 @@ Toàn bộ brief 006–013, migration 0001–0006, `formulas.js`, nội dung kh�
 - Kiểm thử:
   * `tests/coach/theme.test.mjs`: kiểm tra DEFAULT_HUE 355, 6 presets, clampHue, manifest.json và các file icon tồn tại (86/86 unit test pass).
   * `tests/coach/e2e_theme.py`: kiểm tra logo login, manifest DINOMET, default hue 355, 6 swatches, logo-mark đầu trang (16/16 checks pass).
+
+
+## DINO-019 — Giao diện DINOMET v2 (UI/UX) + icon mới — Antigravity (29/11/2026, nhánh feature/dino-coach-019-ui-v2, dcoach-v27)
+- Không migration, không đổi logic hay dữ liệu, không đụng app cá nhân.
+- Tài sản icon & font:
+  * 6 icon mới do Claude đặt sẵn trong `coach/icons/`: `apple-touch-icon.png`, `favicon-32.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `logo-mark.png` (cập nhật).
+  * Import font `Barlow Condensed:wght@600;700;800` cho các ô số liệu (lớp `.num`).
+- Thành phần giao diện mới & cải tiến:
+  * **Thanh trên cùng (Top bar)**: `#topbar` cố định trên đầu trang khi đăng nhập, gồm logo-mark (26px), chữ "DINOMET", huy hiệu vai trò (Coach / Tập) và nút avatar tròn `#btnAvatar` với chữ viết tắt họ tên. Ẩn trên các trang công khai (login, forgot, reset).
+  * **Menu tài khoản (Account Bottom Sheet)**: bấm `#btnAvatar` mở dialog đáy màn hình (`#accountSheet`) hiển thị avatar lớn, họ tên đầy đủ, chuyển đổi chế độ ("Mở Tập của tôi" / "Về giao diện Coach" / "Xem Hồ sơ cá nhân"), khối chọn màu giao diện (dọn từ trang chủ coach vào đây) và nút Đăng xuất.
+  * **Kiểu chữ & Bố cục**:
+    * Tiêu đề `<h1>` trên toàn bộ app khống chế `<= 24px` trên màn hình nhỏ (375px/390px), giới hạn 1 dòng kèm `text-overflow: ellipsis`.
+    * Tất cả nút `.btn` thêm `white-space: nowrap;` ngăn gãy dòng chữ trên nút; bổ sung lớp `.btn-icon` cho các nút dạng icon tròn/vuông.
+    * Lớp `.num` áp dụng font Barlow Condensed cho các số liệu lớn trên trang Hôm nay và bảng khách.
+  * **Trang chủ Khách (`#/client`)**:
+    * Lời chào ngắn gọn: "Chào [Tên]!" kèm họ tên đầy đủ và ngày tháng.
+    * 3 ô chỉ số lớn với font `.num`.
+    * Vòng tròn tiến độ SVG (`ringSvg`) hiển thị % hoàn thành trong các thẻ.
+    * Thẻ buổi tập và check-in dạng hàng ngang với icon hộp vuông hiện đại.
+    * Nút hành động nổi FAB (`#btnNewAdhoc`) góc dưới bên phải cố định để thêm nhanh buổi tập tự do.
+    * Đổi tên tab thứ 4 từ "Cơ thể" thành "Tiến độ" (`label: 'Tiến độ'`).
+  * **Trang chủ Coach (`#/coach`)**:
+    * Tiêu đề "Khách của bạn" kèm nút "+ Mời khách".
+    * Thẻ khách dạng khối có thể bấm trực tiếp để vào chi tiết khách; các chỉ số `.gstats` dùng class `.num`.
+    * Dọn khối chọn màu ra khỏi trang body, đưa vào account bottom sheet.
+  * **Thư viện Coach (`#/coach/library`)**:
+    * Thanh trượt 3 tab segmented (`.seg`): Bài tập, Món ăn, Công cụ.
+    * Ô tìm kiếm có icon kính lúp bên trong.
+    * Hàng chip lọc có thể cuộn ngang mượt mà trên mobile.
+    * Nút hành động dạng icon `⋯` (`.btn-icon`).
+- Kỹ thuật & Service Worker:
+  * `coach/sw.js`: nâng version lên `dcoach-v27`, cập nhật cache font Barlow Condensed và các icon mới.
+  * `tests/coach/e2e_ui_v2.py`: bộ test E2E kiểm tra 18 tiêu chí DINOMET v2 (khung nhìn 375px & 390px, không tràn ngang trên 10 màn hình chính, H1 <= 24px, button nowrap, topbar, bottom sheet, FAB, segmented tabs, 0 lỗi console).
+- Kết quả kiểm thử:
+  * 86 unit tests node: 86/86 PASS.
+  * 15 test suites E2E Playwright: 100% PASS (bao gồm `e2e_ui_v2.py`, `e2e_theme.py`, `e2e_dash.py`, `e2e_packages.py`, `e2e_adhoc.py`, `e2e_checkin.py`, `e2e_library.py`, `e2e_log.py`, `e2e_nutrition.py`, `e2e_photos.py`, `e2e_plan.py`, `e2e_readiness.py`, `e2e_tools.py`, `e2e_goal.py`, `e2e_dino007.py`).

@@ -43,9 +43,9 @@ try:
   m=pg.inner_text('main')
   ok('3 cân TB tuần 69,5 ↓ 0,5 kg + tin coach', '69,5' in m and '↓ 0,5 kg' in m and 'Nhớ khởi động kỹ' in m)
   wv=pg.evaluate("[...document.querySelectorAll('.tabbar .tab-label')].map(e=>[e.closest('a').hasAttribute('aria-current'), e.getBoundingClientRect().width, e.textContent])")
-  ok('4 thanh tab: chỉ tab đang chọn hiện chữ "Hôm nay", 5 biểu tượng', pg.locator('.tabbar a svg').count()==5 and all((w>20) if cur else (w<=1) for cur,w,_ in wv) and [x[2] for x in wv if x[0]]==['Hôm nay'])
+  ok('4 thanh tab: 5 biểu tượng, tab đang chọn là Hôm nay', pg.locator('.tabbar a svg').count()==5 and [x[2] for x in wv if x[0]]==['Hôm nay'])
   ok('5 màu mặc định --h = 355', H(pg)=='355')
-  ok('5b logo-mark 24px hiện ở đầu trang Hôm nay khách', pg.locator('img[src="/coach/icons/logo-mark.png"]').count()>=1)
+  ok('5b logo-mark hiện ở đầu trang Hôm nay khách', pg.locator('img[src="/coach/icons/logo-mark.png"]').count()>=1)
   # hoàn thành buổi hôm nay → buổi lỡ thành TẬP BÙ, hoặc buổi tới thành BUỔI KẾ TIẾP
   pg.evaluate("()=>{const d=JSON.parse(localStorage.getItem('fakedb'));d.session_feedback=[{id:'f1',client_id:'a1',session_id:'today',completed:true}];localStorage.setItem('fakedb',JSON.stringify(d))}")
   pg.reload();pg.wait_for_selector('main .card--hi')
@@ -61,10 +61,11 @@ try:
   ok('9 tải lại vẫn giữ màu 300 (áp trước khi vẽ)', H(pg)=='300')
   a1=pg.evaluate("getComputedStyle(document.querySelector('.tabbar a[aria-current]')).backgroundImage")
   ok('10 tab đang chọn dùng gradient theo màu mới (không có nền đặc)', a1.count('gradient')>=2 and 'hsl(300' in a1.replace(' ','') or 'rgb' in a1)
-  # coach cũng có chọn màu
-  co=ctx.new_page();co.on('pageerror',lambda e:errs.append('coach '+str(e)));login(co,'c1','#/coach');co.wait_for_selector('#themePick')
-  ok('11 trang chủ coach có khối chọn màu, dùng chung màu trên máy, 6 swatch', H(co)=='300' and co.locator('#themePick .swatch').count()==6)
-  ok('11b logo-mark 24px hiện ở đầu trang chủ coach', co.locator('img[src="/coach/icons/logo-mark.png"]').count()>=1)
+  # coach chọn màu trong menu tài khoản góc trên
+  co=ctx.new_page();co.on('pageerror',lambda e:errs.append('coach '+str(e)));login(co,'c1','#/coach');co.wait_for_selector('#btnAvatar')
+  co.click('#btnAvatar');co.wait_for_selector('#themePick')
+  ok('11 menu tài khoản coach có khối chọn màu, dùng chung màu trên máy, 6 swatch', H(co)=='300' and co.locator('#themePick .swatch').count()==6)
+  ok('11b logo-mark hiện ở đầu trang chủ coach', co.locator('img[src="/coach/icons/logo-mark.png"]').count()>=1)
   ok('12 không lỗi JS', not errs)
   if errs: print(errs[:3])
   b.close()

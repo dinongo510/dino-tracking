@@ -15,18 +15,40 @@ export async function coachLibraryView() {
   const editId = new URLSearchParams(location.hash.split('?')[1] || '').get('edit');
 
   render(`
-    <p class="small" style="margin:0"><a href="#/coach/foods">Kho món ăn →</a> · <a href="#/tools">Công cụ hỗ trợ →</a></p>
-    <div class="row row--between"><h1>Thư viện bài tập</h1>
-      <div class="row"><button class="btn small" id="imp">Dán danh sách</button><button class="btn btn--primary small" id="add">+ Bài mới</button></div></div>
-    <input class="input" id="q" type="search" placeholder="Tìm bài (gõ không dấu cũng được): squat, day nguc, xo…" autocomplete="off" style="margin:8px 0">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
-      <select id="fc"><option value="">Mọi nhóm</option>${opts(CATEGORY_VI)}</select>
-      <select id="fm"><option value="">Mọi nhóm cơ</option>${opts(MUSCLE_VI)}</select>
-      <select id="fe"><option value="">Mọi dụng cụ</option>${opts(Object.fromEntries(Object.entries(EQUIP_VI).filter(([k]) => k !== 'medicine_ball')))}</select>
-      <select id="ft"><option value="">Mọi nhãn</option><option value="ohsa:">Corrective theo OHSA</option><option value="hyrox">HYROX</option><option value="run">Chạy</option><option value="dino_core">Bài cốt lõi của Dino</option></select>
+    <div class="row row--between" style="margin-bottom:8px">
+      <h1 style="margin:0">Thư viện</h1>
+      <div class="row" style="gap:8px">
+        <button class="btn btn-icon" id="imp" aria-label="Dán danh sách" title="Dán danh sách">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        </button>
+        <button class="btn btn--primary small" id="add">+ Bài mới</button>
+      </div>
     </div>
-    <label class="row small" style="margin:8px 0"><input type="checkbox" id="ff"> Chỉ bài hay dùng ★</label>
-    <p class="small muted" id="cnt"></p>
+
+    <div class="seg" role="tablist">
+      <a class="seg-btn active" href="#/coach/library" role="tab" aria-selected="true">Bài tập</a>
+      <a class="seg-btn" href="#/coach/foods" role="tab" aria-selected="false">Món ăn</a>
+      <a class="seg-btn" href="#/tools" role="tab" aria-selected="false">Công cụ</a>
+    </div>
+
+    <div style="position:relative;margin:10px 0 8px">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </span>
+      <input class="input" id="q" type="search" placeholder="Tìm bài (gõ không dấu cũng được): squat, day nguc, xo…" autocomplete="off" style="padding-left:38px">
+    </div>
+
+    <div class="chips" style="overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch">
+      <label class="chip" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;flex:none">
+        <input type="checkbox" id="ff" style="display:none">
+        <span id="ffStar">★ Hay dùng</span>
+      </label>
+      <select id="fc" class="chip" style="cursor:pointer;flex:none"><option value="">Nhóm: Tất cả</option>${opts(CATEGORY_VI)}</select>
+      <select id="fm" class="chip" style="cursor:pointer;flex:none"><option value="">Cơ: Tất cả</option>${opts(MUSCLE_VI)}</select>
+      <select id="fe" class="chip" style="cursor:pointer;flex:none"><option value="">Dụng cụ: Tất cả</option>${opts(Object.fromEntries(Object.entries(EQUIP_VI).filter(([k]) => k !== 'medicine_ball')))}</select>
+      <select id="ft" class="chip" style="cursor:pointer;flex:none"><option value="">Nhãn: Tất cả</option><option value="ohsa:">Corrective theo OHSA</option><option value="hyrox">HYROX</option><option value="run">Chạy</option><option value="dino_core">Bài cốt lõi của Dino</option></select>
+    </div>
+    <p class="small muted" id="cnt" style="margin:4px 0"></p>
     <div class="card" style="padding:4px 12px"><ul class="list" id="ls"></ul></div>
     <p class="center" style="padding:12px 0"><button class="btn" id="more" hidden>Xem thêm</button></p>
 
@@ -60,12 +82,12 @@ export async function coachLibraryView() {
     $('#cnt').textContent = `${rows.length} bài${rows.length !== list.length ? ` / ${list.length}` : ''}`;
     $('#ls').innerHTML = rows.slice(0, st.shown).map((e) => `
       <li style="justify-content:flex-start">
-        ${e.image_urls?.[0] ? `<img src="${esc(e.image_urls[0])}" alt="" loading="lazy" style="width:56px;height:56px;object-fit:cover;border-radius:8px;background:#fff;flex:none">`
-          : `<div style="width:56px;height:56px;border-radius:8px;background:var(--surface-2);flex:none;display:flex;align-items:center;justify-content:center" class="small muted">${esc((vi(CATEGORY_VI, e.category) || '').slice(0, 6))}</div>`}
+        ${e.image_urls?.[0] ? `<img src="${esc(e.image_urls[0])}" alt="" loading="lazy" style="width:56px;height:56px;object-fit:cover;border-radius:14px;background:#fff;flex:none">`
+          : `<div style="width:56px;height:56px;border-radius:14px;background:var(--surface-2);flex:none;display:flex;align-items:center;justify-content:center" class="small muted">${esc((vi(CATEGORY_VI, e.category) || '').slice(0, 6))}</div>`}
         <a href="#/exercise/${esc(e.id)}" style="flex:1;color:var(--text);text-decoration:none;min-width:0">
           <strong>${e.featured ? '★ ' : ''}${esc(e.name_vi)}</strong>
           <div class="small muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.name_en || '')}${(e.primary_muscles || []).length ? ' · ' + esc(e.primary_muscles.map((m) => vi(MUSCLE_VI, m)).join(', ')) : ''}</div></a>
-        <button class="btn btn--ghost small" data-edit="${esc(e.id)}">Sửa</button></li>`).join('') || '<li class="muted">Không có bài nào khớp.</li>';
+        <button class="btn btn--ghost btn-icon small" data-edit="${esc(e.id)}" aria-label="Sửa bài ${esc(e.name_vi)}">⋯</button></li>`).join('') || '<li class="muted">Không có bài nào khớp.</li>';
     $('#more').hidden = rows.length <= st.shown;
     document.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => openEdit(list.find((x) => x.id === b.dataset.edit))));
   };

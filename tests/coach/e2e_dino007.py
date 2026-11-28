@@ -28,7 +28,7 @@ try:
   for i in range(1,8): pg.click(f'input[data-k="parq.q{i}"][value={"yes" if i==6 else "no"}]')
   pg.click('button.btn--primary');pg.wait_for_selector('text=Cảm ơn bạn');ok('4 có câu Có -> thông báo coach liên hệ','24 giờ' in pg.inner_text('main'))
   pg.click('text=Về trang chính');pg.wait_for_selector('text=Hôm nay');ok('5 hoàn thành -> vào trang chính',True)
-  pg.click('.tabbar >> text=Cơ thể');pg.wait_for_selector('text=Số đo');ok('6 cân từ wizard có trong Số đo','78.5' in pg.inner_text('main'))
+  pg.click('.tabbar a[href="#/client/body"]');pg.wait_for_selector('text=Số đo');ok('6 cân từ wizard có trong Số đo','78.5' in pg.inner_text('main'))
   pg.click('#addM');pg.fill('#dm [name=weight_kg]','77');pg.fill('#dm [name=waist_cm]','88');pg.click('#dm .btn--primary');pg.wait_for_selector('text=▼1.5')
   ok('7 thêm số đo, hiện chênh lệch ▼1.5',True)
   pg.click('.tabbar >> text=Hồ sơ');pg.wait_for_selector('text=Hồ sơ của bạn');ok('8 xem hồ sơ','Vợ - 091' in pg.inner_text('main'))

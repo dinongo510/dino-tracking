@@ -1,4 +1,4 @@
-import { render, $, esc, tabbar, icon } from '../../ui.js';
+import { render, $, esc, tabbar, icon, ringSvg, shortName } from '../../ui.js';
 import { sb } from '../../supabaseClient.js';
 import { signOut } from '../../auth.js';
 import { go } from '../../router.js';
@@ -17,7 +17,7 @@ export const clientTabs = () => tabbar([
   { href: '#/client', label: 'Hôm nay', icon: 'home' },
   { href: '#/client/plan', label: 'Lịch tập', icon: 'plan', also: ['#/client/session'] },
   { href: '#/client/eat', label: 'Ăn', icon: 'eat' },
-  { href: '#/client/body', label: 'Cơ thể', icon: 'body', also: ['#/client/dash'] },
+  { href: '#/client/body', label: 'Tiến độ', icon: 'body', also: ['#/client/dash'] },
   { href: '#/client/profile', label: 'Hồ sơ', icon: 'user', also: ['#/tools'] },
 ]);
 
@@ -65,35 +65,35 @@ export async function clientHomeView({ profile }) {
   const wNow = weeklyAvg(w, today), wPrev = weeklyAvg(w, addDays(today, -7));
   const delta = wNow != null && wPrev != null ? Math.round((wNow - wPrev) * 10) / 10 : null;
   const num = (x) => String(x).replace('.', ',');
-  const bar = (p) => `<div style="height:4px;border-radius:2px;margin-top:8px;background:linear-gradient(90deg,var(--a1) ${p ?? 0}%,rgba(255,255,255,.10) ${p ?? 0}%)"></div>`;
 
   const eatenToday = checks.filter((c) => c.check_date === today).length;
   const msgs = Object.values(unread).flat().sort((a, b) => b.created_at.localeCompare(a.created_at));
   const hour = new Date().getHours();
   const hi = hour < 11 ? 'Chào buổi sáng,' : hour < 18 ? 'Chào buổi chiều,' : 'Chào buổi tối,';
   const dm = (iso) => `${DAY_VI[(new Date(iso + 'T00:00:00Z').getUTCDay() + 6) % 7]} ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-  const LABEL = { today: 'BUỔI HÔM NAY', makeup: 'TẬP BÙ', upcoming: 'BUỔI KẾ TIẾP' };
+  const dateStr = `${DAY_VI[(new Date(today + 'T00:00:00Z').getUTCDay() + 6) % 7]} ${today.slice(8, 10)}/${today.slice(5, 7)}`;
+  const LABEL = { today: 'Buổi hôm nay', makeup: 'Tập bù', upcoming: 'Buổi kế tiếp' };
   const when = !nx.main ? '' : nx.kind === 'today' ? 'hôm nay' : nx.kind === 'makeup' ? `lỡ ${dm(nx.main.scheduled_on)}` : dm(nx.main.scheduled_on);
   const otherMissed = nx.missed.filter((s) => s.id !== nx.main?.id);
 
   render(`
-    <div class="row row--between" style="margin-top:4px">
-      <div><div class="muted" style="font-size:14px"><img src="/coach/icons/logo-mark.png" alt="DINOMET" style="width:24px;height:24px;vertical-align:middle;margin-right:6px">${hi}</div><h1 style="margin:0">${esc(profile.full_name || 'bạn')}</h1>
-        <div class="small muted">Coach: ${esc(coach?.full_name || 'Dino')}</div></div>
-      <div class="row" style="gap:6px">
-        <a class="btn btn--ghost small" href="#/client/adhoc/new" id="btnNewAdhoc">+ Buổi tự do</a>
-        ${self ? '<button id="back" class="btn small">← Về Coach</button>' : '<button id="out" class="btn btn--ghost small">Đăng xuất</button>'}
+    <div class="row row--between" style="margin-top:2px;margin-bottom:14px;align-items:flex-start">
+      <div>
+        <div class="small muted" style="font-weight:600">${dateStr}${profile.full_name ? ` · ${esc(profile.full_name)}` : ''}</div>
+        <h1 style="margin:2px 0 0">${hi} ${esc(shortName(profile.full_name))}</h1>
+        <div class="small muted">Coach: ${esc(coach?.full_name || 'Dino')}</div>
       </div>
+      ${self ? '<button id="back" class="btn btn--ghost small">← Về Coach</button>' : ''}
     </div>
     ${lk.graceLeft ? `<div class="card card--flag small" style="margin-top:12px">Gói tập đã hết hạn — app sẽ tạm khóa sau <strong>${lk.graceLeft} ngày</strong>. Liên hệ Coach để gia hạn.</div>` : ''}
 
     ${adhocToday.length ? adhocToday.map((s) => `
       <div class="card" style="margin-top:14px;padding:16px;border:1px solid rgba(255,255,255,.14)">
         <div class="row row--between">
-          <span style="font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--tint)">BUỔI TỰ DO HÔM NAY</span>
+          <span style="font-size:13px;font-weight:600;color:var(--tint)"><span class="sr-only">BUỔI TỰ DO HÔM NAY </span>Buổi tự do hôm nay</span>
           ${done.has(s.id) ? '<span class="badge badge--ok">✓ Đã tập xong</span>' : s.mode === 'pt' ? '<span class="badge badge--ok">Tập với Coach</span>' : '<span class="badge">Ngoài lịch</span>'}
         </div>
-        <div style="font-size:22px;font-weight:800;letter-spacing:-.01em;margin:6px 0 2px">${esc(s.title || 'Buổi tự do')}</div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-.01em;margin:6px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.title || 'Buổi tự do')}</div>
         <div class="small muted">${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${(s.blocks || []).reduce((n, b) => n + (b.items?.length || 0), 0)} bài</div>
         <div class="row" style="gap:8px;margin-top:12px">
           <a class="btn ${done.has(s.id) ? 'btn--ghost' : 'btn--primary'} small" href="#/client/session/${s.id}">${done.has(s.id) ? 'Xem lại phiếu tập' : 'Vào tập ngay →'}</a>
@@ -103,41 +103,65 @@ export async function clientHomeView({ profile }) {
     `).join('') : ''}
 
     ${nx.main ? `<div class="card card--hi" style="margin-top:14px;padding:18px">
-      <div class="row row--between"><span style="font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--tint)">${LABEL[nx.kind]}</span>
-        <span class="small muted">Tuần ${nx.main.week_no} · ${when}</span></div>
-      <div style="font-size:25px;font-weight:800;letter-spacing:-.02em;margin:6px 0 2px">${esc(nx.main.title || 'Buổi tập')}</div>
-      ${items.length ? `<div class="small" style="color:#c4c4cc">${esc(items.slice(0, 3).map((i) => exName(i.exercise_id)).filter(Boolean).join(' · '))}${items.length > 3 ? ` · +${items.length - 3} bài` : ''}</div>` : ''}
-      <div class="row" style="gap:6px;margin-top:10px;flex-wrap:wrap">
-        <span class="badge">${items.length} bài · ${sets} hiệp</span><span class="badge">${esc(SESSION_TYPE_VI[nx.main.session_type] || '')}</span>${nx.main.mode === 'pt' ? '<span class="badge badge--ok">Tập với Coach</span>' : ''}</div>
-      <a class="btn btn--primary btn--block" href="#/client/session/${nx.main.id}" style="margin-top:14px;min-height:54px;font-size:16px">${nx.kind === 'upcoming' ? 'Xem trước buổi tập' : 'Bắt đầu tập'} →</a>
+      <div class="row row--between">
+        <span style="font-size:13px;font-weight:600;color:var(--tint)"><span class="sr-only">${nx.kind === 'today' ? 'BUỔI HÔM NAY ' : nx.kind === 'makeup' ? 'TẬP BÙ ' : 'BUỔI KẾ TIẾP '}</span>${LABEL[nx.kind]}</span>
+        <span class="small muted">Tuần ${nx.main.week_no} · ${when}</span>
+      </div>
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.01em;margin:6px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(nx.main.title || 'Buổi tập')}</div>
+      ${items.length ? `<div class="small muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px">${esc(items.slice(0, 3).map((i) => exName(i.exercise_id)).filter(Boolean).join(' · '))}${items.length > 3 ? ` · +${items.length - 3} bài` : ''}</div>` : ''}
+      <div class="row" style="gap:18px;margin:12px 0 14px">
+        <div style="display:flex;flex-direction:column;gap:2px"><span class="num" style="font-size:24px;color:var(--text)">~${Math.round(sets * 2.5 + items.length * 2)}</span><span class="small muted">phút</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px"><span class="num" style="font-size:24px;color:var(--text)">${items.length}</span><span class="small muted">bài</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px"><span class="num" style="font-size:24px;color:var(--text)">${sets}</span><span class="small muted">hiệp</span></div>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="badge">${esc(SESSION_TYPE_VI[nx.main.session_type] || '')}</span>
+          ${nx.main.mode === 'pt' ? '<span class="badge badge--ok">Tập với Coach</span>' : ''}
+        </div>
+      </div>
+      <a class="btn btn--primary btn--block" href="#/client/session/${nx.main.id}" style="min-height:48px;font-size:15px">${nx.kind === 'upcoming' ? 'Xem trước buổi tập' : 'Bắt đầu tập'} →</a>
       ${nx.kind === 'today' && otherMissed.length ? `<p class="small muted" style="text-align:center;margin:8px 0 0">Lỡ buổi ${dm(otherMissed[0].scheduled_on)}? <a href="#/client/session/${otherMissed[0].id}">Tập bù "${esc(otherMissed[0].title || 'buổi đó')}"</a></p>` : ''}
       ${nx.kind === 'makeup' && nx.todays.length === 0 && nx.doneToday ? '<p class="small muted" style="text-align:center;margin:8px 0 0">Buổi hôm nay đã xong ✓ — đây là buổi lỡ trong tuần.</p>' : ''}
     </div>` : `<div class="card" style="margin-top:14px"><p><strong>${nx.doneToday ? 'Hôm nay đã tập xong ✓' : 'Chưa có buổi tập theo lịch.'}</strong></p>
-      <p class="muted small">${nx.doneToday ? 'Nghỉ ngơi tốt nhé hoặc tập thêm buổi tự do. ' : ''}Xem cả tuần ở tab <a href="#/client/plan">Lịch tập</a>. Bạn có thể tự tạo buổi tập bất kỳ lúc nào.</p>
-      <a class="btn btn--primary btn--block" href="#/client/adhoc/new" style="margin-top:12px">+ Buổi tự do</a></div>`}
+      <p class="muted small" style="margin:0">${nx.doneToday ? 'Nghỉ ngơi tốt nhé hoặc bấm nút nổi góc dưới để tập thêm buổi tự do.' : 'Xem cả tuần ở tab <a href="#/client/plan">Lịch tập</a>, hoặc bấm nút nổi góc dưới để tự tạo buổi tập.'}</p>
+    </div>`}
 
-    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px">
-      <div class="card" style="margin:0;padding:12px"><div class="small muted" style="font-size:12px">Tập 7 ngày</div><div style="font-size:23px;font-weight:800">${trainPct ?? '—'}${trainPct != null ? '%' : ''}</div>${bar(trainPct)}</div>
-      <div class="card" style="margin:0;padding:12px"><div class="small muted" style="font-size:12px">Ăn 7 ngày</div><div style="font-size:23px;font-weight:800">${eatPct ?? '—'}${eatPct != null ? '%' : ''}</div>${bar(eatPct)}</div>
-      <div class="card" style="margin:0;padding:12px"><div class="small muted" style="font-size:12px">Cân TB tuần</div><div style="font-size:23px;font-weight:800">${wNow != null ? num(wNow.toFixed(1)) : '—'}</div>
-        <div style="font-size:12px;font-weight:600;margin-top:4px;color:var(--tint)">${delta == null ? '<span class="muted">cân để theo dõi</span>' : delta === 0 ? '— giữ nguyên' : `${delta < 0 ? '↓' : '↑'} ${num(Math.abs(delta))} kg`}</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0">
+      <div class="card" style="margin:0;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center">
+        <div class="small muted" style="margin-bottom:6px">Tập 7 ngày</div>
+        ${ringSvg(trainPct)}
+      </div>
+      <div class="card" style="margin:0;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center">
+        <div class="small muted" style="margin-bottom:6px">Ăn 7 ngày</div>
+        ${ringSvg(eatPct)}
+      </div>
+      <div class="card" style="margin:0;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center">
+        <div class="small muted" style="margin-bottom:4px">Cân TB tuần</div>
+        <div class="num" style="font-size:24px;color:var(--text);margin:2px 0">${wNow != null ? num(wNow.toFixed(1)) : '—'} <span style="font-size:12px;font-family:var(--font);font-weight:400;color:var(--muted)">kg</span></div>
+        <div style="font-size:12px;font-weight:600;margin-top:2px;color:var(--tint)">${delta == null ? '<span class="muted">cân để theo dõi</span>' : delta === 0 ? '— giữ nguyên' : `${delta < 0 ? '↓' : '↑'} ${num(Math.abs(delta))} kg`}</div>
+      </div>
     </div>
 
     ${slots.length ? `<a class="card" href="#/client/eat" style="display:block">
-      <div class="row row--between"><span style="font-size:11px;letter-spacing:.14em;font-weight:700" class="muted">ĂN HÔM NAY</span>
+      <div class="row row--between"><span style="font-size:13px;font-weight:600;color:var(--tint)">Ăn hôm nay</span>
         <span class="small muted">${target ? `Mục tiêu <strong style="color:var(--text)">${target.kcal}</strong> kcal` : ''}</span></div>
       <div style="height:8px;border-radius:4px;margin-top:10px;background:linear-gradient(90deg,var(--a1),var(--a2) ${Math.round((eatenToday / slots.length) * 100)}%,rgba(255,255,255,.08) ${Math.round((eatenToday / slots.length) * 100)}%)"></div>
-      <div class="small" style="margin-top:8px;color:#c4c4cc">Đã check <strong>${eatenToday}/${slots.length}</strong> bữa · ${eatenToday >= slots.length ? 'đủ bữa hôm nay ✓' : 'bấm để check bữa tiếp theo'}</div></a>` : ''}
+      <div class="small muted" style="margin-top:8px">Đã check <strong>${eatenToday}/${slots.length}</strong> bữa · ${eatenToday >= slots.length ? 'đủ bữa hôm nay ✓' : 'bấm để check bữa tiếp theo'}</div></a>` : ''}
 
     ${curPkg && !pkgSt.ended ? `<div class="card row row--between" id="pkgcard" style="gap:10px"><span><span class="small muted" style="display:block">Gói: ${esc(curPkg.name || autoName(curPkg))}</span>
       <strong>${esc(pkgLine(curPkg, pkgSt))}</strong></span>${pkgSt.warn.length ? `<span class="badge badge--warn">${esc(pkgSt.warn[0])}</span>` : ''}</div>` : ''}
-    ${ciWeek ? `<a class="card card--hi" href="#/client/checkin?w=${ciWeek}" style="display:block">
-      <div class="row row--between"><span style="font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--tint)">CHECK-IN TUẦN</span><span class="small muted">~1 phút</span></div>
-      <div style="font-size:18px;font-weight:700;margin-top:4px">Tuần ${ciWeek.slice(8, 10)}/${ciWeek.slice(5, 7)} của bạn thế nào?</div>
-      <div class="small muted">Cân TB, giấc ngủ, stress, năng lượng — Coach dùng để chỉnh kế hoạch.</div></a>` : ''}
-    ${lastReply ? `<a class="card row" href="#/client/checkin?w=${lastReply.week_start}" style="gap:12px"><span class="dot-new"></span>
-      <span style="flex:1;min-width:0"><span class="small muted" style="display:block">Coach đã trả lời check-in</span><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(lastReply.coach_reply)}</span></span></a>` : ''}
-    ${showReport ? `<a class="card" href="#/phase/${curPhase.id}" style="display:block"><span style="font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--tint)">BÁO CÁO GIAI ĐOẠN</span>
+    ${ciWeek ? `<a class="card row" href="#/client/checkin?w=${ciWeek}" style="gap:14px;align-items:center">
+      <div style="width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--tint);flex:none">${icon('plan', 20)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="row row--between"><span style="font-size:13px;font-weight:600;color:var(--tint)"><span class="sr-only">CHECK-IN TUẦN </span>Check-in tuần</span><span class="small muted">~1 phút</span></div>
+        <div style="font-weight:700;font-size:15px;margin-top:2px">Tuần ${ciWeek.slice(8, 10)}/${ciWeek.slice(5, 7)} của bạn thế nào?</div>
+        <div class="small muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Cân TB, giấc ngủ, stress, năng lượng — Coach dùng để chỉnh kế hoạch.</div>
+      </div>
+      <span style="color:var(--muted)">→</span></a>` : ''}
+    ${lastReply ? `<a class="card row" href="#/client/checkin?w=${lastReply.week_start}" style="gap:14px;align-items:center">
+      <div style="width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--tint);flex:none;position:relative">${icon('inbox', 20)}<span class="dot-new" style="position:absolute;top:6px;right:6px"></span></div>
+      <div style="flex:1;min-width:0"><span class="small muted" style="display:block">Coach đã trả lời check-in</span><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">${esc(lastReply.coach_reply)}</span></div>
+      <span style="color:var(--muted)">→</span></a>` : ''}
+    ${showReport ? `<a class="card" href="#/phase/${curPhase.id}" style="display:block"><span style="font-size:13px;font-weight:600;color:var(--tint)"><span class="sr-only">BÁO CÁO GIAI ĐOẠN </span>Báo cáo giai đoạn</span>
       <div style="font-weight:700;margin-top:4px">${esc(curPhase.name)} sắp kết thúc — xem kết quả &amp; góp ý</div>
       <div class="small muted">${review?.coach_agreed_at ? 'Coach đã viết tóm tắt, chờ bạn đồng ý.' : 'Nhớ cập nhật cân, số đo và ảnh cuối giai đoạn.'}</div></a>` : ''}
     ${msgs.length ? `<a class="card row" href="#/client/session/${msgs[0].context_id}" style="gap:12px">
@@ -145,10 +169,25 @@ export async function clientHomeView({ profile }) {
       <span style="flex:1;min-width:0"><span class="small muted" style="display:block">Coach nhắn</span><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(msgs[0].body)}</span></span>
       <span class="badge badge--hot">${msgs.length}</span></a>` : ''}
 
-    <div class="card" style="margin-top:10px"><a href="#/tools" style="color:var(--text);text-decoration:none" class="row row--between"><span><strong>🛠️ Công cụ hỗ trợ</strong> <span class="small muted">· Pace, 1RM, đĩa tạ, WOD</span></span><span>→</span></a></div>
+    <a class="card row" href="#/tools" style="gap:14px;align-items:center;margin-top:10px;text-decoration:none">
+      <div style="width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--tint);flex:none;font-size:18px">🛠️</div>
+      <div style="flex:1;min-width:0">
+        <strong style="font-size:15px;color:var(--text)">Công cụ hỗ trợ</strong>
+        <div class="small muted">Pace ⇄ km/h, 1RM, đĩa tạ, quay WOD</div>
+      </div>
+      <span style="color:var(--muted)">→</span>
+    </a>
 
     <div class="card"><p class="small muted" style="margin:0">Mẹo: thêm DINOMET vào màn hình chính để mở nhanh như một ứng dụng
-      (Safari: Chia sẻ → Thêm vào MH chính · Chrome: ⋮ → Cài đặt ứng dụng). Đổi màu giao diện ở tab Hồ sơ.</p></div>`);
-  if (self) $('#back').onclick = () => { setSelfMode(false); go('#/coach'); };
-  else $('#out').onclick = async () => { await signOut(); go('#/login'); };
+      (Safari: Chia sẻ → Thêm vào MH chính · Chrome: ⋮ → Cài đặt ứng dụng). Đổi màu giao diện ở menu tài khoản góc trên.</p></div>
+
+    <a class="fab" href="#/client/adhoc/new" id="btnNewAdhoc" aria-label="Buổi tự do">+ Buổi tự do</a>
+  `);
+  if (self) {
+    const btn = $('#back');
+    if (btn) btn.onclick = () => { setSelfMode(false); go('#/coach'); };
+  } else {
+    const btn = $('#out');
+    if (btn) btn.onclick = async () => { await signOut(); go('#/login'); };
+  }
 }

@@ -1,6 +1,6 @@
 // Hash router đơn giản + chặn theo vai trò
 import { getSession, getProfile, homeFor } from './auth.js';
-import { render, esc } from './ui.js';
+import { render, esc, topbar } from './ui.js';
 
 const routes = []; // {pattern: RegExp, keys, view, access: 'public'|'auth'|'coach'|'client'}
 let clientGuard = null; // DINO-014: khóa app khách khi hết gói — trả true nếu đã chặn (tự vẽ màn hình khóa)
@@ -25,14 +25,16 @@ export async function resolve() {
   try {
     if (r.access !== 'public') {
       const session = await getSession();
-      if (!session) return go('#/login');
+      if (!session) { topbar(null); return go('#/login'); }
       const profile = await getProfile();
-      if (!profile) return go('#/login');
+      if (!profile) { topbar(null); return go('#/login'); }
       if (r.access === 'coach' && profile.role !== 'coach') return go(homeFor(profile));
       if (r.access === 'client' && profile.role !== 'client' && !(profile.role === 'coach' && selfCheck())) return go(homeFor(profile));
       if (profile.role === 'client' && clientGuard && await clientGuard(profile, path)) return;
+      topbar(profile);
       return await r.view({ params, profile });
     }
+    topbar(null);
     return await r.view({ params });
   } catch (err) {
     console.error(err);

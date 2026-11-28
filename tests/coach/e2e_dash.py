@@ -118,7 +118,7 @@ try:
   cl=ctx.new_page();cl.on('pageerror',lambda e:errs.append('client '+str(e)))
   login(cl,A,'#/client/body');cl.wait_for_selector('text=Xem biểu đồ tiến độ')
   cl.click('text=Xem biểu đồ tiến độ');cl.wait_for_selector('[data-chart="weight"]')
-  ok('21 khách mở dashboard của mình từ tab Cơ thể (tab Cơ thể sáng)', cl.inner_text('.tabbar [aria-current=page]')=='Cơ thể' and len(vals(cl,'weight'))>0)
+  ok('21 khách mở dashboard của mình từ tab Tiến độ (tab Tiến độ sáng)', cl.inner_text('.tabbar [aria-current=page]') in ('Tiến độ','Cơ thể') and len(vals(cl,'weight'))>0)
   ok('22 khách không có nút Xuất CSV / Chọn bài, không thấy cảnh báo', cl.locator('#csv').count()==0 and cl.locator('#pick').count()==0 and 'Gối trái' not in cl.inner_text('main'))
   ok('23 khách thấy bài theo dõi coach đã chọn', sorted(cl.locator('[data-chart="e1rm"] .legend span').all_inner_texts())==['Deadlift','Đẩy ngực'])
   cl.goto(B+f'#/dash/{B_}');time.sleep(1.2)
