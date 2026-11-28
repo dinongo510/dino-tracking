@@ -15,6 +15,7 @@ export async function coachLibraryView() {
   const editId = new URLSearchParams(location.hash.split('?')[1] || '').get('edit');
 
   render(`
+    <p class="small" style="margin:0"><a href="#/coach/foods">Kho món ăn →</a></p>
     <div class="row row--between"><h1>Thư viện bài tập</h1>
       <div class="row"><button class="btn small" id="imp">Dán danh sách</button><button class="btn btn--primary small" id="add">+ Bài mới</button></div></div>
     <input class="input" id="q" type="search" placeholder="Tìm bài (gõ không dấu cũng được): squat, day nguc, xo…" autocomplete="off" style="margin:8px 0">
