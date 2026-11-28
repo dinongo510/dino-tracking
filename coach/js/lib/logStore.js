@@ -48,20 +48,21 @@ export async function feedbackFor(clientId) {
 }
 
 // ---------- Tin nhắn theo buổi ----------
-export async function listMessages(sessionId) {
-  return must(await (await sb()).from('messages').select('*').eq('context_type', 'session').eq('context_id', sessionId).order('created_at'));
+// type: 'session' (buổi tập) | 'checkin' (check-in tuần) | 'phase' (báo cáo giai đoạn)
+export async function listMessages(contextId, type = 'session') {
+  return must(await (await sb()).from('messages').select('*').eq('context_type', type).eq('context_id', contextId).order('created_at'));
 }
-export async function sendMessage(clientId, sessionId, body) {
-  return must(await (await sb()).from('messages').insert({ client_id: clientId, context_type: 'session', context_id: sessionId, body }).select().single());
+export async function sendMessage(clientId, contextId, body, type = 'session') {
+  return must(await (await sb()).from('messages').insert({ client_id: clientId, context_type: type, context_id: contextId, body }).select().single());
 }
 /** Đánh dấu đã đọc mọi tin của người kia trong buổi */
-export async function markRead(sessionId, me) {
+export async function markRead(contextId, me) {
   const db = await sb();
-  must(await db.from('messages').update({ read_at: new Date().toISOString() }).eq('context_type', 'session').eq('context_id', sessionId).neq('author_id', me).is('read_at', null));
+  must(await db.from('messages').update({ read_at: new Date().toISOString() }).eq('context_id', contextId).neq('author_id', me).is('read_at', null));
 }
 /** Tin chưa đọc (người kia gửi) — theo buổi: { [session_id]: số tin } */
-export async function unreadBySession(me, clientId = null) {
-  let q = (await sb()).from('messages').select('context_id, client_id, author_id, body, created_at').eq('context_type', 'session').neq('author_id', me).is('read_at', null);
+export async function unreadBySession(me, clientId = null, type = 'session') {
+  let q = (await sb()).from('messages').select('context_id, context_type, client_id, author_id, body, created_at').eq('context_type', type).neq('author_id', me).is('read_at', null);
   if (clientId) q = q.eq('client_id', clientId);
   const rows = must(await q);
   const by = {};

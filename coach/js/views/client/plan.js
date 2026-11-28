@@ -2,6 +2,7 @@
 import { render, $, esc } from '../../ui.js';
 import { clientTabs } from './home.js';
 import { DAY_VI, SESSION_TYPE_VI, addDays, todayISO } from '../../lib/plan.js';
+import { reportOpen } from '../../lib/checkin.js';
 import { loadPlan } from '../../lib/planStore.js';
 import { feedbackFor, unreadBySession } from '../../lib/logStore.js';
 
@@ -43,7 +44,8 @@ export async function clientPlanView({ profile }) {
     <h1>Lịch tập</h1>
     <div class="card"><strong>${esc(phase.name)}</strong>
       <div class="small muted">Giai đoạn ${idx + 1}/${phases.length} · ${phase.weeks} tuần · ${dm(phase.start_date)} → ${dm(phase.end_date)}</div>
-      ${phase.handover_note ? `<p class="small" style="margin-top:8px">${esc(phase.handover_note).replace(/\n/g, '<br>')}</p>` : ''}</div>
+      ${phase.handover_note ? `<p class="small" style="margin-top:8px">${esc(phase.handover_note).replace(/\n/g, '<br>')}</p>` : ''}
+      ${reportOpen(phase, today, false) ? `<a class="btn btn--primary btn--block" href="#/phase/${phase.id}" style="margin-top:10px">Báo cáo giai đoạn →</a>` : ''}</div>
     <div class="row row--between" style="margin:8px 0">
       ${prevLink ? `<a class="btn btn--ghost small" href="#/client/plan${prevLink}">← Tuần trước</a>` : '<span></span>'}
       <strong>Tuần ${week} · ${dm(start)}–${dm(addDays(start, 6))}</strong>
