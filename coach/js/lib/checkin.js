@@ -20,10 +20,10 @@ export function weekAvgs(measurements, weekStarts) {
   return weekStarts.map((w) => weeklyAvg(e, addDays(w, 6)));
 }
 
-/** % buổi tập hoàn thành và % ăn đúng của 1 tuần (chỉ tính tới hôm nay) */
+/** % buổi tập hoàn thành và % ăn đúng của 1 tuần (chỉ tính tới hôm nay; DINO-017: bỏ buổi adhoc) */
 export function weekStats({ sessions, doneIds, checks, slotsCount, weekStart, today }) {
   const end = addDays(weekStart, 6) < today ? addDays(weekStart, 6) : today;
-  const ss = sessions.filter((s) => s.scheduled_on >= weekStart && s.scheduled_on <= end);
+  const ss = sessions.filter((s) => !s.adhoc && s.scheduled_on >= weekStart && s.scheduled_on <= end);
   const days = Math.max(0, Math.round((Date.parse(end) - Date.parse(weekStart)) / 864e5) + 1);
   const ck = checks.filter((c) => c.check_date >= weekStart && c.check_date <= end);
   return {

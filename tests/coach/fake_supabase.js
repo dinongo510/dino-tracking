@@ -19,7 +19,35 @@ function Q(t){reloadDB();DB[t]||=[];const me=sess()?.user.id;let f=[],ords=[],li
  const COACH_ONLY=['nutrition_targets','meal_slots','meal_options','alerts','exercises','foods','meal_templates','day_plan_templates','programs','phases','sessions','session_blocks','block_items','program_templates','tracked_lifts','packages','package_uses'];
  const KIDS={meal_slots:['meal_options','slot_id'],programs:['phases','program_id'],phases:['sessions','phase_id'],sessions:['session_blocks','session_id'],session_blocks:['block_items','block_id']};
  const cascade=(tt,ids)=>{const k=KIDS[tt];if(!k||!ids.length)return;DB[k[0]]||=[];const kids=DB[k[0]].filter(x=>ids.includes(x[k[1]]));DB[k[0]]=DB[k[0]].filter(x=>!kids.includes(x));cascade(k[0],kids.map(x=>x.id));};
- const exec=()=>{ if(op!=='select'&&COACH_ONLY.includes(t)&&DB.profiles.find(p=>p.id===me)?.role!=='coach') return {data:null,error:{message:'new row violates row-level security policy'}};
+ const isCoach = DB.profiles.find(p=>p.id===me)?.role==='coach';
+ const isAdhocAllowed = () => {
+   if (isCoach) return true;
+   const arr2 = Array.isArray(payload) ? payload : [payload];
+   if (t === 'sessions') {
+     if (op === 'insert' || op === 'upsert') return arr2.every(r => r.client_id === me && r.adhoc === true && r.mode === 'self');
+     if (op === 'update') {
+       const tg = rows(); if (!tg.length) return false;
+       if (!tg.every(r => r.client_id === me && r.adhoc === true && r.mode === 'self')) return false;
+       if (payload.client_id && payload.client_id !== me) return false;
+       if (payload.adhoc !== undefined && !payload.adhoc) return false;
+       if (payload.mode && payload.mode !== 'self') return false;
+       return true;
+     }
+     if (op === 'delete') { const tg = rows(); return tg.length > 0 && tg.every(r => r.client_id === me && r.adhoc === true && r.mode === 'self'); }
+   }
+   if (t === 'session_blocks') {
+     const getS = (sid) => DB.sessions?.find(s => s.id === sid);
+     if (op === 'insert' || op === 'upsert') return arr2.every(r => { const s = getS(r.session_id); return r.client_id === me && s && s.client_id === me && s.adhoc === true && s.mode === 'self'; });
+     if (op === 'update' || op === 'delete') { const tg = rows(); return tg.length > 0 && tg.every(r => { const s = getS(r.session_id); return r.client_id === me && s && s.client_id === me && s.adhoc === true && s.mode === 'self'; }); }
+   }
+   if (t === 'block_items') {
+     const getS = (bid) => { const b = DB.session_blocks?.find(x => x.id === bid); return b ? DB.sessions?.find(s => s.id === b.session_id) : null; };
+     if (op === 'insert' || op === 'upsert') return arr2.every(r => { const s = getS(r.block_id); return r.client_id === me && s && s.client_id === me && s.adhoc === true && s.mode === 'self'; });
+     if (op === 'update' || op === 'delete') { const tg = rows(); return tg.length > 0 && tg.every(r => { const s = getS(r.block_id); return r.client_id === me && s && s.client_id === me && s.adhoc === true && s.mode === 'self'; }); }
+   }
+   return false;
+ };
+ const exec=()=>{ if(op!=='select'&&COACH_ONLY.includes(t)&&!isCoach&&!isAdhocAllowed()) return {data:null,error:{message:'new row violates row-level security policy'}};
   const arr=Array.isArray(payload)?payload:[payload];
   if(op==='insert'){const out=arr.map(p=>({id:uid(),created_at:new Date().toISOString(),entered_by:me,measured_on:new Date().toISOString().slice(0,10),scanned_on:new Date().toISOString().slice(0,10),...p}));
     for(const r of out){if(DB[t].some(x=>x.id===r.id))return{data:null,error:{message:'duplicate key value violates unique constraint'}};}

@@ -292,9 +292,9 @@ export function weightTrend(measurements, today) {
   return { now: r1(now), diff: d, arrow: d == null ? null : d >= 0.3 ? '▲' : d <= -0.3 ? '▼' : '—' };
 }
 
-/** % buổi 7 ngày, % ăn 7 ngày (giống trang Hôm nay của khách) */
+/** % buổi 7 ngày, % ăn 7 ngày (giống trang Hôm nay của khách; DINO-017: bỏ buổi adhoc) */
 export function last7({ sessions, doneIds, checks, slotsCount, today }) {
-  const from = addDays(today, -6), ss = sessions.filter((s) => s.scheduled_on >= from && s.scheduled_on <= today);
+  const from = addDays(today, -6), ss = sessions.filter((s) => !s.adhoc && s.scheduled_on >= from && s.scheduled_on <= today);
   return {
     trainPct: ss.length ? Math.round((ss.filter((s) => doneIds.has(s.id)).length / ss.length) * 100) : null,
     eatPct: adherenceRange(checks.filter((c) => c.check_date >= from && c.check_date <= today), slotsCount, 7),

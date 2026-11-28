@@ -116,3 +116,43 @@ Toàn bộ brief 006–013, migration 0001–0006, `formulas.js`, nội dung kh�
   * `coach/sw.js`: nâng version lên `dcoach-v23`, thêm các file tools vào SHELL.
 - Test: unit tests 76/76 PASS; e2e 23/23 PASS (`e2e_tools.py`); hồi quy toàn bộ e2e cũ đạt 100% (`e2e_readiness.py`, `e2e_packages.py`, `e2e_dash.py`, `e2e_log.py`).
 
+## DINO-016b — Sửa ô nhập công cụ + sơ đồ cơ giải phẫu mới — Antigravity (28/11/2026, commit 2f66566 nhánh feature/dino-coach-016-tools, dcoach-v24)
+- A1. Sửa ô nhập Công cụ:
+  * Chiều rộng tối thiểu 64px, `text-align: center`, không cắt số ("42,2", "59").
+  * Hiển thị dấu phẩy kiểu Việt Nam ("10,9 km/h", "21,1 km"), ô nhập chấp nhận cả `,` và `.`.
+- A2. Sơ đồ cơ giải phẫu mới:
+  * Port dữ liệu đa giác cơ từ `react-body-highlighter` (MIT License, lưu trong `docs/dino-coach/THIRD_PARTY.md` và `coach/js/lib/bodymap.js`).
+  * SVG dáng người giải phẫu chi tiết (mặt trước + mặt sau), viewBox 0 0 1000 2220.
+  * Thang màu theo `--h` với 5 mức độ (0, 1–5, 6–10, 11–15, >15 hiệp/tuần), glow nhẹ mức cao, chú thích thang màu `#bodymapLegend`.
+  * Chạm bó cơ hiển thị nhãn số hiệp/tuần và số buổi, chạm chỗ trống bỏ chọn.
+  * Bảng ánh xạ cơ `MUSCLE_INFO` trong `bodymap.js`.
+- Service worker: nâng lên `dcoach-v24`.
+- Test: `e2e_tools.py` 26/26 PASS (kiểm tra scrollWidth <= clientWidth, dấu phẩy, sơ đồ cơ, thang màu, tương tác chạm).
+
+## DINO-017 — Buổi tập ngoài lịch (khách & coach) — Antigravity (28/11/2026, nhánh feature/dino-coach-017-adhoc, dcoach-v25)
+- Nhánh `feature/dino-coach-017-adhoc` tạo từ nhánh `feature/dino-coach-016-tools`.
+- B2. Migration `supabase/migrations/0012_adhoc_sessions.sql` (PROPOSED, chưa chạy):
+  * `sessions.adhoc boolean not null default false`, `sessions.created_by uuid default auth.uid()`.
+  * `alter column phase_id drop not null`, ràng buộc `check (adhoc = true or phase_id is not null)`.
+  * RLS: khách insert/update/delete buổi `adhoc = true and mode = 'self'` của chính mình; khách ghi `session_blocks` và `block_items` của buổi ngoài lịch mình; chặn khách sửa buổi giáo án, chặn tạo buổi PT, chặn tạo cho khách khác. Kèm khối test SQL cho Claude Auditor.
+- B3. Giao diện khách:
+  * Nút "+ Buổi tự do" trên Hôm nay (luôn hiện, kể cả khi chưa có giáo án) và trên Lịch tập.
+  * Màn tạo nhanh `#/client/adhoc/new` và sửa `#/client/adhoc/:id/edit` (`coach/js/views/client/adhoc.js`): ngày, tên mặc định "Buổi tự do dd/mm", loại buổi tập, tìm bài tập không dấu qua `loadExercises()`, sets/reps/kg hoặc distance/duration, nút "Báo coach thêm bài".
+  * Lưu buổi ngoài lịch chuyển thẳng sang phiếu ghi `#/client/session/:id`.
+  * Cho phép sửa/xóa buổi ngoài lịch khi chưa hoàn thành.
+  * Hôm nay hiện thẻ riêng "BUỔI TỰ DO HÔM NAY". Lịch tập liệt kê mục "Buổi tự do tuần này".
+- B4. Coach được biết:
+  * Hộp việc (`coach/js/views/coach/inbox.js`): mục "Buổi tự tập ngoài lịch (n)" liệt kê các buổi tạo trong 7 ngày có `coach_reviewed = false`, bấm vào mở trang review, có nút "Đã xem" (kể cả chưa bấm hoàn thành).
+  * Trang giáo án khách (`coach/js/views/coach/plan.js`): hiển thị mục "Buổi ngoài lịch" theo tuần, nút "+ Buổi ngoài lịch".
+  * Trang chi tiết khách (`coach/js/views/coach/client.js`): nút "+ Buổi ngoài lịch" mở form tạo buổi PT tại chỗ cho khách. Khi coach ghi kết quả hoàn thành, tự động trừ 1 buổi trong gói qua `ptDeduct.js`.
+  * "Tập của tôi" (coach tự tập): tạo buổi tự do bình thường.
+- B5. Tách biệt số liệu:
+  * `% buổi hoàn thành` (`last7`, `weekStats`, `publishedSessions`) bỏ qua `adhoc = true` — không bị kéo giảm tuân thủ.
+  * Khối lượng tạ, km, pace, 1RM, PR, sơ đồ cơ giải phẫu, ma trận tần suất tính đầy đủ buổi ngoài lịch.
+  * Buổi ngoài lịch không bị đánh "bỏ lỡ" (`missedLastWeek` bỏ qua `adhoc`).
+- Kỹ thuật & Service Worker:
+  * `coach/sw.js` nâng lên `dcoach-v25`, thêm `views/client/adhoc.js` vào SHELL.
+  * `tests/coach/fake_supabase.js`: hỗ trợ RLS insert/update/delete/upsert cho adhoc sessions và blocks/items của client.
+  * `tests/coach/adhoc.test.mjs`: unit test kiểm tra `dayNoFromDate`, `defaultAdhocTitle`, lọc adherence bỏ adhoc, `missedLastWeek` bỏ adhoc (81/81 test pass).
+  * `tests/coach/e2e_adhoc.py` (cổng 8782): 20/20 checks PASS.
+  * Hồi quy toàn bộ test suites: 81 unit tests + 11 test suites E2E đạt 100% PASS.

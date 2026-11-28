@@ -1,9 +1,9 @@
-// DINO-009 — Khách: lịch tập theo tuần (chỉ giai đoạn đã phát hành) + xem chi tiết buổi
+// DINO-009 / DINO-017 — Khách: lịch tập theo tuần (giai đoạn đã phát hành + buổi ngoài lịch)
 import { render, $, esc } from '../../ui.js';
 import { clientTabs } from './home.js';
 import { DAY_VI, SESSION_TYPE_VI, addDays, todayISO } from '../../lib/plan.js';
 import { reportOpen } from '../../lib/checkin.js';
-import { loadPlan } from '../../lib/planStore.js';
+import { loadPlan, loadAdhocSessions } from '../../lib/planStore.js';
 import { feedbackFor, unreadBySession } from '../../lib/logStore.js';
 
 const dm = (iso) => (iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '');
@@ -21,17 +21,45 @@ export function currentWeek(phases, today) {
 
 export async function clientPlanView({ profile }) {
   clientTabs();
-  const [programs, fbs, unread] = await Promise.all([loadPlan(profile.id, { publishedOnly: true }), feedbackFor(profile.id).catch(() => []), unreadBySession(profile.id).catch(() => ({}))]);
+  const [programs, fbs, unread, adhocAll] = await Promise.all([
+    loadPlan(profile.id, { publishedOnly: true }),
+    feedbackFor(profile.id).catch(() => []),
+    unreadBySession(profile.id).catch(() => ({})),
+    loadAdhocSessions(profile.id).catch(() => []),
+  ]);
   const done = new Set(fbs.filter((f) => f.completed).map((f) => f.session_id));
   const phases = programs.flatMap((p) => p.phases);
   const today = todayISO();
   const qs = new URLSearchParams(location.hash.split('?')[1] || '');
   const auto = currentWeek(phases, today);
+
   if (!auto) {
-    render(`<h1>Lịch tập</h1><div class="card"><p><strong>Chưa có lịch tập.</strong></p>
-      <p class="muted small">Coach đang chuẩn bị giáo án cho bạn. Khi được phát hành, lịch theo tuần sẽ hiện ở đây.</p></div>`);
+    render(`
+      <div class="row row--between" style="margin-bottom:8px">
+        <h1 style="margin:0">Lịch tập</h1>
+        <a class="btn btn--primary small" href="#/client/adhoc/new">+ Buổi tự do</a>
+      </div>
+      ${adhocAll.length ? `
+        <h2 style="font-size:16px;margin:12px 0 6px">Buổi tự do (${adhocAll.length})</h2>
+        <ul class="list">${adhocAll.map((s) => `
+          <li${s.scheduled_on === today ? ' style="border-left:3px solid var(--a1);padding-left:10px"' : ''}>
+            <a href="#/client/session/${s.id}" style="flex:1;color:var(--text);text-decoration:none">
+              <strong>${dm(s.scheduled_on)}${s.scheduled_on === today ? ' · Hôm nay' : ''}</strong>
+              <span class="badge">Ngoài lịch</span>
+              ${done.has(s.id) ? ' <span class="badge badge--ok">✓ Đã tập</span>' : ''}
+              <div>${esc(s.title || 'Buổi tự do')}</div>
+              <div class="small muted">${s.mode === 'pt' ? '<b style="color:var(--tint)">Tập với Coach</b> · ' : ''}${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${(s.blocks || []).reduce((n, b) => n + (b.items?.length || 0), 0)} bài</div>
+            </a>
+            ${!done.has(s.id) ? `<a class="btn btn--ghost small" href="#/client/adhoc/${s.id}/edit" style="align-self:center">Sửa</a>` : ''}
+          </li>
+        `).join('')}</ul>
+      ` : ''}
+      <div class="card" style="margin-top:14px"><p><strong>Chưa có lịch tập.</strong></p>
+        <p class="muted small">Coach đang chuẩn bị giáo án cho bạn. Khi được phát hành, lịch theo tuần sẽ hiện ở đây. Trong lúc chờ, bạn có thể tự tạo buổi tập ngoài lịch bằng nút "+ Buổi tự do".</p></div>
+    `);
     return;
   }
+
   const phase = phases.find((p) => p.id === qs.get('phase')) || auto.phase;
   const week = Math.min(Math.max(+(qs.get('w') || (phase.id === auto.phase.id ? auto.week : 1)), 1), phase.weeks);
   const idx = phases.indexOf(phase);
@@ -39,16 +67,21 @@ export async function clientPlanView({ profile }) {
   const nextLink = week < phase.weeks ? `?phase=${phase.id}&w=${week + 1}` : idx < phases.length - 1 ? `?phase=${phases[idx + 1].id}&w=1` : null;
   const ss = phase.sessions.filter((s) => s.week_no === week).sort((a, b) => a.day_no - b.day_no);
   const start = addDays(phase.start_date, (week - 1) * 7);
+  const end = addDays(start, 6);
+  const adhocThisWeek = adhocAll.filter((s) => s.scheduled_on >= start && s.scheduled_on <= end).sort((a, b) => a.scheduled_on.localeCompare(b.scheduled_on));
 
   render(`
-    <h1>Lịch tập</h1>
+    <div class="row row--between" style="margin-bottom:8px">
+      <h1 style="margin:0">Lịch tập</h1>
+      <a class="btn btn--primary small" href="#/client/adhoc/new">+ Buổi tự do</a>
+    </div>
     <div class="card"><strong>${esc(phase.name)}</strong>
       <div class="small muted">Giai đoạn ${idx + 1}/${phases.length} · ${phase.weeks} tuần · ${dm(phase.start_date)} → ${dm(phase.end_date)}</div>
       ${phase.handover_note ? `<p class="small" style="margin-top:8px">${esc(phase.handover_note).replace(/\n/g, '<br>')}</p>` : ''}
       ${reportOpen(phase, today, false) ? `<a class="btn btn--primary btn--block" href="#/phase/${phase.id}" style="margin-top:10px">Báo cáo giai đoạn →</a>` : ''}</div>
     <div class="row row--between" style="margin:8px 0">
       ${prevLink ? `<a class="btn btn--ghost small" href="#/client/plan${prevLink}">← Tuần trước</a>` : '<span></span>'}
-      <strong>Tuần ${week} · ${dm(start)}–${dm(addDays(start, 6))}</strong>
+      <strong>Tuần ${week} · ${dm(start)}–${dm(end)}</strong>
       ${nextLink ? `<a class="btn btn--ghost small" href="#/client/plan${nextLink}">Tuần sau →</a>` : '<span></span>'}
     </div>
     <ul class="list">${ss.map((s) => `<li${s.scheduled_on === today ? ' style="border-left:3px solid var(--a1);padding-left:10px"' : ''}>
@@ -56,5 +89,24 @@ export async function clientPlanView({ profile }) {
         <strong>${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)}${s.scheduled_on === today ? ' · Hôm nay' : ''}</strong>${done.has(s.id) ? ' <span class="badge badge--ok">✓ Đã tập</span>' : ''}${unread[s.id] ? ` <span class="badge badge--hot">${unread[s.id].length} tin mới</span>` : ''}
         <div>${esc(s.title || 'Buổi tập')}</div>
         <div class="small muted">${s.mode === 'pt' ? '<b style="color:var(--tint)">Tập với Coach</b> · ' : ''}${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${s.blocks.reduce((n, b) => n + b.items.length, 0)} bài</div></a></li>`).join('')
-      || '<li class="small muted">Tuần này không có buổi tập — nghỉ ngơi hồi phục.</li>'}</ul>`);
+      || '<li class="small muted">Tuần này không có buổi tập theo lịch — nghỉ ngơi hồi phục.</li>'}</ul>
+
+    ${adhocThisWeek.length ? `
+      <h2 style="font-size:16px;margin:16px 0 6px">Buổi tự do tuần này (${adhocThisWeek.length})</h2>
+      <ul class="list">
+        ${adhocThisWeek.map((s) => `
+          <li${s.scheduled_on === today ? ' style="border-left:3px solid var(--a1);padding-left:10px"' : ''}>
+            <a href="#/client/session/${s.id}" style="flex:1;color:var(--text);text-decoration:none">
+              <strong>${dm(s.scheduled_on)}${s.scheduled_on === today ? ' · Hôm nay' : ''}</strong>
+              <span class="badge">Ngoài lịch</span>
+              ${done.has(s.id) ? ' <span class="badge badge--ok">✓ Đã tập</span>' : ''}
+              <div>${esc(s.title || 'Buổi tự do')}</div>
+              <div class="small muted">${s.mode === 'pt' ? '<b style="color:var(--tint)">Tập với Coach</b> · ' : ''}${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${(s.blocks || []).reduce((n, b) => n + (b.items?.length || 0), 0)} bài</div>
+            </a>
+            ${!done.has(s.id) ? `<a class="btn btn--ghost small" href="#/client/adhoc/${s.id}/edit" style="align-self:center">Sửa</a>` : ''}
+          </li>
+        `).join('')}
+      </ul>
+    ` : ''}
+  `);
 }

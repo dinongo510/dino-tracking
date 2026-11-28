@@ -104,4 +104,15 @@ export async function nextItemFor(clientId, session, exerciseId) {
   return null;
 }
 export async function setItemLoad(itemId, load_kg) { must(await (await sb()).from('block_items').update({ load_kg }).eq('id', itemId)); }
-export async function markReviewed(sessionId) { must(await (await sb()).from('session_feedback').update({ coach_reviewed: true }).eq('session_id', sessionId)); }
+export async function markReviewed(sessionId) {
+  const db = await sb();
+  const { data: ex } = await db.from('session_feedback').select('id').eq('session_id', sessionId).maybeSingle();
+  if (ex) {
+    must(await db.from('session_feedback').update({ coach_reviewed: true }).eq('session_id', sessionId));
+  } else {
+    const { data: s } = await db.from('sessions').select('client_id').eq('id', sessionId).single();
+    if (s) {
+      must(await db.from('session_feedback').insert({ session_id: sessionId, client_id: s.client_id, coach_reviewed: true, completed: false }));
+    }
+  }
+}

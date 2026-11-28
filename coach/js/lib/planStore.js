@@ -1,9 +1,9 @@
 // DINO-009 — Đọc/ghi giáo án trên Supabase. Lưu theo kiểu "chỉ sửa phần thay đổi" (giữ nguyên id)
 // để kết quả tập của khách (set_logs, DINO-010) không bị xóa dây chuyền khi coach sửa buổi.
 import { sb } from '../supabaseClient.js';
-import { uid, sessionDate, phaseEnd } from './plan.js';
+import { uid, sessionDate, phaseEnd, dayNoFromDate, defaultAdhocTitle } from './plan.js';
 
-const SESSION_COLS = ['week_no', 'day_no', 'scheduled_on', 'title', 'session_type', 'coach_note', 'mode'];
+const SESSION_COLS = ['week_no', 'day_no', 'scheduled_on', 'title', 'session_type', 'coach_note', 'mode', 'adhoc', 'created_by'];
 const BLOCK_COLS = ['order_no', 'label', 'block_type', 'rounds', 'work_sec', 'rest_sec', 'time_cap_sec', 'note'];
 const ITEM_COLS = ['exercise_id', 'order_no', 'sets', 'reps_min', 'reps_max', 'load_kg', 'pct_1rm', 'target_rpe', 'tempo', 'rest_sec', 'distance_m', 'duration_sec', 'target_pace', 'hr_zone', 'progression_rule', 'note'];
 const only = (o, cols) => { const r = Object.fromEntries(cols.map((k) => [k, o[k] === undefined ? null : o[k]])); if ('mode' in r) r.mode ||= 'self'; return r; };
@@ -107,12 +107,12 @@ export async function latestOhsa(clientId) {
   return data;
 }
 
-/** 1 buổi kèm khối, bài và giai đoạn chứa nó */
+/** 1 buổi kèm khối, bài và giai đoạn chứa nó (buổi ngoài lịch thì phase = null) */
 export async function loadSession(id) {
   const db = await sb();
   const s = must(await db.from('sessions').select('*').eq('id', id).single());
   const [phase, blocks] = await Promise.all([
-    db.from('phases').select('*').eq('id', s.phase_id).single().then(must),
+    s.phase_id ? db.from('phases').select('*').eq('id', s.phase_id).single().then(must) : Promise.resolve(null),
     db.from('session_blocks').select('*').eq('session_id', id).order('order_no').then(must),
   ]);
   const items = blocks.length ? must(await db.from('block_items').select('*').in('block_id', blocks.map((b) => b.id)).order('order_no')) : [];
@@ -121,22 +121,82 @@ export async function loadSession(id) {
   return { session: s, phase };
 }
 
-/** Buổi tập của khách trong 1 ngày (chỉ giai đoạn đã phát hành) */
+/** Buổi tập của khách trong 1 ngày (giai đoạn đã phát hành + buổi ngoài lịch) */
 export async function sessionsOn(clientId, iso) {
   const db = await sb();
-  const ss = must(await db.from('sessions').select('id, title, session_type, phase_id, scheduled_on').eq('client_id', clientId).eq('scheduled_on', iso));
+  const ss = must(await db.from('sessions').select('id, title, session_type, phase_id, scheduled_on, adhoc, mode').eq('client_id', clientId).eq('scheduled_on', iso));
   if (!ss.length) return [];
-  const ph = must(await db.from('phases').select('id, status').in('id', [...new Set(ss.map((s) => s.phase_id))]));
+  const phaseIds = [...new Set(ss.map((s) => s.phase_id).filter(Boolean))];
+  const ph = phaseIds.length ? must(await db.from('phases').select('id, status').in('id', phaseIds)) : [];
   const ok = new Set(ph.filter((p) => p.status !== 'draft').map((p) => p.id));
-  return ss.filter((s) => ok.has(s.phase_id));
+  return ss.filter((s) => s.adhoc || ok.has(s.phase_id));
 }
 
-/** Buổi đã phát hành của khách trong khoảng ngày [from, to] (DINO-011b: Buổi kế tiếp, % tập 7 ngày) */
+/** Buổi đã phát hành của khách trong khoảng ngày [from, to] (DINO-011b/017: bỏ buổi adhoc để không kéo tuân thủ) */
 export async function publishedSessions(clientId, from, to) {
   const db = await sb();
-  const ss = must(await db.from('sessions').select('id, title, session_type, mode, phase_id, scheduled_on, week_no, day_no').eq('client_id', clientId).gte('scheduled_on', from).lte('scheduled_on', to).order('scheduled_on'));
+  const ss = must(await db.from('sessions').select('id, title, session_type, mode, phase_id, scheduled_on, week_no, day_no, adhoc').eq('client_id', clientId).gte('scheduled_on', from).lte('scheduled_on', to).order('scheduled_on'));
   if (!ss.length) return [];
-  const ph = must(await db.from('phases').select('id, status').in('id', [...new Set(ss.map((s) => s.phase_id))]));
+  const phaseIds = [...new Set(ss.map((s) => s.phase_id).filter(Boolean))];
+  const ph = phaseIds.length ? must(await db.from('phases').select('id, status').in('id', phaseIds)) : [];
   const ok = new Set(ph.filter((p) => p.status !== 'draft').map((p) => p.id));
-  return ss.filter((s) => ok.has(s.phase_id));
+  return ss.filter((s) => !s.adhoc && ok.has(s.phase_id));
+}
+
+/** Danh sách buổi ngoài lịch của khách kèm khối và bài tập */
+export async function loadAdhocSessions(clientId, from, to) {
+  const db = await sb();
+  let q = db.from('sessions').select('*').eq('client_id', clientId).eq('adhoc', true);
+  if (from) q = q.gte('scheduled_on', from);
+  if (to) q = q.lte('scheduled_on', to);
+  const ss = must(await q.order('scheduled_on', { ascending: false }));
+  if (!ss.length) return [];
+  const sids = ss.map((s) => s.id);
+  const blocks = must(await db.from('session_blocks').select('*').in('session_id', sids).order('order_no'));
+  const bids = blocks.map((b) => b.id);
+  const items = bids.length ? must(await db.from('block_items').select('*').in('block_id', bids).order('order_no')) : [];
+  const itemsBy = groupBy(items, 'block_id'), blocksBy = groupBy(blocks, 'session_id');
+  for (const b of blocks) b.items = itemsBy[b.id] || [];
+  for (const s of ss) s.blocks = blocksBy[s.id] || [];
+  return ss;
+}
+
+/** Tạo buổi ngoài lịch (DINO-017) */
+export async function createAdhocSession(clientId, { scheduled_on, title, session_type = 'strength', mode = 'self', coach_note = null, blocks = [] }) {
+  const db = await sb();
+  const sid = uid();
+  const day_no = dayNoFromDate(scheduled_on);
+  const me = (await db.auth.getSession()).data?.session?.user?.id || clientId;
+  const sessionRow = {
+    id: sid,
+    client_id: clientId,
+    phase_id: null,
+    adhoc: true,
+    week_no: 0,
+    day_no,
+    scheduled_on,
+    title: title || defaultAdhocTitle(scheduled_on),
+    session_type,
+    mode: mode || 'self',
+    coach_note: coach_note || null,
+    created_by: me,
+  };
+  must(await db.from('sessions').insert(sessionRow));
+  const B = [], I = [];
+  blocks.forEach((b, bi) => {
+    const bid = uid();
+    B.push({ id: bid, client_id: clientId, session_id: sid, ...only({ ...b, order_no: bi + 1 }, BLOCK_COLS) });
+    (b.items || []).forEach((it, ii) => {
+      I.push({ id: uid(), client_id: clientId, block_id: bid, ...only({ ...it, order_no: ii + 1 }, ITEM_COLS) });
+    });
+  });
+  if (B.length) must(await db.from('session_blocks').insert(B));
+  if (I.length) must(await db.from('block_items').insert(I));
+  return { id: sid, ...sessionRow, blocks: B };
+}
+
+/** Xóa buổi ngoài lịch */
+export async function deleteAdhocSession(sessionId) {
+  const db = await sb();
+  must(await db.from('sessions').delete().eq('id', sessionId));
 }

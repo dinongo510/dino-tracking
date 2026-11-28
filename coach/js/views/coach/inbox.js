@@ -47,19 +47,39 @@ export async function coachInboxView({ profile }) {
   await computeAlerts(clients).catch((e) => console.warn('computeAlerts', e));
   const [cks, unreadCk, unreadPh] = await Promise.all([unrepliedCheckins().then((x) => x.filter((c) => c.client_id !== profile.id)).catch(() => []), unreadBySession(profile.id, null, 'checkin').catch(() => ({})), unreadBySession(profile.id, null, 'phase').catch(() => ({}))]);
   const sevenDaysAgo = addDays(todayISO(), -7);
-  const [alerts, unread, fbsRaw] = await Promise.all([openAlerts(), unreadBySession(profile.id),
-    db.from('session_feedback').select('session_id, client_id, session_rpe, pain, readiness, completed, coach_reviewed, created_at').eq('coach_reviewed', false).order('created_at', { ascending: false }).then(must)]);
-  const fbs = fbsRaw.filter((f) => f.completed || (f.readiness?.level === 'red' && (f.readiness.at || f.created_at || '').slice(0, 10) >= sevenDaysAgo));
-  const sids = [...new Set([...Object.keys(unread), ...fbs.map((f) => f.session_id), ...alerts.map((a) => a.ref_id).filter(Boolean)])];
+  const [alerts, unread, fbsRaw, adhocRaw] = await Promise.all([
+    openAlerts(),
+    unreadBySession(profile.id),
+    db.from('session_feedback').select('session_id, client_id, session_rpe, pain, readiness, completed, coach_reviewed, created_at').eq('coach_reviewed', false).order('created_at', { ascending: false }).then(must),
+    db.from('sessions').select('id, client_id, title, day_no, scheduled_on, created_at, mode, session_type').eq('adhoc', true).then(must).catch(() => []),
+  ]);
+  const adhocCandidates = adhocRaw.filter((s) => s.client_id !== profile.id && ((s.created_at && s.created_at.slice(0, 10) >= sevenDaysAgo) || (s.scheduled_on && s.scheduled_on >= sevenDaysAgo)));
+  const adhocIds = adhocCandidates.map((s) => s.id);
+  const adhocFbs = adhocIds.length ? must(await db.from('session_feedback').select('session_id, coach_reviewed, completed, session_rpe').in('session_id', adhocIds)) : [];
+  const adhocFbMap = new Map(adhocFbs.map((f) => [f.session_id, f]));
+  const unreviewedAdhoc = adhocCandidates.filter((s) => !adhocFbMap.get(s.id)?.coach_reviewed);
+
+  const fbs = fbsRaw.filter((f) => !unreviewedAdhoc.some((a) => a.id === f.session_id) && (f.completed || (f.readiness?.level === 'red' && (f.readiness.at || f.created_at || '').slice(0, 10) >= sevenDaysAgo)));
+  const sids = [...new Set([...Object.keys(unread), ...fbs.map((f) => f.session_id), ...alerts.map((a) => a.ref_id).filter(Boolean), ...unreviewedAdhoc.map((s) => s.id)])];
   const sess = sids.length ? must(await db.from('sessions').select('id, title, day_no, scheduled_on').in('id', sids)) : [];
   const S = new Map(sess.map((s) => [s.id, s])), name = (id) => clients.find((c) => c.id === id)?.full_name || 'Khách';
+  for (const s of unreviewedAdhoc) if (!S.has(s.id)) S.set(s.id, s);
   const sLabel = (id) => { const s = S.get(id); return s ? `${esc(s.title || 'Buổi tập')} · ${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)}` : 'Buổi tập'; };
   const other = [...Object.entries(unreadCk).map(([id, ms]) => ({ href: `#/coach/checkin/${id}`, label: 'Check-in tuần', ms })), ...Object.entries(unreadPh).map(([id, ms]) => ({ href: `#/phase/${id}`, label: 'Báo cáo giai đoạn', ms }))];
-  const total = alerts.length + Object.keys(unread).length + fbs.length + cks.length + other.length;
+  const total = alerts.length + Object.keys(unread).length + fbs.length + cks.length + other.length + unreviewedAdhoc.length;
 
   render(`
     <h1>Hộp việc</h1>
     ${!total ? '<div class="card"><p><strong>Không có việc tồn.</strong></p><p class="small muted">Khi khách ghi buổi, nhắn tin hoặc có cảnh báo, việc sẽ hiện ở đây.</p></div>' : ''}
+    ${unreviewedAdhoc.length ? `<h2>Buổi tự tập ngoài lịch (${unreviewedAdhoc.length})</h2><div class="card"><ul class="list">${unreviewedAdhoc.map((s) => {
+      const afb = adhocFbMap.get(s.id);
+      return `<li>
+        <a href="#/coach/review/${s.id}" style="flex:1;color:var(--text);text-decoration:none">
+          <strong>${esc(name(s.client_id))}</strong> · ${sLabel(s.id)}
+          <div class="small muted">${afb?.completed ? `Đã hoàn thành · RPE ${afb.session_rpe ?? '—'}` : 'Chưa bấm hoàn thành'} · <span class="badge">Ngoài lịch</span></div>
+        </a>
+      </li>`;
+    }).join('')}</ul></div>` : ''}
     ${alerts.length ? `<h2>Cảnh báo (${alerts.length})</h2><div class="card card--flag"><ul class="list">${alerts.map((a) => `<li>
         <div style="flex:1"><span class="badge badge--hot">⚠ ${KIND_VI[a.kind] || a.kind}</span> <strong>${esc(name(a.client_id))}</strong>
           <div class="small">${esc(a.message)}</div>

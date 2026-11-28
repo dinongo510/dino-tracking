@@ -55,6 +55,7 @@ export async function coachClientView({ params, profile }) {
     <p class="small"><a href="#/coach">← Danh sách khách</a></p>
     <h1>${esc(c.full_name || '(chưa có tên)')}</h1><p class="muted small">${esc(c.phone || '')} · từ ${fmtDate(c.created_at)}</p>
     <div class="row" style="gap:6px;flex-wrap:wrap;margin:4px 0 8px"><a class="btn btn--primary" href="#/coach/client/${id}/plan">Giáo án tập luyện →</a>
+      <a class="btn" href="#/client/adhoc/new?client=${id}&mode=pt">+ Buổi ngoài lịch</a>
       <a class="btn" href="#/coach/client/${id}/checkins">Check-in tuần</a>
       <a class="btn" href="#/dash/${id}">Tiến độ & biểu đồ</a>
       <a class="btn btn--primary" href="#/coach/client/${id}/nutrition">Dinh dưỡng →</a></div>

@@ -43,7 +43,7 @@ export async function clientSessionView({ params, profile }) {
   const isCoach = profile.role === 'coach', own = s.client_id === profile.id, coachPT = isCoach && !own && s.mode === 'pt';
   if (isCoach && !own && !coachPT) { location.hash = `#/coach/review/${params.id}`; return; }
   if (coachPT) coachTabs(); else clientTabs();
-  if (phase.status === 'draft') { render('<div class="card"><p>Buổi tập này chưa được phát hành.</p><a href="#/client/plan">← Lịch tập</a></div>'); return; }
+  if (phase && phase.status === 'draft') { render('<div class="card"><p>Buổi tập này chưa được phát hành.</p><a href="#/client/plan">← Lịch tập</a></div>'); return; }
   await flushPending();
   const exById = new Map(exList.map((e) => [e.id, e]));
   const items = s.blocks.flatMap((b) => b.items);
@@ -147,10 +147,10 @@ export async function clientSessionView({ params, profile }) {
   }
 
   render(`<div id="log">
-    <p class="small">${coachPT ? `<a href="#/coach/client/${s.client_id}/plan?phase=${phase.id}">← Giáo án ${esc(clientName)}</a>` : `<a href="#/client/plan?phase=${phase.id}&w=${s.week_no}">← Lịch tập</a>`}</p>
+    <p class="small">${coachPT ? `<a href="#/coach/client/${s.client_id}/plan${phase ? '?phase=' + phase.id : ''}">← Giáo án ${esc(clientName)}</a>` : `<a href="#/client/plan${phase ? `?phase=${phase.id}&w=${s.week_no}` : ''}">← Lịch tập</a>`}</p>
     ${s.mode === 'pt' ? `<div class="card card--hi small"><strong style="color:var(--tint)">Buổi PT tại chỗ</strong> — ${coachPT ? `bạn ghi kết quả cho ${esc(clientName)}. Bấm "Hoàn thành" sẽ trừ 1 buổi trong gói của khách.` : 'tập cùng Coach, Coach ghi kết quả.'}</div>` : ''}
     <div class="row row--between"><h1 style="margin:0">${esc(s.title || 'Buổi tập')}</h1><span id="sync" class="badge" style="display:none;color:var(--warn);border-color:var(--warn)"></span></div>
-    <p class="muted small">${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)} · tuần ${s.week_no} · ${esc(SESSION_TYPE_VI[s.session_type] || '')}${fb?.completed ? ' · <strong style="color:var(--tint)">Đã hoàn thành ✓</strong>' : ''}</p>
+    <p class="muted small">${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)} · ${s.adhoc ? 'Ngoài lịch' : 'tuần ' + s.week_no} · ${esc(SESSION_TYPE_VI[s.session_type] || '')}${fb?.completed ? ' · <strong style="color:var(--tint)">Đã hoàn thành ✓</strong>' : ''}</p>
     ${s.coach_note ? `<div class="card"><strong>Coach dặn:</strong> ${esc(s.coach_note).replace(/\n/g, '<br>')}</div>` : ''}
     <div id="rdBox" style="margin-bottom:12px">${renderReadinessBox()}</div>
     <p class="small muted">Số đã điền sẵn là mục tiêu. Tập xong hiệp nào bấm <strong>✓</strong> hiệp đó — chỉ sửa số khi bạn làm khác.</p>
