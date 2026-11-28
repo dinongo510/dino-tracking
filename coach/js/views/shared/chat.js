@@ -32,12 +32,13 @@ export async function renderChat(el, { clientId, sessionId, me, names }) {
   stopWatch = await watchMessages(sessionId, (m) => { add(m); if (m.author_id !== me) markRead(sessionId, me).catch(() => {}); });
 
   const f = el.querySelector('#mf');
-  f.body.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) f.requestSubmit(); });
+  const sendBtn = f.querySelector('button'), ta = f.querySelector('textarea');
+  ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); f.requestSubmit(sendBtn); } });
   f.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const body = f.body.value.trim(); if (!body) return;
-    const btn = e.submitter; btn.disabled = true;
-    try { add(await sendMessage(clientId, sessionId, body)); f.body.value = ''; }
+    const body = ta.value.trim(); if (!body) return;
+    const btn = e.submitter || sendBtn; btn.disabled = true;
+    try { add(await sendMessage(clientId, sessionId, body)); ta.value = ''; }
     catch (err) { toast(viError(err), 'error'); }
     finally { btn.disabled = false; }
   });

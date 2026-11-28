@@ -88,9 +88,9 @@ try:
   cl.fill('#mf [name=body]','Coach ơi gối hơi đau');t0=time.time();cl.click('#mf .btn--primary')
   co.wait_for_selector('#msgs >> text=Coach ơi gối hơi đau',timeout=4000);dt=time.time()-t0
   ok(f'13 coach thấy tin khách không cần tải lại ({dt*1000:.0f} ms)', dt<2)
-  co.fill('#mf [name=body]','Giảm tải squat buổi sau nhé');co.click('#mf .btn--primary')
+  co.fill('#mf [name=body]','Giảm tải squat buổi sau nhé');co.press('#mf [name=body]','Control+Enter')
   cl.wait_for_selector('#msgs >> text=Giảm tải squat',timeout=4000)
-  ok('14 khách thấy trả lời của coach ngay', True)
+  ok('14 coach gửi bằng Ctrl+Enter → khách thấy ngay', True)
   m=[x for x in DB(cl)['messages'] if x['client_id']==A]
   ok('15 tin của khách đã được coach đánh dấu đọc', all(x['read_at'] for x in m if x['author_id']==A))
   # 7. Hoàn thành buổi có đau
