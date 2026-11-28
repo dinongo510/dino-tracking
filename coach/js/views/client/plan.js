@@ -1,9 +1,9 @@
 // DINO-009 — Khách: lịch tập theo tuần (chỉ giai đoạn đã phát hành) + xem chi tiết buổi
 import { render, $, esc } from '../../ui.js';
 import { clientTabs } from './home.js';
-import { loadExercises } from '../../lib/exercises.js';
-import { DAY_VI, SESSION_TYPE_VI, addDays, todayISO, itemSummary, blockSummary } from '../../lib/plan.js';
-import { loadPlan, loadSession } from '../../lib/planStore.js';
+import { DAY_VI, SESSION_TYPE_VI, addDays, todayISO } from '../../lib/plan.js';
+import { loadPlan } from '../../lib/planStore.js';
+import { feedbackFor, unreadBySession } from '../../lib/logStore.js';
 
 const dm = (iso) => (iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '');
 
@@ -20,7 +20,8 @@ export function currentWeek(phases, today) {
 
 export async function clientPlanView({ profile }) {
   clientTabs();
-  const programs = await loadPlan(profile.id, { publishedOnly: true });
+  const [programs, fbs, unread] = await Promise.all([loadPlan(profile.id, { publishedOnly: true }), feedbackFor(profile.id).catch(() => []), unreadBySession(profile.id).catch(() => ({}))]);
+  const done = new Set(fbs.filter((f) => f.completed).map((f) => f.session_id));
   const phases = programs.flatMap((p) => p.phases);
   const today = todayISO();
   const qs = new URLSearchParams(location.hash.split('?')[1] || '');
@@ -50,31 +51,8 @@ export async function clientPlanView({ profile }) {
     </div>
     <ul class="list">${ss.map((s) => `<li${s.scheduled_on === today ? ' style="border-left:4px solid var(--accent)"' : ''}>
       <a href="#/client/session/${s.id}" style="flex:1;color:var(--text);text-decoration:none">
-        <strong>${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)}${s.scheduled_on === today ? ' · Hôm nay' : ''}</strong>
+        <strong>${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)}${s.scheduled_on === today ? ' · Hôm nay' : ''}</strong>${done.has(s.id) ? ' <span class="badge badge--ok">✓ Đã tập</span>' : ''}${unread[s.id] ? ` <span class="badge" style="background:var(--danger,#c62828);color:#fff">${unread[s.id].length} tin mới</span>` : ''}
         <div>${esc(s.title || 'Buổi tập')}</div>
         <div class="small muted">${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${s.blocks.reduce((n, b) => n + b.items.length, 0)} bài</div></a></li>`).join('')
       || '<li class="small muted">Tuần này không có buổi tập — nghỉ ngơi hồi phục.</li>'}</ul>`);
-}
-
-export async function clientSessionView({ params, profile }) {
-  if (profile.role === 'client') clientTabs();
-  const [{ session: s, phase }, exList] = await Promise.all([loadSession(params.id), loadExercises()]);
-  if (phase.status === 'draft' && profile.role === 'client') { render('<div class="card"><p>Buổi tập này chưa được phát hành.</p><a href="#/client/plan">← Lịch tập</a></div>'); return; }
-  const exById = new Map(exList.map((e) => [e.id, e]));
-  render(`
-    <p class="small"><a href="#/client/plan?phase=${phase.id}&w=${s.week_no}">← Lịch tập</a></p>
-    <h1 style="margin-bottom:0">${esc(s.title || 'Buổi tập')}</h1>
-    <p class="muted small">${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)} · tuần ${s.week_no} · ${esc(SESSION_TYPE_VI[s.session_type] || '')}</p>
-    ${s.coach_note ? `<div class="card"><strong>Coach dặn:</strong> ${esc(s.coach_note).replace(/\n/g, '<br>')}</div>` : ''}
-    ${s.blocks.map((b) => `<div class="card">
-      <div class="row row--between"><strong>${esc(b.label ? b.label + '. ' : '')}${esc(blockSummary(b))}</strong></div>
-      ${b.note ? `<p class="small muted">${esc(b.note)}</p>` : ''}
-      <ul class="list">${b.items.map((it) => { const ex = exById.get(it.exercise_id); return `<li>
-        <a href="#/exercise/${it.exercise_id}" style="flex:1;color:var(--text);text-decoration:none">
-          <strong>${esc(ex?.name_vi || 'Bài tập')}</strong>
-          <div class="small">${esc(itemSummary(it))}</div>
-          ${it.note ? `<div class="small muted">${esc(it.note)}</div>` : ''}</a>
-        ${ex?.image_urls?.[0] ? `<img src="${esc(ex.image_urls[0])}" alt="" loading="lazy" style="width:56px;height:56px;object-fit:cover;border-radius:8px;background:#fff">` : ''}</li>`; }).join('')}</ul>
-    </div>`).join('') || '<div class="card"><p class="muted">Buổi này chưa có bài.</p></div>'}
-    <div class="card"><p class="small muted">Ghi kết quả từng hiệp (tạ, reps, RPE) sẽ có ở bản cập nhật tiếp theo.</p></div>`);
 }

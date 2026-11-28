@@ -30,7 +30,7 @@ export async function coachSessionView({ params }) {
   const mark = () => { dirty = true; $('#save').classList.add('btn--primary'); $('#save').textContent = 'Lưu buổi •'; };
 
   render(`
-    <p class="small"><a href="${back}" id="back">← ${esc(phase.name)}</a></p>
+    <p class="small"><a href="${back}" id="back">← ${esc(phase.name)}</a> · <a href="#/coach/review/${session.id}">Xem kết quả khách ghi →</a></p>
     <div class="row row--between"><h1 style="margin:0">Tuần ${session.week_no} · ${DAY_VI[session.day_no - 1]}</h1>
       ${phase.status !== 'draft' ? '<span class="badge badge--ok">Khách đang thấy</span>' : '<span class="badge">Nháp</span>'}</div>
     <div class="card stack">

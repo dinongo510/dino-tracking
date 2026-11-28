@@ -1,3 +1,4 @@
+[hidden] { display: none !important; } /* DINO-010: thuộc tính hidden luôn thắng class (.badge, .card…) */
 /* DINO Coach — design tokens + components dùng chung cho mọi Change Set */
 :root {
   --bg: #0f1115; --surface: #181b22; --surface-2: #20242d; --line: #2c313c;
