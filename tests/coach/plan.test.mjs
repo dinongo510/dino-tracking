@@ -96,3 +96,18 @@ test('tóm tắt bài và quy tắc', () => {
   assert.deepEqual(ruleFromKey('dup_light', 2), { type: 'dup', days: { 2: 'light' } });
   assert.equal(ruleKey(ruleFromKey('linear_pct', 1), 1), 'linear_pct');
 });
+
+import { pickNext } from '../../coach/js/lib/plan.js';
+test('buổi kế tiếp: hôm nay → tập bù trong tuần → sắp tới; buổi tuần trước không tính tập bù', () => {
+  const S = [{ id: 'lw', scheduled_on: '2026-11-20' }, { id: 'mon', scheduled_on: '2026-11-23' }, { id: 'wed', scheduled_on: '2026-11-25' },
+    { id: 'fri', scheduled_on: '2026-11-27' }, { id: 'sat', scheduled_on: '2026-11-28' }, { id: 'nmon', scheduled_on: '2026-11-30' }];
+  let r = pickNext(S, new Set(['mon']), '2026-11-28');
+  assert.equal(r.main.id, 'sat'); assert.equal(r.kind, 'today'); assert.deepEqual(r.missed.map((s) => s.id), ['wed', 'fri']);
+  r = pickNext(S, new Set(['mon', 'sat']), '2026-11-28');
+  assert.equal(r.main.id, 'wed'); assert.equal(r.kind, 'makeup'); assert.equal(r.doneToday, true);
+  r = pickNext(S, new Set(['mon', 'wed', 'fri', 'sat']), '2026-11-28');
+  assert.equal(r.main.id, 'nmon'); assert.equal(r.kind, 'upcoming');
+  r = pickNext(S, new Set(['mon', 'wed', 'fri', 'sat', 'nmon']), '2026-11-28');
+  assert.equal(r.kind, 'none');
+  assert.ok(!pickNext(S, new Set(), '2026-11-28').missed.some((s) => s.id === 'lw'));
+});

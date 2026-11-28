@@ -1,3 +1,4 @@
+import { themePickerHtml, bindThemePicker } from '../../lib/theme.js';
 import { render, $, esc, toast, busy, tabbar, fmtDate } from '../../ui.js';
 import { sb, viError } from '../../supabaseClient.js';
 import { signOut } from '../../auth.js';
@@ -6,9 +7,9 @@ import { go } from '../../router.js';
 const STATUS = { active: ['Đang tập', 'badge--ok'], paused: ['Tạm dừng', 'badge--warn'], ended: ['Kết thúc', ''] };
 
 export const coachTabs = () => tabbar([
-  { href: '#/coach', label: 'Khách' },
-  { href: '#/coach/library', label: 'Thư viện' },
-  { href: '#/coach/inbox', label: 'Hộp việc' },
+  { href: '#/coach', label: 'Khách', icon: 'users' },
+  { href: '#/coach/library', label: 'Thư viện', icon: 'book', also: ['#/coach/foods', '#/exercise'] },
+  { href: '#/coach/inbox', label: 'Hộp việc', icon: 'inbox' },
 ]);
 
 export async function coachHomeView({ profile }) {
@@ -48,8 +49,10 @@ export async function coachHomeView({ profile }) {
         <option value="active">Đang tập</option><option value="paused">Tạm dừng</option><option value="ended">Kết thúc</option></select></label>
       <div class="row"><button type="button" id="cancel" class="btn btn--ghost">Hủy</button>
         <button class="btn btn--primary" style="flex:1">Lưu</button></div>
-    </form></dialog>`);
+    </form></dialog>
+    ${themePickerHtml()}`);
 
+  bindThemePicker();
   $('#out').onclick = async () => { await signOut(); go('#/login'); };
 
   const dlg = $('#dlg'), f = $('#f');

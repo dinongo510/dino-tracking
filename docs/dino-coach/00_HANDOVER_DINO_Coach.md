@@ -61,9 +61,18 @@ Toàn bộ brief 006–013, migration 0001–0006, `formulas.js`, nội dung kh�
 - Test: sessionLog 7/7, e2e_log 31/31 (2 tab realtime, mất mạng, gợi ý +5 kg, cảnh báo, bảo mật API); toàn bộ: 146/146.
 - Sau UAT: sửa gửi chat bằng Ctrl+Enter (`requestSubmit()` không có submitter làm nút null).
 
-## DINO-011 — Dinh dưỡng (Claude viết 28/11/2026, chờ AG tạo nhánh + Dino UAT)
+## DINO-011 — Dinh dưỡng — DEPLOYED production 28/11/2026 (dcoach-v14, merge e374abd; Claude UAT trên Preview: đạt)
 - Không cần migration: dùng `foods`, `nutrition_targets`, `meal_slots`, `meal_options`, `meal_checks` (0001) + `meal_templates`, `day_plan_templates`, unique `foods.name_vi` (0004). RLS có sẵn: coach ghi mục tiêu/thực đơn, khách chỉ đọc; khách ghi `meal_checks`; ảnh bữa ăn ở `progress/<client_id>/meals/`.
 - File mới: `lib/nutrition.js` (hàm thuần: cân/FFM mới nhất, đề xuất mục tiêu qua `formulas.bmrAuto/tdee/nutritionTargets`, carb tự tính, mục tiêu từng bữa, tổng/✓✗ qua `optionTotals/optionFits`, gợi ý 3 phương án đạm + tinh bột + rau bước 0,5, áp thực đơn mẫu nhân hệ số làm tròn 0,5, đọc CSV, tuân thủ), `lib/nutritionStore.js`, `views/coach/nutrition.js` (mục tiêu → duyệt; thực đơn: áp mẫu cả ngày, tạo 4 bữa, % kcal, + phương án tay, gợi ý, từ mẫu bữa; nhật ký ăn 7 ngày có ảnh), `views/coach/foods.js` (kho món: tìm, thêm/sửa/xóa, dán CSV xem trước, trùng tên = cập nhật), `views/client/eat.js` (tab Ăn: mục tiêu ngày, tuân thủ 7 ngày, mỗi bữa chọn phương án + Đúng/Gần đúng/Lệch + ảnh + ghi chú, xem ngày trước).
 - Sửa: `app.js` (3 route), `sw.js` v13, tab "Ăn" cho khách, nút "Dinh dưỡng →" ở trang khách, link "Kho món ăn" ở Thư viện.
 - Kiểm tay 3 khách mẫu (nutrition.test.mjs): Nam 30t/175/80 giảm mỡ ×1,375 → BMR 1749, TDEE 2405, 1980 kcal P176 C175 F64; Nữ 28t/160/55 tăng cơ ×1,55 → 1249/1936/2080; FFM 60 recomp ×1,725 → Katch 1666/2874/2870.
 - Test: nutrition 7/7, e2e_nutrition 24/24; toàn bộ 177/177.
+- Sau UAT: nhãn ✗ ghi rõ lý do lệch khung (`fitReason`: thừa/thiếu % kcal, thiếu đạm).
+
+## DINO-011b — Giao diện "kính tối ánh màu" + Buổi kế tiếp (Claude viết 28/11/2026, chờ AG tạo nhánh + Dino UAT)
+- Bản mẫu Dino chốt: https://claude.ai/artifact/Xt1McUsfGyJnfKH7Pu2odm (4 màn hình, chọn màu bằng chấm + thanh kéo).
+- Nguyên tắc: nền đen nhám, thẻ kính có viền gradient mảnh, vệt màu loang cố định phía sau; KHÔNG khối màu đặc — nút chính / tab đang chọn / ✓ / "Đúng" dùng lớp `.btn--primary` / `.soft` = nền tối + ánh màu nhạt bên trong + viền gradient + chữ sáng cùng tông + quầng sáng mờ. Font Be Vietnam Pro.
+- Màu: mọi màu suy ra từ 1 biến CSS `--h` (sắc độ 0–359): `--a1` nhấn, `--a2` (+38°), `--a3` (−34°, nhạt), `--tint` chữ ánh màu, trạng thái `--ok/--warn/--danger` cùng tông, phân biệt bằng độ đậm + ký hiệu (✓ ≈ ✕, ↑ ↓, ⚠). Người dùng chọn ở Hồ sơ (khách) / trang chủ (coach): 5 màu nhanh + thanh kéo; lưu `localStorage.dcoach_hue` (từng máy), áp trước khi vẽ bằng script nhỏ trong `index.html`.
+- File: mới `lib/theme.js`; viết lại `css/coach.css`; `ui.js` thanh tab nổi có biểu tượng (tab đang chọn hiện chữ; mục `also` để phiếu tập sáng tab Lịch tập); bỏ màu gán cứng ở review/nutrition/inbox/plan/log/eat/chat (sửa luôn lỗi `var(--accent)` không tồn tại làm bong bóng chat trong suốt).
+- Trang Hôm nay (khách) viết lại: thẻ BUỔI HÔM NAY / TẬP BÙ / BUỔI KẾ TIẾP theo `plan.pickNext` (ưu tiên buổi hôm nay → buổi lỡ trong tuần → buổi sắp tới), nhắc tập bù, 3 ô Tập 7 ngày / Ăn 7 ngày / Cân TB tuần (↓↑), thẻ Ăn hôm nay, tin mới của coach. `planStore.publishedSessions`.
+- Test: plan 8/8 (+pickNext), e2e_theme 12/12 (mới); sửa e2e_plan/e2e_log/e2e_nutrition theo trang Hôm nay mới; toàn bộ 42 + 151 = 193/193. `sw.js` v15.

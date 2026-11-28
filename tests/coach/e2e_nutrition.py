@@ -90,7 +90,7 @@ try:
   t0=time.time()
   for i,l in enumerate(['on','near','on','off']): cl.click(f'[data-slot] >> nth={i} >> [data-level={l}]');cl.wait_for_timeout(150)
   cl.wait_for_timeout(500);dt=time.time()-t0
-  ck=[c for c in DB(cl).get('meal_checks',[]) if c['client_id']=='a1']
+  ck=[c for c in DB(cl).get('meal_checks',[]) if c['client_id']=='a1'];ok('16b nút mức được tô theo lớp lvl--', cl.locator('.lvl--on').count()==2 and cl.locator('.lvl--near').count()==1 and cl.locator('.lvl--off').count()==1)
   ok(f'16 check 4 bữa bằng 4 lần bấm ({dt:.1f} giây)', len(ck)==4 and sorted(c['level'] for c in ck)==['near','off','on','on'] and all(c['check_date']==TODAY for c in ck))
   cl.click(f'[data-slot] >> nth=1 >> input[type=radio] >> nth=1');cl.wait_for_timeout(400)
   tr_ck=[c for c in DB(cl)['meal_checks'] if c['slot_id']==sl[1]['id']][0]
@@ -103,7 +103,7 @@ try:
   cl.reload();cl.wait_for_selector('[data-slot] >> nth=3')
   ok('20 tuân thủ 7 ngày = (1+0,5+1+0)/(4×7) = 9%', 'Tuân thủ 7 ngày' in cl.inner_text('main') and '9%' in cl.inner_text('main'))
   cl.click('text=← Hôm trước');cl.wait_for_selector('text=Hôm sau →')
-  ok('21 xem ngày hôm trước: chưa có check', cl.locator('[data-level][style*="background"]').count()==0)
+  ok('21 xem ngày hôm trước: chưa có check', cl.locator('[data-level][aria-pressed="true"]').count()==0)
   # 8. Coach xem nhật ký
   co.goto(B+'#/coach/client/a1/nutrition');co.wait_for_selector('text=Nhật ký ăn 7 ngày')
   t=co.inner_text('main')

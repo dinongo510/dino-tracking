@@ -17,6 +17,8 @@ import { clientSessionView } from './views/client/log.js';
 import { coachReviewView } from './views/coach/review.js';
 import { coachInboxView } from './views/coach/inbox.js';
 import { flushPending } from './lib/logStore.js';
+import { applyHue, getHue } from './lib/theme.js';
+applyHue(getHue()); // màu giao diện người dùng đã chọn
 import { coachNutritionView } from './views/coach/nutrition.js';
 import { coachFoodsView } from './views/coach/foods.js';
 import { clientEatView } from './views/client/eat.js';

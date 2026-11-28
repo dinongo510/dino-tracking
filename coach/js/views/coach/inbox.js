@@ -56,7 +56,7 @@ export async function coachInboxView({ profile }) {
     <h1>Hộp việc</h1>
     ${!total ? '<div class="card"><p><strong>Không có việc tồn.</strong></p><p class="small muted">Khi khách ghi buổi, nhắn tin hoặc có cảnh báo, việc sẽ hiện ở đây.</p></div>' : ''}
     ${alerts.length ? `<h2>Cảnh báo (${alerts.length})</h2><div class="card card--flag"><ul class="list">${alerts.map((a) => `<li>
-        <div style="flex:1"><span class="badge" style="background:var(--danger,#c62828);color:#fff">${KIND_VI[a.kind] || a.kind}</span> <strong>${esc(name(a.client_id))}</strong>
+        <div style="flex:1"><span class="badge badge--hot">⚠ ${KIND_VI[a.kind] || a.kind}</span> <strong>${esc(name(a.client_id))}</strong>
           <div class="small">${esc(a.message)}</div>
           ${a.ref_id ? `<a class="small" href="#/coach/review/${a.ref_id}">${sLabel(a.ref_id)} →</a>` : `<a class="small" href="#/coach/client/${a.client_id}/plan">Mở giáo án →</a>`}</div>
         <button class="btn btn--ghost small" data-resolve="${a.id}">Đã xử lý</button></li>`).join('')}</ul></div>` : ''}

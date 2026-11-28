@@ -7,7 +7,7 @@ import { LEVEL_VI, slotTargets, totalsOf, adherenceRange } from '../../lib/nutri
 import { loadNutrition, listChecks, saveCheck } from '../../lib/nutritionStore.js';
 import { uploadClientImage, signedUrls } from '../../lib/files.js';
 
-const LEVEL_COLOR = { on: '#2e7d32', near: '#f9a825', off: '#c62828' };
+const LEVEL_ICON = { on: '✓', near: '≈', off: '✕' };
 const fmtQty = (q) => String(q).replace('.', ',');
 const dowVi = (iso) => { const d = new Date(iso + 'T00:00:00Z').getUTCDay(); return DAY_VI[(d + 6) % 7]; };
 
@@ -39,7 +39,7 @@ export async function clientEatView({ profile }) {
       <div><div class="small muted">Mục tiêu ngày</div><strong style="font-size:22px">${t.kcal} kcal</strong></div>
       <div class="small">Đạm <strong>${t.protein_g} g</strong> · Tinh bột <strong>${t.carb_g} g</strong> · Béo <strong>${t.fat_g} g</strong></div></div>
       ${adh != null ? `<div style="margin-top:10px"><div class="small row row--between"><span>Tuân thủ 7 ngày</span><strong>${adh}%</strong></div>
-        <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><div style="height:100%;width:${Math.min(adh, 100)}%;background:${adh >= 80 ? '#2e7d32' : adh >= 60 ? '#f9a825' : '#c62828'}"></div></div></div>` : ''}
+        <div style="height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden"><div style="height:100%;width:${Math.min(adh, 100)}%;background:var(--grad);box-shadow:0 0 12px var(--glow)"></div></div></div>` : ''}
     </div>
     <p class="small muted">Mỗi bữa: chọn phương án bạn ăn, rồi bấm <strong>Đúng</strong> / <strong>Gần đúng</strong> / <strong>Lệch</strong>. Ảnh và ghi chú không bắt buộc.</p>
     ${N.slots.map((s, i) => { const c = checks.find((x) => x.slot_id === s.id), chosen = c?.option_id || s.options[0]?.id; return `<div class="card" data-slot="${s.id}">
@@ -48,7 +48,7 @@ export async function clientEatView({ profile }) {
         <input type="radio" name="opt-${s.id}" value="${o.id}"${o.id === chosen ? ' checked' : ''} style="margin-top:4px">
         <span><strong>${esc(o.label || 'Phương án')}</strong><div class="small">${o.items.map((it) => `${esc(foodById.get(it.food_id)?.name_vi || '')} ×${fmtQty(it.qty)}${foodById.get(it.food_id)?.serving ? ` <span class="muted">(${esc(foodById.get(it.food_id).serving)})</span>` : ''}`).join(' · ')}</div>
           <div class="small muted">${tot.kcal} kcal · P ${tot.proteinG} · C ${tot.carbG} · F ${tot.fatG}</div></span></label>`; }).join('') || '<p class="small muted">Coach chưa thêm phương án cho bữa này.</p>'}</div>
-      <div class="row" style="gap:6px;margin-top:8px">${['on', 'near', 'off'].map((l) => `<button class="btn small" data-level="${l}" style="flex:1;${c?.level === l ? `background:${LEVEL_COLOR[l]};color:#fff;border-color:${LEVEL_COLOR[l]}` : ''}">${LEVEL_VI[l]}</button>`).join('')}</div>
+      <div class="row" style="gap:6px;margin-top:8px">${['on', 'near', 'off'].map((l) => `<button class="btn small${c?.level === l ? ' lvl--' + l : ''}" data-level="${l}" aria-pressed="${c?.level === l}" style="flex:1">${LEVEL_ICON[l]} ${LEVEL_VI[l]}</button>`).join('')}</div>
       <div class="row" style="gap:6px;margin-top:6px;align-items:center">
         <label class="btn btn--ghost small" style="cursor:pointer">📷 Ảnh<input type="file" accept="image/*" capture="environment" data-photo hidden></label>
         ${c?.photo_path && urls[c.photo_path] ? `<img src="${urls[c.photo_path]}" alt="Ảnh bữa ${esc(s.name)}" style="width:48px;height:48px;object-fit:cover;border-radius:6px">` : ''}
@@ -70,7 +70,7 @@ export async function clientEatView({ profile }) {
   $('#ev').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-level]'); if (!b) return;
     const l = b.dataset.level;
-    b.parentElement.querySelectorAll('[data-level]').forEach((x) => { const on = x === b; x.style.background = on ? LEVEL_COLOR[l] : ''; x.style.color = on ? '#fff' : ''; x.style.borderColor = on ? LEVEL_COLOR[l] : ''; });
+    b.parentElement.querySelectorAll('[data-level]').forEach((x) => { const on = x === b; x.classList.remove('lvl--on', 'lvl--near', 'lvl--off'); if (on) x.classList.add('lvl--' + l); x.setAttribute('aria-pressed', String(on)); });
     try { await save(b, { level: l }); } catch (err) { toast(viError(err), 'error'); }
   });
   $('#ev').addEventListener('change', async (e) => {

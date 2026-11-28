@@ -49,9 +49,9 @@ export async function clientPlanView({ profile }) {
       <strong>Tuần ${week} · ${dm(start)}–${dm(addDays(start, 6))}</strong>
       ${nextLink ? `<a class="btn btn--ghost small" href="#/client/plan${nextLink}">Tuần sau →</a>` : '<span></span>'}
     </div>
-    <ul class="list">${ss.map((s) => `<li${s.scheduled_on === today ? ' style="border-left:4px solid var(--accent)"' : ''}>
+    <ul class="list">${ss.map((s) => `<li${s.scheduled_on === today ? ' style="border-left:3px solid var(--a1);padding-left:10px"' : ''}>
       <a href="#/client/session/${s.id}" style="flex:1;color:var(--text);text-decoration:none">
-        <strong>${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)}${s.scheduled_on === today ? ' · Hôm nay' : ''}</strong>${done.has(s.id) ? ' <span class="badge badge--ok">✓ Đã tập</span>' : ''}${unread[s.id] ? ` <span class="badge" style="background:var(--danger,#c62828);color:#fff">${unread[s.id].length} tin mới</span>` : ''}
+        <strong>${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)}${s.scheduled_on === today ? ' · Hôm nay' : ''}</strong>${done.has(s.id) ? ' <span class="badge badge--ok">✓ Đã tập</span>' : ''}${unread[s.id] ? ` <span class="badge badge--hot">${unread[s.id].length} tin mới</span>` : ''}
         <div>${esc(s.title || 'Buổi tập')}</div>
         <div class="small muted">${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${s.blocks.reduce((n, b) => n + b.items.length, 0)} bài</div></a></li>`).join('')
       || '<li class="small muted">Tuần này không có buổi tập — nghỉ ngơi hồi phục.</li>'}</ul>`);

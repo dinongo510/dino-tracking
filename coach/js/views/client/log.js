@@ -33,8 +33,8 @@ export async function clientSessionView({ params, profile }) {
 
   render(`<div id="log">
     <p class="small"><a href="#/client/plan?phase=${phase.id}&w=${s.week_no}">← Lịch tập</a></p>
-    <div class="row row--between"><h1 style="margin:0">${esc(s.title || 'Buổi tập')}</h1><span id="sync" class="badge" style="display:none;background:#f9a825"></span></div>
-    <p class="muted small">${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)} · tuần ${s.week_no} · ${esc(SESSION_TYPE_VI[s.session_type] || '')}${fb?.completed ? ' · <strong style="color:var(--ok,#2e7d32)">Đã hoàn thành ✓</strong>' : ''}</p>
+    <div class="row row--between"><h1 style="margin:0">${esc(s.title || 'Buổi tập')}</h1><span id="sync" class="badge" style="display:none;color:var(--warn);border-color:var(--warn)"></span></div>
+    <p class="muted small">${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)} · tuần ${s.week_no} · ${esc(SESSION_TYPE_VI[s.session_type] || '')}${fb?.completed ? ' · <strong style="color:var(--tint)">Đã hoàn thành ✓</strong>' : ''}</p>
     ${s.coach_note ? `<div class="card"><strong>Coach dặn:</strong> ${esc(s.coach_note).replace(/\n/g, '<br>')}</div>` : ''}
     <p class="small muted">Số đã điền sẵn là mục tiêu. Tập xong hiệp nào bấm <strong>✓</strong> hiệp đó — chỉ sửa số khi bạn làm khác.</p>
     ${s.blocks.map((b, bi) => blockHtml(b, bi)).join('') || '<div class="card"><p class="muted">Buổi này chưa có bài.</p></div>'}
@@ -80,7 +80,7 @@ export async function clientSessionView({ params, profile }) {
       ? `${n('distance_m', 80)}<td><input class="input" data-k="duration" value="${toClock(r.duration_sec)}" placeholder="mm:ss" style="width:100%;max-width:80px;padding:6px"></td>${n('avg_hr', 60)}<td class="small" data-pace>${pace(r.distance_m, r.duration_sec) || ''}</td>`
       : kind === 'timed' ? n('duration_sec', 80)
         : `${n('reps', 56, 1)}${n('load_kg', 70)}<td><select data-k="rpe" style="padding:6px">${RPES.map((v) => `<option value="${v}"${r.rpe != null && Number(v) === Number(r.rpe) && v ? ' selected' : ''}>${v || '–'}</option>`).join('')}</select></td>`;
-    return `<tr data-set="${r.set_no}" style="${r.done ? 'background:rgba(46,125,50,.12)' : ''}"><td class="small">${r.set_no}</td>${cells}
+    return `<tr data-set="${r.set_no}" class="${r.done ? 'row-done' : ''}"><td class="small">${r.set_no}</td>${cells}
       <td><button class="btn small ${r.done ? 'btn--primary' : ''}" data-done aria-label="Xong hiệp ${r.set_no}">✓</button></td></tr>`;
   }
 
@@ -105,9 +105,9 @@ export async function clientSessionView({ params, profile }) {
       const row = { client_id: s.client_id, block_item_id: itemId, set_no: +tr.dataset.set, done,
         reps: v('reps'), load_kg: v('load_kg'), rpe: v('rpe'), distance_m: v('distance_m'), avg_hr: v('avg_hr'),
         duration_sec: tr.querySelector('[data-k=duration]') ? fromClock(tr.querySelector('[data-k=duration]').value) : v('duration_sec') };
-      btn.classList.toggle('btn--primary', done); tr.style.background = done ? 'rgba(46,125,50,.12)' : '';
+      btn.classList.toggle('btn--primary', done); tr.classList.toggle('row-done', done);
       try { const online = await saveLog(row); sync(); if (!online) toast('Mất mạng — hiệp đã lưu tạm trên máy, sẽ tự gửi khi có mạng.'); }
-      catch (err) { toast(viError(err), 'error'); btn.classList.toggle('btn--primary', !done); tr.style.background = ''; return; }
+      catch (err) { toast(viError(err), 'error'); btn.classList.toggle('btn--primary', !done); tr.classList.remove('row-done'); return; }
       if (done && it.rest_sec && !TOTAL_BLOCKS.has(s.blocks.find((b) => b.items.includes(it)).block_type)) startRest(it.rest_sec);
       return;
     }
@@ -121,7 +121,7 @@ export async function clientSessionView({ params, profile }) {
   function startRest(sec) {
     clearInterval(tick); document.getElementById('restbar')?.remove();
     let left = sec;
-    document.body.insertAdjacentHTML('beforeend', `<div id="restbar" style="position:fixed;left:12px;right:12px;bottom:78px;z-index:20;background:#111;color:#fff;border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(0,0,0,.3)">
+    document.body.insertAdjacentHTML('beforeend', `<div id="restbar" class="soft" style="position:fixed;left:50%;transform:translateX(-50%);width:min(528px,calc(100% - 28px));bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:20;border-radius:32px;padding:8px 8px 8px 22px;display:flex;align-items:center;gap:10px;color:var(--text);background:linear-gradient(rgba(16,16,20,.94),rgba(16,16,20,.94)) padding-box,var(--grad) border-box;border:1.5px solid transparent;box-shadow:0 12px 30px rgba(0,0,0,.55),0 0 24px -6px var(--glow);backdrop-filter:blur(20px)">
       <span>Nghỉ</span><strong id="rleft" style="font-size:24px;font-variant-numeric:tabular-nums">${toClock(left)}</strong><span style="flex:1"></span>
       <button class="btn small" id="rplus">+15s</button><button class="btn small" id="rskip">Bỏ qua</button></div>`);
     const stop = () => { clearInterval(tick); tick = null; document.getElementById('restbar')?.remove(); };

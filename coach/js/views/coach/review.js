@@ -10,8 +10,8 @@ import { loadLogs, loadFeedback, markReviewed, nextItemFor, setItemLoad } from '
 import { renderChat } from '../shared/chat.js';
 
 const dm = (iso) => (iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '');
-const COLOR = { hit: 'rgba(46,125,50,.14)', over: 'rgba(21,101,192,.14)', under: 'rgba(198,40,40,.14)' };
-const GRADE_VI = { hit: 'Đạt', over: 'Vượt', under: 'Hụt' };
+const COLOR = { hit: 'var(--ok-bg)', over: 'hsl(calc(var(--h) + 38) 85% 60% / .12)', under: 'rgba(255,255,255,.03)' };
+const GRADE_VI = { hit: '✓ Đạt', over: '↑ Vượt', under: '✕ Hụt' };
 
 export async function coachReviewView({ params, profile }) {
   coachTabs();
