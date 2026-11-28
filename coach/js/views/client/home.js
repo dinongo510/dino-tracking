@@ -23,7 +23,7 @@ export const clientTabs = () => tabbar([
 
 export async function clientHomeView({ profile }) {
   const intake = await loadIntake(profile.id);
-  if (!intake?.updated_at) return go('#/client/intake'); // chưa hoàn thành hồ sơ → vào wizard
+  if (!intake?.updated_at && profile.role !== 'coach') return go('#/client/intake'); // chưa hoàn thành hồ sơ → vào wizard (coach "Tập của tôi" không bắt buộc)
   clientTabs();
   const db = await sb(), me = profile.id, today = todayISO(), from7 = addDays(today, -6);
   const must = (r) => { if (r.error) throw r.error; return r.data; };

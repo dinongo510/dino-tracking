@@ -76,7 +76,7 @@ export async function coachInboxView({ profile }) {
           <div class="small muted">${c.avg_weight_kg != null ? String(Number(c.avg_weight_kg)).replace('.', ',') + ' kg · ' : ''}buổi ${c.sessions_pct ?? '—'}% · ăn ${c.eat_pct ?? '—'}%</div></a></li>`).join('')}</ul></div>` : ''}
     ${fbs.length ? `<h2>Buổi vừa xong chưa xem (${fbs.length})</h2><div class="card"><ul class="list">${fbs.map((f) => `<li>
         <a href="#/coach/review/${f.session_id}" style="flex:1;color:var(--text);text-decoration:none"><strong>${esc(name(f.client_id))}</strong> · ${sLabel(f.session_id)}
-          <div class="small muted">${f.readiness?.level === 'red' ? '<span class="badge badge--hot" style="margin-right:6px">Readiness thấp</span>' : ''}${f.completed ? `RPE ${f.session_rpe ?? '—'}` : 'Chưa hoàn thành'}${f.pain?.length ? ' · <span style="color:var(--danger)">có đau</span>' : ''}</div></a></li>`).join('')}</ul></div>` : ''}`);
+          <div class="small muted">${f.readiness?.level === 'red' ? '<span class="badge badge--hot" style="margin-right:6px">Readiness thấp</span> ' : ''}${f.completed ? `RPE ${f.session_rpe ?? '—'}` : 'Chưa hoàn thành'}${f.pain?.length ? ' · <span style="color:var(--danger)">có đau</span>' : ''}</div></a></li>`).join('')}</ul></div>` : ''}`);
 
   document.querySelectorAll('[data-resolve]').forEach((b) => (b.onclick = async () => {
     await busy(b, async () => { try { await resolveAlert(b.dataset.resolve); toast('Đã đóng cảnh báo.'); coachInboxView({ profile }); } catch (err) { toast(viError(err), 'error'); } });

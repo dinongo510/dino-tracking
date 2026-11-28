@@ -261,7 +261,7 @@ export async function clientSessionView({ params, profile }) {
             session_id: s.id,
             readiness: rdObj,
             completed: fb?.completed || false,
-            coach_reviewed: false,
+            coach_reviewed: fb?.coach_reviewed ?? isCoach,
           };
           try {
             await saveFeedback(row);
@@ -288,7 +288,7 @@ export async function clientSessionView({ params, profile }) {
           session_id: s.id,
           readiness,
           completed: fb?.completed || false,
-          coach_reviewed: false,
+          coach_reviewed: fb?.coach_reviewed ?? isCoach,
         };
         try {
           await saveFeedback(row);
