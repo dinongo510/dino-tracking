@@ -11,6 +11,10 @@ import {
   e1rmWeekly, volumeByMuscle, runWeekly, adherenceWeekly, weightTrend, last7, toCsv, zipStore, exportName,
   muscleSets, frequencyMatrix14, personalRecords,
 } from '../../lib/dashboard.js';
+import {
+  ANTERIOR_DATA, POSTERIOR_DATA,
+  calculateBodymapStats, getBodymapPolygonStyle,
+} from '../../lib/bodymap.js';
 import { dashData, saveTracked, exportTables } from '../../lib/dashboardStore.js';
 
 const dm = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '—');
@@ -64,6 +68,8 @@ export async function dashView({ params, profile }) {
     const mSets = muscleSets(rows, exById, from, to);
     const fMatrix = frequencyMatrix14(rows, exById, today);
     const prs = personalRecords(rows, exById, today);
+    const bStats = calculateBodymapStats(rows, exById, from, to, weeksCount);
+    let selectedMuscle = null;
 
     const mStyle = (k) => {
       const s = mSets[k] || 0;
@@ -87,51 +93,53 @@ export async function dashView({ params, profile }) {
 
       <!-- Sơ đồ nhóm cơ -->
       <div class="card" id="muscleHeatmapCard" style="margin-top:14px">
-        <div class="row row--between">
+        <div class="row row--between" style="align-items:flex-start;gap:8px">
           <div>
             <h3 style="margin:0 0 2px">Sơ đồ nhóm cơ</h3>
             <div class="small muted">Mức độ tác động dựa trên số hiệp tập/tuần</div>
           </div>
-          <div id="activeMuscleLabel" class="badge" style="font-weight:600">
-            Chạm vùng cơ để xem số hiệp
+          <div id="activeMuscleLabel" class="badge" style="font-weight:600;font-size:12px;padding:6px 10px;text-align:right">
+            Chạm bó cơ để xem chi tiết
           </div>
         </div>
-        <div class="row" style="justify-content:space-around;gap:12px;margin:16px 0 10px;text-align:center">
-          <div style="flex:1;max-width:180px">
-            <div class="small muted" style="margin-bottom:6px">MẶT TRƯỚC</div>
-            <svg id="svgAnterior" viewBox="0 0 100 200" style="width:100%;max-height:220px">
-              <circle cx="50" cy="18" r="10" fill="#18181b" stroke="#333" stroke-width="1.5" />
-              <path class="muscle-path" data-muscle="chest" style="${mStyle('chest')}" d="M38 42 C44 42 48 48 48 56 C42 58 35 54 34 46 Z" />
-              <path class="muscle-path" data-muscle="chest" style="${mStyle('chest')}" d="M62 42 C56 42 52 48 52 56 C58 58 65 54 66 46 Z" />
-              <path class="muscle-path" data-muscle="shoulders" style="${mStyle('shoulders')}" d="M28 42 C34 40 37 46 36 54 C30 52 26 48 28 42 Z" />
-              <path class="muscle-path" data-muscle="shoulders" style="${mStyle('shoulders')}" d="M72 42 C66 40 63 46 64 54 C70 52 74 48 72 42 Z" />
-              <path class="muscle-path" data-muscle="biceps" style="${mStyle('biceps')}" d="M25 56 C30 56 30 70 26 76 C23 72 22 62 25 56 Z" />
-              <path class="muscle-path" data-muscle="biceps" style="${mStyle('biceps')}" d="M75 56 C70 56 70 70 74 76 C77 72 78 62 75 56 Z" />
-              <rect class="muscle-path" data-muscle="abdominals" style="${mStyle('abdominals')}" x="44" y="60" width="12" height="12" rx="2" />
-              <rect class="muscle-path" data-muscle="abdominals" style="${mStyle('abdominals')}" x="44" y="74" width="12" height="14" rx="2" />
-              <path class="muscle-path" data-muscle="quadriceps" style="${mStyle('quadriceps')}" d="M37 98 C46 98 48 116 46 138 C40 140 35 125 34 106 Z" />
-              <path class="muscle-path" data-muscle="quadriceps" style="${mStyle('quadriceps')}" d="M63 98 C54 98 52 116 54 138 C60 140 65 125 66 106 Z" />
-              <path class="muscle-path" data-muscle="calves" style="${mStyle('calves')}" d="M37 146 C42 146 43 166 41 182 C37 182 36 166 37 146 Z" />
-              <path class="muscle-path" data-muscle="calves" style="${mStyle('calves')}" d="M63 146 C58 146 57 166 59 182 C63 182 64 166 63 146 Z" />
+        <div class="row" style="justify-content:space-around;gap:12px;margin:16px 0 10px;text-align:center" id="bodymapContainer">
+          <div style="flex:1;max-width:200px">
+            <div class="small muted" style="margin-bottom:6px;font-weight:600">MẶT TRƯỚC</div>
+            <svg id="svgAnterior" viewBox="0 0 1000 2220" style="width:100%;max-height:280px;overflow:visible">
+              ${ANTERIOR_DATA.map((item) => item.svgPoints.map((pts) => `
+                <polygon
+                  class="muscle-path muscle-poly"
+                  data-muscle="${item.muscle === 'trapezius' ? 'traps' : item.muscle}"
+                  data-muscle-raw="${item.muscle}"
+                  points="${pts}"
+                  style="${getBodymapPolygonStyle(item.muscle, bStats, false)}"
+                />
+              `).join('')).join('')}
             </svg>
           </div>
-          <div style="flex:1;max-width:180px">
-            <div class="small muted" style="margin-bottom:6px">MẶT SAU</div>
-            <svg id="svgPosterior" viewBox="0 0 100 200" style="width:100%;max-height:220px">
-              <circle cx="50" cy="18" r="10" fill="#18181b" stroke="#333" stroke-width="1.5" />
-              <path class="muscle-path" data-muscle="traps" style="${mStyle('traps')}" d="M42 30 L58 30 L64 42 L36 42 Z" />
-              <path class="muscle-path" data-muscle="lats" style="${mStyle('lats')}" d="M36 44 C44 48 44 70 38 78 C33 68 32 54 36 44 Z" />
-              <path class="muscle-path" data-muscle="lats" style="${mStyle('lats')}" d="M64 44 C56 48 56 70 62 78 C67 68 68 54 64 44 Z" />
-              <path class="muscle-path" data-muscle="triceps" style="${mStyle('triceps')}" d="M24 54 C28 54 28 70 24 74 C21 70 21 60 24 54 Z" />
-              <path class="muscle-path" data-muscle="triceps" style="${mStyle('triceps')}" d="M76 54 C72 54 72 70 76 74 C79 70 79 60 76 54 Z" />
-              <path class="muscle-path" data-muscle="glutes" style="${mStyle('glutes')}" d="M37 92 C48 90 49 110 40 114 C33 112 32 100 37 92 Z" />
-              <path class="muscle-path" data-muscle="glutes" style="${mStyle('glutes')}" d="M63 92 C52 90 51 110 60 114 C67 112 68 100 63 92 Z" />
-              <path class="muscle-path" data-muscle="hamstrings" style="${mStyle('hamstrings')}" d="M36 116 C46 116 47 136 44 142 C38 142 35 132 36 116 Z" />
-              <path class="muscle-path" data-muscle="hamstrings" style="${mStyle('hamstrings')}" d="M64 116 C54 116 53 136 56 142 C62 142 65 132 64 116 Z" />
-              <path class="muscle-path" data-muscle="calves" style="${mStyle('calves')}" d="M36 148 C44 148 43 170 39 180 C34 176 34 160 36 148 Z" />
-              <path class="muscle-path" data-muscle="calves" style="${mStyle('calves')}" d="M64 148 C56 148 57 170 61 180 C66 176 66 160 64 148 Z" />
+          <div style="flex:1;max-width:200px">
+            <div class="small muted" style="margin-bottom:6px;font-weight:600">MẶT SAU</div>
+            <svg id="svgPosterior" viewBox="0 0 1000 2220" style="width:100%;max-height:280px;overflow:visible">
+              ${POSTERIOR_DATA.map((item) => item.svgPoints.map((pts) => `
+                <polygon
+                  class="muscle-path muscle-poly"
+                  data-muscle="${item.muscle === 'trapezius' ? 'traps' : item.muscle}"
+                  data-muscle-raw="${item.muscle}"
+                  points="${pts}"
+                  style="${getBodymapPolygonStyle(item.muscle, bStats, false)}"
+                />
+              `).join('')).join('')}
             </svg>
           </div>
+        </div>
+
+        <!-- Chú thích thang màu -->
+        <div class="row" style="justify-content:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06);flex-wrap:wrap;font-size:11px" id="bodymapLegend">
+          <span class="row" style="gap:4px;align-items:center"><i style="display:inline-block;width:11px;height:11px;border-radius:2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14)"></i> <span class="muted">0 hiệp</span></span>
+          <span class="row" style="gap:4px;align-items:center"><i style="display:inline-block;width:11px;height:11px;border-radius:2px;background:hsl(var(--h) 45% 36% / .55);border:1px solid hsl(var(--h) 55% 48% / .7)"></i> <span class="muted">1–5</span></span>
+          <span class="row" style="gap:4px;align-items:center"><i style="display:inline-block;width:11px;height:11px;border-radius:2px;background:hsl(var(--h) 65% 45% / .72);border:1px solid hsl(var(--h) 75% 58% / .85)"></i> <span class="muted">6–10</span></span>
+          <span class="row" style="gap:4px;align-items:center"><i style="display:inline-block;width:11px;height:11px;border-radius:2px;background:hsl(var(--h) 80% 54% / .88);border:1px solid hsl(var(--h) 90% 70% / .95)"></i> <span class="muted">11–15</span></span>
+          <span class="row" style="gap:4px;align-items:center"><i style="display:inline-block;width:11px;height:11px;border-radius:2px;background:hsl(var(--h) 92% 60% / .98);box-shadow:0 0 4px var(--tint);border:1px solid hsl(var(--h) 96% 78% / 1)"></i> <span class="muted">&gt;15 hiệp/tuần</span></span>
         </div>
       </div>
 
@@ -196,21 +204,48 @@ export async function dashView({ params, profile }) {
     document.querySelectorAll('[data-range]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.range === RANGE)));
     $('#pick')?.addEventListener('click', openPicker);
 
-    // Bắt sự kiện chạm sơ đồ cơ
-    document.querySelectorAll('.muscle-path').forEach((path) => {
-      path.onclick = () => {
-        const m = path.dataset.muscle;
-        const name = MUSCLE_VI[m] || m;
-        const s = mSets[m] || 0;
-        const pw = Math.round((s / weeksCount) * 10) / 10;
-        const lbl = $('#activeMuscleLabel');
-        if (lbl) {
-          lbl.textContent = `${name}: ${pw} hiệp/tuần`;
-          lbl.style.background = 'hsl(var(--h) 80% 50% / .2)';
-          lbl.style.color = 'var(--tint)';
+    // Bắt sự kiện chạm sơ đồ cơ giải phẫu
+    const updateMuscleSelection = (slug) => {
+      selectedMuscle = slug;
+      const lbl = $('#activeMuscleLabel');
+      if (!lbl) return;
+      if (!slug) {
+        lbl.textContent = 'Chạm bó cơ để xem chi tiết';
+        lbl.style.background = '';
+        lbl.style.color = '';
+      } else {
+        const s = bStats[slug] || (slug === 'traps' ? bStats['trapezius'] : null);
+        if (s) {
+          lbl.textContent = `${s.label} · ${fmtNum(s.pw, 1)} hiệp/tuần · ${s.sessions} buổi`;
+        } else {
+          lbl.textContent = `${slug} · 0 hiệp/tuần · 0 buổi`;
         }
+        lbl.style.background = 'hsl(var(--h) 80% 50% / .22)';
+        lbl.style.color = 'var(--tint)';
+      }
+      document.querySelectorAll('.muscle-poly').forEach((el) => {
+        const raw = el.dataset.muscleRaw || el.dataset.muscle;
+        const isSel = (raw === slug) || (slug === 'traps' && raw === 'trapezius');
+        el.setAttribute('style', getBodymapPolygonStyle(raw, bStats, isSel));
+      });
+    };
+
+    document.querySelectorAll('.muscle-poly').forEach((poly) => {
+      poly.onclick = (e) => {
+        e.stopPropagation();
+        const m = poly.dataset.muscleRaw || poly.dataset.muscle;
+        updateMuscleSelection(selectedMuscle === m ? null : m);
       };
     });
+
+    const cardHeatmap = $('#muscleHeatmapCard');
+    if (cardHeatmap) {
+      cardHeatmap.onclick = (e) => {
+        if (!e.target.closest('.muscle-poly')) {
+          updateMuscleSelection(null);
+        }
+      };
+    }
   };
   document.querySelectorAll('[data-range]').forEach((b) => (b.onclick = () => { RANGE = b.dataset.range; draw(); }));
   draw();

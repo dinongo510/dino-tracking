@@ -108,14 +108,30 @@ try:
     co.fill('#p_s', '30')
     co.dispatch_event('#p_s', 'input')
     spd_val = co.input_value('#p_spd')
-    ok(f'3 Đổi pace 5:30 -> ~10.9 km/h ({spd_val})', '10.9' in spd_val)
+    ok(f'3 Đổi pace 5:30 -> ~10,9 km/h ({spd_val})', '10,9' in spd_val or '10.9' in spd_val)
+
+    # Ô nhập chấp nhận cả dấu phẩy tiếng Việt ("10,9")
+    co.fill('#p_spd', '12,0')
+    co.dispatch_event('#p_spd', 'input')
+    p_m_val = co.input_value('#p_m')
+    p_s_val = co.input_value('#p_s')
+    ok(f'3b Nhập vận tốc kiểu phẩy 12,0 -> pace 5:00 ({p_m_val}:{p_s_val})', p_m_val == '5' and p_s_val == '00')
 
     co.fill('#t_dist', '10')
     co.fill('#t_min', '55')
     co.fill('#t_sec', '0')
     co.dispatch_event('#t_sec', 'input')
     race_grid = co.inner_text('#racePredGrid')
-    ok('4 Dự đoán giải từ 10km 55:00 hiện đủ cự ly (21,1 km, 42,2 km)', ('21,1 km' in race_grid or '21.1' in race_grid) and ('42,2 km' in race_grid or '42.2' in race_grid))
+    ok('4 Dự đoán giải từ 10km 55:00 hiện đủ cự ly dấu phẩy (21,1 km, 42,2 km)', ('21,1 km' in race_grid or '21.1' in race_grid) and ('42,2 km' in race_grid or '42.2' in race_grid))
+
+    # Kiểm tra ô nhập không bị cắt chữ (scrollWidth <= clientWidth)
+    inputs_to_check = ['#t_dist', '#t_min', '#t_sec', '#p_m', '#p_s', '#p_spd', '#rm_kg', '#rm_reps', '#pl_target']
+    clipped = []
+    for sel in inputs_to_check:
+      sw, cw = co.evaluate(f's => {{ const el = document.querySelector(s); return [el.scrollWidth, el.clientWidth]; }}', sel)
+      if sw > cw + 1:
+        clipped.append((sel, sw, cw))
+    ok(f'4b Các ô nhập không bị cắt số (scrollWidth <= clientWidth) ({clipped})', len(clipped) == 0)
 
     # Thẻ 2: 1RM & Bảng %
     co.fill('#rm_kg', '80')
@@ -133,7 +149,7 @@ try:
     co.select_option('#pl_bar', '20')
     co.dispatch_event('#pl_target', 'input')
     plate_res = co.inner_text('#plResultBox')
-    ok(f'7 Lắp đĩa 87.5kg thanh 20 -> 25 + 5 + 2.5 + 1.25 ({plate_res})', '25 kg' in plate_res and '5 kg' in plate_res and '2.5 kg' in plate_res and '1.25 kg' in plate_res)
+    ok(f'7 Lắp đĩa 87.5kg thanh 20 -> 25 + 5 + 2.5 + 1.25 ({plate_res})', '25 kg' in plate_res and '5 kg' in plate_res and ('2,5 kg' in plate_res or '2.5 kg' in plate_res) and ('1,25 kg' in plate_res or '1.25 kg' in plate_res))
 
     # Thẻ 4: WOD ngẫu nhiên
     co.select_option('#wod_type', 'amrap')
@@ -164,11 +180,17 @@ try:
     quad_style = co.get_attribute('[data-muscle="quadriceps"]', 'style')
     trap_style = co.get_attribute('[data-muscle="traps"]', 'style')
     ok(f'13 Cơ đã tập (quads) sáng hơn cơ chưa tập (traps)', 'hsl(' in quad_style and 'rgba' in trap_style)
+    ok('13b Có chú thích thang màu dưới sơ đồ cơ', co.is_visible('#bodymapLegend'))
 
-    # Chạm/click vào cơ -> hiển thị số hiệp
+    # Chạm/click vào cơ -> hiển thị nhãn chi tiết có số hiệp và số buổi
     co.click('[data-muscle="quadriceps"]')
     active_label = co.inner_text('#activeMuscleLabel')
-    ok(f'14 Chạm cơ đùi trước hiện số hiệp ({active_label})', 'Đùi trước:' in active_label and 'hiệp/tuần' in active_label)
+    ok(f'14 Chạm cơ đùi trước hiện số hiệp & số buổi ({active_label})', 'Đùi trước' in active_label and 'hiệp/tuần' in active_label and 'buổi' in active_label)
+
+    # Chạm chỗ trống bỏ chọn
+    co.click('#muscleHeatmapCard')
+    reset_label = co.inner_text('#activeMuscleLabel')
+    ok(f'14b Chạm chỗ trống bỏ chọn ({reset_label})', 'Chạm bó cơ' in reset_label)
 
     # Ma trận tần suất 14 ngày
     co.wait_for_selector('#freqMatrixCard')
