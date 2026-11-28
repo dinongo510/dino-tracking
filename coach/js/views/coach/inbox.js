@@ -46,8 +46,10 @@ export async function coachInboxView({ profile }) {
   const clients = must(await db.from('profiles').select('id, full_name').eq('role', 'client'));
   await computeAlerts(clients).catch((e) => console.warn('computeAlerts', e));
   const [cks, unreadCk, unreadPh] = await Promise.all([unrepliedCheckins().then((x) => x.filter((c) => c.client_id !== profile.id)).catch(() => []), unreadBySession(profile.id, null, 'checkin').catch(() => ({})), unreadBySession(profile.id, null, 'phase').catch(() => ({}))]);
-  const [alerts, unread, fbs] = await Promise.all([openAlerts(), unreadBySession(profile.id),
-    db.from('session_feedback').select('session_id, client_id, session_rpe, pain, created_at').eq('completed', true).eq('coach_reviewed', false).order('created_at', { ascending: false }).then(must)]);
+  const sevenDaysAgo = addDays(todayISO(), -7);
+  const [alerts, unread, fbsRaw] = await Promise.all([openAlerts(), unreadBySession(profile.id),
+    db.from('session_feedback').select('session_id, client_id, session_rpe, pain, readiness, completed, coach_reviewed, created_at').eq('coach_reviewed', false).order('created_at', { ascending: false }).then(must)]);
+  const fbs = fbsRaw.filter((f) => f.completed || (f.readiness?.level === 'red' && (f.readiness.at || f.created_at || '').slice(0, 10) >= sevenDaysAgo));
   const sids = [...new Set([...Object.keys(unread), ...fbs.map((f) => f.session_id), ...alerts.map((a) => a.ref_id).filter(Boolean)])];
   const sess = sids.length ? must(await db.from('sessions').select('id, title, day_no, scheduled_on').in('id', sids)) : [];
   const S = new Map(sess.map((s) => [s.id, s])), name = (id) => clients.find((c) => c.id === id)?.full_name || 'Khách';
@@ -74,7 +76,7 @@ export async function coachInboxView({ profile }) {
           <div class="small muted">${c.avg_weight_kg != null ? String(Number(c.avg_weight_kg)).replace('.', ',') + ' kg · ' : ''}buổi ${c.sessions_pct ?? '—'}% · ăn ${c.eat_pct ?? '—'}%</div></a></li>`).join('')}</ul></div>` : ''}
     ${fbs.length ? `<h2>Buổi vừa xong chưa xem (${fbs.length})</h2><div class="card"><ul class="list">${fbs.map((f) => `<li>
         <a href="#/coach/review/${f.session_id}" style="flex:1;color:var(--text);text-decoration:none"><strong>${esc(name(f.client_id))}</strong> · ${sLabel(f.session_id)}
-          <div class="small muted">RPE ${f.session_rpe ?? '—'}${f.pain?.length ? ' · <span style="color:var(--danger)">có đau</span>' : ''}</div></a></li>`).join('')}</ul></div>` : ''}`);
+          <div class="small muted">${f.readiness?.level === 'red' ? '<span class="badge badge--hot" style="margin-right:6px">Readiness thấp</span>' : ''}${f.completed ? `RPE ${f.session_rpe ?? '—'}` : 'Chưa hoàn thành'}${f.pain?.length ? ' · <span style="color:var(--danger)">có đau</span>' : ''}</div></a></li>`).join('')}</ul></div>` : ''}`);
 
   document.querySelectorAll('[data-resolve]').forEach((b) => (b.onclick = async () => {
     await busy(b, async () => { try { await resolveAlert(b.dataset.resolve); toast('Đã đóng cảnh báo.'); coachInboxView({ profile }); } catch (err) { toast(viError(err), 'error'); } });

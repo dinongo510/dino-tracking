@@ -9,6 +9,7 @@ import { grade, sessionStats, suggestions, rowKind, toClock, pace } from '../../
 import { loadLogs, loadFeedback, markReviewed, nextItemFor, setItemLoad } from '../../lib/logStore.js';
 import { useForSession } from '../../lib/packageStore.js';
 import { renderChat } from '../shared/chat.js';
+import { LEVEL_LABEL_VI } from '../../lib/readiness.js';
 
 const dm = (iso) => (iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '');
 const COLOR = { hit: 'var(--ok-bg)', over: 'hsl(calc(var(--h) + 38) 85% 60% / .12)', under: 'rgba(255,255,255,.03)' };
@@ -24,6 +25,8 @@ export async function coachReviewView({ params, profile }) {
   const st = sessionStats(s, logs, exById), sug = suggestions(s, logs, exById);
   const use = s.mode === 'pt' ? await useForSession(s.id).catch(() => null) : null;
   const anyLog = Object.values(logs).some((a) => a.some((l) => l.done !== false));
+  const rd = fb?.readiness;
+  const rdIcon = rd?.level === 'green' ? '🟢' : rd?.level === 'yellow' ? '🟡' : '🔴';
 
   render(`<div id="rv">
     <p class="small"><a href="#/coach/inbox">← Hộp việc</a> · <a href="#/coach/client/${s.client_id}/plan?phase=${phase.id}">Giáo án</a> · <a href="#/coach/session/${s.id}">Sửa buổi này</a></p>
@@ -35,12 +38,16 @@ export async function coachReviewView({ params, profile }) {
 
     <div class="card ${fb?.pain?.length ? 'card--flag' : ''}">
       ${fb?.completed ? `<div class="row row--between"><strong>Khách đã hoàn thành ✓</strong>
-          ${fb.coach_reviewed ? '<span class="badge badge--ok">Đã xem</span>' : '<button class="btn btn--primary small" id="seen">Đã xem</button>'}</div>
-        <ul class="list small" style="margin-top:6px">
-          <li><span class="muted">RPE cả buổi</span><strong>${fb.session_rpe ?? '—'}</strong></li>
-          <li><span class="muted">Đau</span><strong style="${fb.pain?.length ? 'color:var(--danger)' : ''}">${fb.pain?.length ? esc(fb.pain.map((p) => `${p.area} ${p.level}/5`).join(', ')) : 'Không'}</strong></li>
-          ${fb.note ? `<li><span class="muted">Ghi chú</span><span>${esc(fb.note)}</span></li>` : ''}</ul>`
+          ${fb.coach_reviewed ? '<span class="badge badge--ok">Đã xem</span>' : '<button class="btn btn--primary small" id="seen">Đã xem</button>'}</div>`
         : `<p class="muted">${anyLog ? 'Khách đang ghi dở, chưa bấm hoàn thành.' : 'Khách chưa ghi buổi này.'}</p>`}
+      ${rd || fb?.completed ? `<ul class="list small" style="margin-top:6px">
+        ${rd ? `<li><span class="muted">Readiness</span><span><strong>${rd.score}/100</strong> · ${rdIcon} ${esc(LEVEL_LABEL_VI[rd.level] || rd.level)}</span></li>
+          <li><span class="muted">Chi tiết</span><span>Ngủ ${rd.sleep}/5 · Mỏi ${rd.soreness}/5 · Stress ${rd.stress}/5 · Năng lượng ${rd.energy}/5${rd.pain?.length ? ' · <strong style="color:var(--danger)">Đau: ' + esc(rd.pain.join(', ')) + '</strong>' : ''}</span></li>
+          <li><span class="muted">Khởi động</span><span>${rd.warmup_done ? '<strong style="color:var(--tint)">Đã khởi động ✓</strong>' : '<span class="muted">Chưa khởi động</span>'}</span></li>` : ''}
+        ${fb?.completed ? `<li><span class="muted">RPE cả buổi</span><strong>${fb.session_rpe ?? '—'}</strong></li>
+          <li><span class="muted">Đau</span><strong style="${fb.pain?.length ? 'color:var(--danger)' : ''}">${fb.pain?.length ? esc(fb.pain.map((p) => `${p.area} ${p.level}/5`).join(', ')) : 'Không'}</strong></li>
+          ${fb.note ? `<li><span class="muted">Ghi chú</span><span>${esc(fb.note)}</span></li>` : ''}` : ''}
+      </ul>` : ''}
     </div>
 
     ${anyLog ? `<div class="card"><div class="row" style="gap:16px;flex-wrap:wrap">

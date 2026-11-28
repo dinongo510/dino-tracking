@@ -1,15 +1,17 @@
-// DINO-010 — Phiếu buổi tập (Khách): ghi từng hiệp, đồng hồ nghỉ / khối, hoàn thành buổi, chat với coach
+// DINO-010 / DINO-015 — Phiếu buổi tập (Khách): ghi từng hiệp, readiness & khởi động, đồng hồ nghỉ / khối, hoàn thành buổi, chat với coach
 import { render, $, esc, toast, busy } from '../../ui.js';
 import { sb, viError } from '../../supabaseClient.js';
 import { clientTabs } from './home.js';
 import { loadExercises } from '../../lib/exercises.js';
 import { DAY_VI, SESSION_TYPE_VI, itemSummary, blockSummary } from '../../lib/plan.js';
-import { loadSession } from '../../lib/planStore.js';
+import { loadSession, latestOhsa } from '../../lib/planStore.js';
 import { buildRows, rowKind, toClock, fromClock, pace, timerPlan, PAIN_AREAS, TOTAL_BLOCKS } from '../../lib/sessionLog.js';
 import { deductForSession } from '../../lib/ptDeduct.js';
 import { coachTabs } from '../coach/home.js';
 import { loadLogs, saveLog, flushPending, pendingCount, loadFeedback, saveFeedback } from '../../lib/logStore.js';
 import { renderChat } from '../shared/chat.js';
+import { readinessScore, readinessLevel, adjustment, LEVEL_LABEL_VI } from '../../lib/readiness.js';
+import { warmupPlan } from '../../lib/prehab.js';
 
 const dm = (iso) => (iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '');
 const RPES = ['', '6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10'];
@@ -31,10 +33,104 @@ export async function clientSessionView({ params, profile }) {
   await flushPending();
   const exById = new Map(exList.map((e) => [e.id, e]));
   const items = s.blocks.flatMap((b) => b.items);
-  const [logs, fb] = await Promise.all([loadLogs(items.map((i) => i.id)), loadFeedback(s.id)]);
+  const [logs, fb, aOhsa] = await Promise.all([loadLogs(items.map((i) => i.id)), loadFeedback(s.id), latestOhsa(s.client_id).catch(() => null)]);
+  const ohsa = aOhsa?.ohsa || {};
+  let readiness = fb?.readiness || null;
+  const offKey = 'dcoach_rd_' + s.id;
+  if (!readiness) {
+    try { const off = localStorage.getItem(offKey); if (off) readiness = JSON.parse(off).readiness; } catch { /* */ }
+  }
+  let skipped = sessionStorage.getItem('dcoach_skip_rd_' + s.id) === '1';
+  const hasCorrectiveBlock = s.blocks.some((b) => b.block_type === 'corrective');
   const rowsOf = {}; for (const b of s.blocks) for (const it of b.items) rowsOf[it.id] = buildRows(b, it, logs[it.id]);
   const clientName = coachPT ? ((await (await sb()).from('profiles').select('full_name').eq('id', s.client_id).maybeSingle()).data?.full_name || 'Khách') : '';
   const coachName = profile.coach_id ? ((await (await sb()).from('profiles').select('full_name').eq('id', profile.coach_id).maybeSingle()).data?.full_name || 'Coach') : 'Coach';
+
+  let curPlan = [];
+  function renderReadinessBox() {
+    if (readiness) {
+      curPlan = warmupPlan({ ohsa, sessionType: s.session_type, pain: readiness.pain || [], exercises: exList });
+      const totalMin = Math.max(5, Math.min(8, Math.round(curPlan.reduce((n, p) => n + p.sec, 0) / 60)));
+      return `
+        <div class="card ${readiness.level === 'red' ? 'card--flag' : readiness.level === 'yellow' ? 'lvl--near' : 'lvl--on'}" id="rdSummaryCard">
+          <div class="row row--between">
+            <strong style="font-size:15px">Readiness: ${readiness.score}/100 · ${readiness.level === 'green' ? '🟢' : readiness.level === 'yellow' ? '🟡' : '🔴'} ${esc(LEVEL_LABEL_VI[readiness.level] || '')}</strong>
+          </div>
+          <p style="margin:6px 0 3px"><strong>Gợi ý:</strong> ${esc(adjustment(readiness.level))}</p>
+          <div class="small muted">Ngủ ${readiness.sleep}/5 · Mỏi ${readiness.soreness}/5 · Stress ${readiness.stress}/5 · Năng lượng ${readiness.energy}/5${readiness.pain?.length ? ' · <span style="color:var(--danger)">Đau: ' + esc(readiness.pain.join(', ')) + '</span>' : ''}</div>
+        </div>
+        ${!hasCorrectiveBlock ? `
+        <div class="card" id="warmupCard" style="margin-top:10px">
+          <div class="row row--between">
+            <strong>Khởi động & chỉnh tư thế (~${totalMin} phút)</strong>
+            <label class="row small" style="cursor:pointer;gap:6px">
+              <input type="checkbox" id="warmupDone" ${readiness.warmup_done ? 'checked' : ''}>
+              <span id="warmupDoneTxt">${readiness.warmup_done ? 'Đã khởi động xong ✓' : 'Đã khởi động xong'}</span>
+            </label>
+          </div>
+          <div class="stack" style="margin-top:10px;gap:8px">
+            ${curPlan.map((st, i) => `
+              <div class="card" style="padding:10px;background:var(--bg)">
+                <div class="row row--between">
+                  <strong>${esc(st.label)}</strong>
+                  <button type="button" class="btn btn--ghost small" data-wtimer="${i}">⏱ ${st.sec}s</button>
+                </div>
+                <ul class="list small" style="margin-top:4px">
+                  ${st.items.map((it) => `<li><span>${esc(it.name_vi)}</span><span class="muted">${esc(it.dose)}</span></li>`).join('')}
+                </ul>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+      `;
+    }
+    if (!skipped && !fb?.completed) {
+      return `
+        <div class="card" id="rdCard" style="border:1.5px solid var(--tint)">
+          <div class="row row--between"><strong style="font-size:15px;color:var(--tint)">Sẵn sàng chưa?</strong><button type="button" class="btn btn--ghost small" id="rdSkip">Bỏ qua</button></div>
+          <p class="small muted" style="margin:4px 0 10px">Trả lời nhanh 4 câu để app gợi ý điều chỉnh cường độ & bài khởi động phù hợp thể trạng hôm nay.</p>
+          <div class="stack" style="gap:10px" id="rdQuestions">
+            <div>
+              <div class="row row--between small"><span>Giấc ngủ đêm qua</span><strong id="v_sleep">3</strong></div>
+              <div class="row" style="gap:4px;margin-top:4px" data-score-row="sleep">
+                ${[1, 2, 3, 4, 5].map((v) => `<button type="button" class="btn small ${v === 3 ? 'btn--primary' : 'btn--ghost'}" style="flex:1" data-val="${v}">${v}</button>`).join('')}
+              </div>
+              <div class="row row--between" style="font-size:10.5px;color:var(--text-muted);margin-top:2px"><span>Rất tệ (1)</span><span>Sâu giấc (5)</span></div>
+            </div>
+            <div>
+              <div class="row row--between small"><span>Mức mỏi cơ / ê ẩm</span><strong id="v_soreness">3</strong></div>
+              <div class="row" style="gap:4px;margin-top:4px" data-score-row="soreness">
+                ${[1, 2, 3, 4, 5].map((v) => `<button type="button" class="btn small ${v === 3 ? 'btn--primary' : 'btn--ghost'}" style="flex:1" data-val="${v}">${v}</button>`).join('')}
+              </div>
+              <div class="row row--between" style="font-size:10.5px;color:var(--text-muted);margin-top:2px"><span>Không mỏi (1)</span><span>Rất mỏi (5)</span></div>
+            </div>
+            <div>
+              <div class="row row--between small"><span>Căng thẳng thần kinh</span><strong id="v_stress">3</strong></div>
+              <div class="row" style="gap:4px;margin-top:4px" data-score-row="stress">
+                ${[1, 2, 3, 4, 5].map((v) => `<button type="button" class="btn small ${v === 3 ? 'btn--primary' : 'btn--ghost'}" style="flex:1" data-val="${v}">${v}</button>`).join('')}
+              </div>
+              <div class="row row--between" style="font-size:10.5px;color:var(--text-muted);margin-top:2px"><span>Thoải mái (1)</span><span>Rất căng thẳng (5)</span></div>
+            </div>
+            <div>
+              <div class="row row--between small"><span>Mức năng lượng</span><strong id="v_energy">3</strong></div>
+              <div class="row" style="gap:4px;margin-top:4px" data-score-row="energy">
+                ${[1, 2, 3, 4, 5].map((v) => `<button type="button" class="btn small ${v === 3 ? 'btn--primary' : 'btn--ghost'}" style="flex:1" data-val="${v}">${v}</button>`).join('')}
+              </div>
+              <div class="row row--between" style="font-size:10.5px;color:var(--text-muted);margin-top:2px"><span>Kiệt sức (1)</span><span>Sung sức (5)</span></div>
+            </div>
+            <div style="margin-top:4px">
+              <div class="small" style="margin-bottom:4px">Có vùng đau nào không? (nếu có, chọn bên dưới):</div>
+              <div class="row" style="flex-wrap:wrap;gap:6px">
+                ${PAIN_AREAS.map((a) => `<label class="badge" style="cursor:pointer;padding:6px 10px"><input type="checkbox" data-rd-pain="${esc(a)}"> ${esc(a)}</label>`).join('')}
+              </div>
+            </div>
+            <button type="button" class="btn btn--primary" id="rdDone" style="margin-top:8px">Xong</button>
+          </div>
+        </div>
+      `;
+    }
+    return '';
+  }
 
   render(`<div id="log">
     <p class="small">${coachPT ? `<a href="#/coach/client/${s.client_id}/plan?phase=${phase.id}">← Giáo án ${esc(clientName)}</a>` : `<a href="#/client/plan?phase=${phase.id}&w=${s.week_no}">← Lịch tập</a>`}</p>
@@ -42,6 +138,7 @@ export async function clientSessionView({ params, profile }) {
     <div class="row row--between"><h1 style="margin:0">${esc(s.title || 'Buổi tập')}</h1><span id="sync" class="badge" style="display:none;color:var(--warn);border-color:var(--warn)"></span></div>
     <p class="muted small">${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)} · tuần ${s.week_no} · ${esc(SESSION_TYPE_VI[s.session_type] || '')}${fb?.completed ? ' · <strong style="color:var(--tint)">Đã hoàn thành ✓</strong>' : ''}</p>
     ${s.coach_note ? `<div class="card"><strong>Coach dặn:</strong> ${esc(s.coach_note).replace(/\n/g, '<br>')}</div>` : ''}
+    <div id="rdBox" style="margin-bottom:12px">${renderReadinessBox()}</div>
     <p class="small muted">Số đã điền sẵn là mục tiêu. Tập xong hiệp nào bấm <strong>✓</strong> hiệp đó — chỉ sửa số khi bạn làm khác.</p>
     ${s.blocks.map((b, bi) => blockHtml(b, bi)).join('') || '<div class="card"><p class="muted">Buổi này chưa có bài.</p></div>'}
 
@@ -93,9 +190,125 @@ export async function clientSessionView({ params, profile }) {
   // ---------- Ghi hiệp ----------
   const sync = () => { const n = pendingCount(), el = $('#sync'); if (!el) return; el.style.display = n ? '' : 'none'; el.textContent = `Chưa đồng bộ ${n} hiệp`; };
   sync();
-  const onOnline = async () => { await flushPending(); sync(); if (!pendingCount()) toast('Đã đồng bộ các hiệp ghi lúc mất mạng.'); };
+  const onOnline = async () => {
+    await flushPending();
+    sync();
+    // Đồng bộ readiness offline nếu có
+    try {
+      const off = localStorage.getItem(offKey);
+      if (off) { await saveFeedback(JSON.parse(off)); localStorage.removeItem(offKey); }
+    } catch { /* */ }
+    if (!pendingCount()) toast('Đã đồng bộ dữ liệu lúc mất mạng.');
+  };
   addEventListener('online', onOnline);
   addEventListener('hashchange', () => removeEventListener('online', onOnline), { once: true });
+
+  // ---------- Readiness & Warmup interactions ----------
+  const rdScores = { sleep: 3, soreness: 3, stress: 3, energy: 3 };
+  function updateRdBox() {
+    const box = $('#rdBox');
+    if (!box) return;
+    box.innerHTML = renderReadinessBox();
+    wireReadiness();
+  }
+  function wireReadiness() {
+    const box = $('#rdBox');
+    if (!box) return;
+
+    box.querySelectorAll('[data-score-row]').forEach((row) => {
+      const key = row.dataset.scoreRow;
+      row.querySelectorAll('[data-val]').forEach((btn) => {
+        btn.onclick = () => {
+          rdScores[key] = Number(btn.dataset.val);
+          row.querySelectorAll('[data-val]').forEach((b) => b.classList.replace('btn--primary', 'btn--ghost'));
+          btn.classList.replace('btn--ghost', 'btn--primary');
+          const vl = document.getElementById('v_' + key);
+          if (vl) vl.textContent = rdScores[key];
+        };
+      });
+    });
+
+    const skipBtn = $('#rdSkip', box);
+    if (skipBtn) {
+      skipBtn.onclick = () => {
+        sessionStorage.setItem('dcoach_skip_rd_' + s.id, '1');
+        skipped = true;
+        updateRdBox();
+      };
+    }
+
+    const doneBtn = $('#rdDone', box);
+    if (doneBtn) {
+      doneBtn.onclick = async () => {
+        const pain = [...box.querySelectorAll('[data-rd-pain]:checked')].map((c) => c.dataset.rdPain);
+        const score = readinessScore(rdScores);
+        const level = readinessLevel(score, pain);
+        const rdObj = {
+          sleep: rdScores.sleep,
+          soreness: rdScores.soreness,
+          stress: rdScores.stress,
+          energy: rdScores.energy,
+          pain,
+          score,
+          level,
+          warmup_done: false,
+          at: new Date().toISOString(),
+        };
+        await busy(doneBtn, async () => {
+          readiness = rdObj;
+          const row = {
+            client_id: s.client_id,
+            session_id: s.id,
+            readiness: rdObj,
+            completed: fb?.completed || false,
+            coach_reviewed: false,
+          };
+          try {
+            await saveFeedback(row);
+            localStorage.removeItem(offKey);
+            toast('Đã lưu đánh giá sẵn sàng.');
+          } catch {
+            localStorage.setItem(offKey, JSON.stringify(row));
+            toast('Mất mạng — đã lưu tạm trên máy.');
+          }
+          updateRdBox();
+        });
+      };
+    }
+
+    const wmChk = $('#warmupDone', box);
+    if (wmChk) {
+      wmChk.onchange = async () => {
+        if (!readiness) return;
+        readiness.warmup_done = wmChk.checked;
+        const txt = $('#warmupDoneTxt', box);
+        if (txt) txt.textContent = readiness.warmup_done ? 'Đã khởi động xong ✓' : 'Đã khởi động xong';
+        const row = {
+          client_id: s.client_id,
+          session_id: s.id,
+          readiness,
+          completed: fb?.completed || false,
+          coach_reviewed: false,
+        };
+        try {
+          await saveFeedback(row);
+          localStorage.removeItem(offKey);
+          toast(readiness.warmup_done ? 'Đã ghi nhận khởi động ✓' : 'Đã bỏ ghi nhận khởi động.');
+        } catch {
+          localStorage.setItem(offKey, JSON.stringify(row));
+        }
+      };
+    }
+
+    box.querySelectorAll('[data-wtimer]').forEach((tb) => {
+      tb.onclick = () => {
+        const idx = Number(tb.dataset.wtimer);
+        const st = curPlan[idx];
+        if (st) startRest(st.sec, st.label.split('(')[0].trim());
+      };
+    });
+  }
+  wireReadiness();
 
   $('#log').addEventListener('input', (e) => {
     const tr = e.target.closest('tr[data-set]'); if (!tr) return;
@@ -124,11 +337,11 @@ export async function clientSessionView({ params, profile }) {
   });
 
   // ---------- Đồng hồ nghỉ ----------
-  function startRest(sec) {
+  function startRest(sec, title = 'Nghỉ') {
     clearInterval(tick); document.getElementById('restbar')?.remove();
     let left = sec;
     document.body.insertAdjacentHTML('beforeend', `<div id="restbar" class="soft" style="position:fixed;left:50%;transform:translateX(-50%);width:min(528px,calc(100% - 28px));bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:20;border-radius:32px;padding:8px 8px 8px 22px;display:flex;align-items:center;gap:10px;color:var(--text);background:linear-gradient(rgba(16,16,20,.94),rgba(16,16,20,.94)) padding-box,var(--grad) border-box;border:1.5px solid transparent;box-shadow:0 12px 30px rgba(0,0,0,.55),0 0 24px -6px var(--glow);backdrop-filter:blur(20px)">
-      <span>Nghỉ</span><strong id="rleft" style="font-size:24px;font-variant-numeric:tabular-nums">${toClock(left)}</strong><span style="flex:1"></span>
+      <span>${esc(title)}</span><strong id="rleft" style="font-size:24px;font-variant-numeric:tabular-nums">${toClock(left)}</strong><span style="flex:1"></span>
       <button class="btn small" id="rplus">+15s</button><button class="btn small" id="rskip">Bỏ qua</button></div>`);
     const stop = () => { clearInterval(tick); tick = null; document.getElementById('restbar')?.remove(); };
     $('#rplus').onclick = () => { left += 15; $('#rleft').textContent = toClock(left); };
@@ -174,7 +387,7 @@ export async function clientSessionView({ params, profile }) {
       try {
         const left = await flushPending(); sync();
         if (left) return toast(`Còn ${left} hiệp chưa đồng bộ — có mạng rồi bấm lại nhé.`, 'error');
-        await saveFeedback({ client_id: s.client_id, session_id: s.id, completed: true, session_rpe: f.rpe.value ? Number(f.rpe.value) : null, pain: pain.length ? pain : null, note: f.note.value.trim() || null, coach_reviewed: isCoach });
+        await saveFeedback({ client_id: s.client_id, session_id: s.id, completed: true, session_rpe: f.rpe.value ? Number(f.rpe.value) : null, pain: pain.length ? pain : null, note: f.note.value.trim() || null, coach_reviewed: isCoach, readiness: readiness || fb?.readiness || null });
         if (coachPT) {
           const msg = await deductForSession(s);
           toast(msg); setTimeout(() => (location.hash = `#/coach/review/${s.id}`), 1200); return;
