@@ -72,6 +72,7 @@ try:
   co.wait_for_timeout(300);n0=len(DB(co)['meal_options'])
   co.click(f'[data-slot="{sl[0]["id"]}"] [data-delopt] >> nth=0');co.wait_for_timeout(600)
   ok('11 thêm từ mẫu bữa rồi xóa 1 phương án', n0==7 and len(DB(co)['meal_options'])==6)
+  ok('11b nhãn ✗ ghi rõ lý do (thừa/thiếu kcal, thiếu đạm)', any(k in co.inner_text('main') for k in ('% kcal','thiếu đạm')) and '✗ lệch khung' not in co.inner_text('main'))
   # 6. Kho món: dán 20 món CSV
   co.goto(B+'#/coach/foods');co.wait_for_selector('#fl li')
   ok('12 kho món: 11 món, tìm không dấu', '11/11 món' in co.inner_text('#fc'))

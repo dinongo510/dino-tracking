@@ -4,7 +4,7 @@ import { sb, viError } from '../../supabaseClient.js';
 import { coachTabs } from './home.js';
 import { norm } from '../../lib/exercises.js';
 import { addDays, todayISO } from '../../lib/plan.js';
-import { LEVEL_VI, GROUP_VI, SLOT_CODE, latestBody, computeTargets, carbFrom, slotTargets, totalsOf, fits, suggestOptions, applyDayPlan, scaleItems, defaultSlots, adherenceRange } from '../../lib/nutrition.js';
+import { LEVEL_VI, GROUP_VI, SLOT_CODE, latestBody, computeTargets, carbFrom, slotTargets, totalsOf, fits, fitReason, suggestOptions, applyDayPlan, scaleItems, defaultSlots, adherenceRange } from '../../lib/nutrition.js';
 import { loadNutrition, loadBodyAndIntake, approveTarget, insertSlots, updateSlot, deleteSlot, insertOption, deleteOption, replacePlan, listTemplates, listChecks } from '../../lib/nutritionStore.js';
 import { signedUrls } from '../../lib/files.js';
 
@@ -73,7 +73,7 @@ export async function coachNutritionView({ params, profile }) {
         <label class="small row" style="gap:4px">% kcal <input class="input" type="number" min="0" max="100" step="0.5" data-pct value="${s.kcal_pct}" style="width:70px;padding:4px"></label>
         <button class="btn btn--ghost small" data-delslot>✕</button></div>
       <ul class="list" style="margin-top:6px">${s.options.map((o) => { const tot = totalsOf(o.items, foodById), ok = fits(tot, t); return `<li>
-        <div style="flex:1"><strong>${esc(o.label || 'Phương án')}</strong> <span class="badge ${ok ? 'badge--ok' : ''}" style="${ok ? '' : 'background:#c62828;color:#fff'}">${ok ? '✓ vừa khung' : '✗ lệch khung'}</span>
+        <div style="flex:1"><strong>${esc(o.label || 'Phương án')}</strong> <span class="badge ${ok ? 'badge--ok' : ''}" style="${ok ? '' : 'background:#c62828;color:#fff'}">${ok ? '✓ vừa khung' : `✗ ${esc(fitReason(tot, t) || 'lệch khung')}`}</span>
           <div class="small">${itemsText(o.items)}</div><div class="small muted">${totText(tot)}</div></div>
         <button class="btn btn--ghost small" data-delopt="${o.id}">✕</button></li>`; }).join('') || '<li class="small muted">Chưa có phương án.</li>'}</ul>
       <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">
@@ -160,7 +160,7 @@ export async function coachNutritionView({ params, profile }) {
     $('#obRows').innerHTML = rows.map((r, i) => `<div class="row" style="gap:6px"><span style="flex:1">${esc(foodById.get(r.food_id)?.name_vi)} <span class="small muted">(${esc(foodById.get(r.food_id)?.serving || '')})</span></span>
       <input class="input" type="number" min="0.5" step="0.5" value="${r.qty}" data-q="${i}" style="width:80px;padding:4px"> <button type="button" class="btn btn--ghost small" data-rm="${i}">✕</button></div>`).join('') || '<p class="small muted">Tìm và bấm vào món để thêm.</p>';
     const tot = totalsOf(rows, foodById);
-    $('#obTot').innerHTML = `Tổng: <strong>${totText(tot)}</strong> · khung ${bT.kcal} kcal ±10%, đạm ≥ ${Math.round(bT.proteinG * 0.8)} g → ${fits(tot, bT) ? '<strong style="color:#2e7d32">✓ vừa</strong>' : '<strong style="color:#c62828">✗ lệch</strong>'}`;
+    $('#obTot').innerHTML = `Tổng: <strong>${totText(tot)}</strong> · khung ${bT.kcal} kcal ±10%, đạm ≥ ${Math.round(bT.proteinG * 0.8)} g → ${fits(tot, bT) ? '<strong style="color:#2e7d32">✓ vừa</strong>' : `<strong style="color:#c62828">✗ ${esc(fitReason(tot, bT) || 'lệch')}</strong>`}`;
   };
   const drawRes = () => {
     const q = norm($('#obQ').value);

@@ -78,3 +78,11 @@ test('tuân thủ ăn: Đúng 1, Gần 0,5, Lệch 0 trên số bữa × số ng
   assert.equal(adherenceRange([], 4, 7), 0);
   assert.equal(adherenceRange([], 0, 7), null);
 });
+
+import { fitReason } from '../../coach/js/lib/nutrition.js';
+test('lý do lệch khung: ghi rõ thừa/thiếu kcal và thiếu đạm', () => {
+  const slot = { kcal: 694, proteinG: 48 };
+  assert.equal(fitReason({ kcal: 825, proteinG: 33 }, slot), 'thừa 19% kcal, thiếu đạm (33/38 g)');
+  assert.equal(fitReason({ kcal: 600, proteinG: 50 }, slot), 'thiếu 14% kcal');
+  assert.equal(fitReason({ kcal: 700, proteinG: 50 }, slot), '');
+});

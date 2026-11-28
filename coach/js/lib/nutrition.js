@@ -51,6 +51,15 @@ export function totalsOf(items, foodById) {
   return optionTotals(items.filter((i) => foodById.get(i.food_id)).map((i) => ({ food: foodById.get(i.food_id), qty: Number(i.qty) })));
 }
 export const fits = (tot, slot) => optionFits(tot, slot.kcal, slot.proteinG);
+/** Lý do lệch khung (rỗng nếu vừa): thừa/thiếu kcal (±10%), thiếu đạm (< 80% mục tiêu đạm của bữa) */
+export function fitReason(tot, slot) {
+  const r = [];
+  const d = Math.round(((tot.kcal - slot.kcal) / slot.kcal) * 100);
+  if (d > 10) r.push(`thừa ${d}% kcal`); else if (d < -10) r.push(`thiếu ${-d}% kcal`);
+  const pMin = Math.round(slot.proteinG * 0.8);
+  if (tot.proteinG < slot.proteinG * 0.8) r.push(`thiếu đạm (${Math.round(tot.proteinG)}/${pMin} g)`);
+  return r.join(', ');
+}
 
 /**
  * Gợi ý phương án cho 1 bữa: 1 món đạm + 1 tinh bột + 1 rau, số khẩu phần bước 0,5 (đạm/tinh bột 0,5–3; rau 1).
