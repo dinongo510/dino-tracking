@@ -44,3 +44,10 @@ Toàn bộ brief 006–013, migration 0001–0006, `formulas.js`, nội dung kh�
 - Tôi: duyệt đặc tả + nội dung khách; sửa kho trong Excel; chốt OPEN 1–2.
 - Antigravity (khi rảnh): nhận `DINO-006_brief.md` + thư mục `coach/` (code DINO-006 Claude đã viết, 8/8 test giao diện pass với Supabase giả lập — xem `coach/README_DINO-006.md`) + lệnh `DINO-006 AUTHORIZED` → review, tích hợp, UAT với Supabase thật.
 - Phiên Claude kế tiếp: hỗ trợ tôi làm 7 bước Supabase của DINO-006 (từng bước, có vị trí nút), review báo cáo AG, sinh lại SQL khi tôi sửa Excel.
+
+## DINO-009 — Giáo án theo chu kỳ (Claude viết 26/11/2026, chờ AG tạo nhánh + Dino UAT)
+- File mới: `coach/js/lib/plan.js` (hàm thuần: ngày buổi tập, sinh tuần 2…N qua `formulas.generateWeek` + deload tuần cuối, mẫu ↔ cây, corrective từ OHSA 4 bước, chèn chạy compromised HYROX), `coach/js/lib/planStore.js` (đọc/ghi Supabase; lưu buổi theo kiểu chỉ sửa phần thay đổi, giữ id để set_logs của DINO-010 không bị xóa dây chuyền), `views/coach/plan.js` (chương trình → giai đoạn → lưới tuần × buổi; áp mẫu, sinh tuần, chép tuần, phát hành/thu hồi, lưu thành mẫu, đổi ngày bắt đầu tự dời lịch), `views/coach/session.js` (soạn buổi: 9 loại khối, chọn bài từ thư viện, kg/%1RM/RPE, quy tắc tăng tải, ↑↓✕), `views/client/plan.js` (tab "Lịch tập" theo tuần + xem buổi chỉ đọc).
+- Sửa: `app.js` (4 route), `sw.js` v8, trang chi tiết khách (nút "Giáo án tập luyện →"), trang khách (tab Lịch tập + buổi hôm nay).
+- Không cần migration mới (dùng bảng có sẵn từ 0001 + 0006).
+- Test: plan.test.mjs 7/7, e2e_plan.py 28/28; chạy lại 006–008: 13+6+15+5+17+16 đều đạt (tổng 107/107).
+- Giới hạn đã biết: khách gọi thẳng API vẫn đọc được giai đoạn nháp (app chỉ lọc ở truy vấn) — chấp nhận ở MVP. Ghi kết quả từng hiệp = DINO-010.
