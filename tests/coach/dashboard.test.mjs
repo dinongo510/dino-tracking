@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   rangeStart, mondaysBetween, phaseMarkers, weightSeries, logRows, autoTracked, e1rmWeekly, volumeByMuscle, runWeekly,
   adherenceWeekly, weightTrend, groupRow, sortByAttention, toCsv, crc32, zipStore, exportName,
+  muscleSets, personalRecords,
 } from '../../coach/js/lib/dashboard.js';
 import { niceScale, lineChart, barChart, fmtPace } from '../../coach/js/lib/charts.js';
 
@@ -117,4 +118,52 @@ test('biểu đồ SVG: điểm mang số liệu thô, trục y tròn, rỗng th
   assert.ok(!lineChart({ title: 'C', series: [{ name: 'TB', points: [{ x: '2026-11-25', y: 1 }] }] }).includes('class="legend"'));
   const b = barChart({ id: 'ad', title: 'Tuân thủ', unit: '%', labels: ['2026-11-16', '2026-11-23'], series: [{ name: 'Buổi', values: [50, 100] }], max: 100 });
   assert.ok(b.includes('data-v="100"') && b.includes('>100</text>') && !b.includes('>125</text>'));
+});
+
+test('DINO-016: muscleSets (nhóm phụ 0,5 hiệp) và personalRecords (PR đúng bài/ngày, nhãn "Mới")', () => {
+  const ex = new Map([
+    ['sq', { name_vi: 'Squat', primary_muscles: ['quadriceps'], secondary_muscles: ['glutes'] }],
+    ['bp', { name_vi: 'Đẩy ngực', primary_muscles: ['chest'], secondary_muscles: ['triceps', 'shoulders'] }],
+    ['z2', { name_vi: 'Chạy Z2', primary_muscles: ['quadriceps'] }],
+  ]);
+  const items = [{ id: 'i1', exercise_id: 'sq' }, { id: 'i2', exercise_id: 'bp' }, { id: 'i3', exercise_id: 'z2' }];
+  const logs = [
+    // 2 hiệp squat ngày 20/11 -> quads +2, glutes +1 (0.5 * 2)
+    L('i1', '2026-11-20', 5, 100),
+    L('i1', '2026-11-20', 5, 110),
+    // 1 hiệp squat ngày 25/11 (PR mới) -> quads +1, glutes +0.5
+    L('i1', '2026-11-25', 3, 120),
+    // 2 hiệp đẩy ngực ngày 22/11 -> chest +2, triceps +1, shoulders +1
+    L('i2', '2026-11-22', 8, 70),
+    L('i2', '2026-11-22', 6, 75),
+    // 1 hiệp chạy 6km ngày 26/11
+    { block_item_id: 'i3', distance_m: 6000, duration_sec: 1800, done: true, logged_at: '2026-11-26T06:00:00' },
+  ];
+  const rows = logRows(logs, items);
+
+  // 1. muscleSets
+  const ms = muscleSets(rows, ex, '2026-11-18', TODAY);
+  assert.equal(ms['quadriceps'], 3);  // 3 hiệp chính
+  assert.equal(ms['glutes'], 1.5);    // 3 hiệp phụ * 0.5 = 1.5
+  assert.equal(ms['chest'], 2);       // 2 hiệp chính
+  assert.equal(ms['triceps'], 1);     // 2 hiệp phụ * 0.5 = 1
+  assert.equal(ms['shoulders'], 1);   // 2 hiệp phụ * 0.5 = 1
+
+  // 2. personalRecords
+  const prs = personalRecords(rows, ex, TODAY);
+  assert.ok(prs.length >= 3);
+
+  // Squat 1RM: 120 * (1 + 3/30) = 132 kg, ngày 2026-11-25 (cách TODAY 3 ngày -> isNew: true)
+  const sq1rm = prs.find((p) => p.exercise_id === 'sq' && p.type === '1rm');
+  assert.ok(sq1rm);
+  assert.equal(sq1rm.value, 132);
+  assert.equal(sq1rm.day, '2026-11-25');
+  assert.equal(sq1rm.isNew, true);
+
+  // Chạy pace tốt nhất: 1800s / 6km = 300s (5:00/km)
+  const runPr = prs.find((p) => p.type === 'run_pace');
+  assert.ok(runPr);
+  assert.equal(runPr.value, 300);
+  assert.equal(runPr.day, '2026-11-26');
+  assert.equal(runPr.isNew, true);
 });

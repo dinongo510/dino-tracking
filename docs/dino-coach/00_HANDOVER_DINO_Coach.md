@@ -94,17 +94,25 @@ Toàn bộ brief 006–013, migration 0001–0006, `formulas.js`, nội dung kh�
 - Test: dashboard 8/8, e2e_dash 27/27; toàn bộ 54 + 202 = 256/256.
 - Sau UAT (dữ liệu thật Khách A: cân 84/83 → TB 83,5; 1RM goblet squat 12×12 = 16,8; khối lượng 432; xuất 23 bảng; khách bị chặn ở dashboard khách khác + không tự sửa bài theo dõi): đường TB 7 ngày chỉ 1 điểm vẫn hiện chấm; biểu đồ 1RM luôn ghi tên bài kể cả khi chỉ 1 bài; `sw.js` v19.
 
-## DINO-014 — Gói tập (buổi / thời hạn), buổi PT tại chỗ, khóa app khi hết hạn, "Tập của tôi" (Claude viết 28/11/2026; chờ chạy 0010 + AG tạo nhánh + UAT)
-- Quyết định của Dino (28/11): hủy muộn không xử lý (tự giải quyết); gói thường không thời hạn (có lựa chọn "Không thời hạn"); gói hết hạn → khóa app khách sau 3 ngày; lưu giá + đã trả; chưa cần đặt giờ hẹn; khách riêng của Dino (không theo chính sách BFS).
-- Migration `0010_packages.sql` (test Postgres 16 local, chạy 2 lần không lỗi): `profiles.coach_mode` (online/offline/hybrid, khách không tự đổi), `sessions.mode` ('self' khách tự tập · 'pt' tại chỗ), bảng `packages` (số buổi NULL = không giới hạn, end_date NULL = không thời hạn, price_vnd, paid_vnd, status active/ended), `package_uses` (1 buổi PT chỉ trừ 1 lần — unique session_id). RLS: coach ghi, khách chỉ đọc. Sửa trigger check-in / báo cáo: coach tự làm khách của mình thì không bị chặn; luật cũ với khách giữ nguyên.
-- Khóa app: khách CÓ gói và mọi gói có hạn đều quá hạn > 3 ngày (hoặc coach kết thúc gói cuối) → màn hình khóa ở mọi trang khách (dữ liệu giữ nguyên). Gói không thời hạn đang hoạt động hoặc khách chưa có gói → không khóa. Khóa ở giao diện (khách gọi thẳng API vẫn đọc được dữ liệu của mình — chấp nhận).
-- File mới: `lib/packages.js` (hàm thuần: cộng tháng, đọc/ghi tiền "3tr/500k/3.000.000", trạng thái gói, chọn gói để trừ buổi PT, khóa + ân hạn, lý do cần chú ý, chế độ "Tập của tôi"), `lib/packageStore.js`, `lib/ptDeduct.js`, `views/coach/packages.js` (khối Gói tập & hình thức trên trang khách: thêm/sửa gói, trừ tay 1 buổi, hoàn buổi, kết thúc/mở lại, báo khóa/ân hạn).
-- Sửa: soạn buổi có "Ai ghi buổi này?" (Khách tự tập / PT tại chỗ); coach mở được phiếu buổi PT để ghi thay khách, "Hoàn thành & trừ 1 buổi"; trang kết quả buổi PT báo đã/chưa trừ gói; nhãn PT ở giáo án + "Tập với Coach" ở lịch/Hôm nay của khách; Hôm nay khách có thẻ gói + báo sắp khóa; bảng tổng nhóm có nhãn hình thức + lý do gói (sắp hết buổi/hạn, còn nợ, đã khóa) xếp ngay sau cảnh báo; trang chủ coach có "Tập của tôi" (dùng app như khách cho chính mình, không cần đăng xuất; mở lại app vẫn nhớ chế độ); Hộp việc ẩn check-in của chính coach; `sw.js` v20.
-- Test: packages 6/6, e2e_packages 27/27; toàn bộ 60 + 229 = 289/289.
+## DINO-014 + DINO-015 — Gói tập + Readiness & Khởi động — DEPLOYED production 28/11/2026 (dcoach-v22, merge ef6bbc5; Claude UAT trên Preview đạt; migration 0010 + 0011 đã chạy)
+- DINO-014: Gói tập (buổi / thời hạn), trừ buổi PT tại chỗ, khóa app sau 3 ngày hết hạn, chế độ "Tập của tôi" cho coach.
+- DINO-015: Readiness trước buổi tập (score 0–100, green/yellow/red, gợi ý điều chỉnh), Khởi động chỉnh tư thế NASM CEx 4 bước (Inhibit, Lengthen, Activate, Integrate) theo OHSA và vùng đau, bấm giờ từng bước, nhãn "Readiness thấp" trong Hộp việc.
+- Sửa sau UAT: "Tập của tôi" không bị bắt điền hồ sơ khách; lưu readiness giữ nguyên trạng thái đã xem; khoảng trắng nhãn inbox; `sw.js` v22.
 
-## DINO-015 — Readiness trước buổi tập + Khởi động chỉnh tư thế (Prehab NASM) — Antigravity viết code + test (28/11/2026, dcoach-v21)
-- Migration `0011_readiness.sql` (chưa chạy, Claude duyệt rồi chạy): `alter table public.session_feedback add column if not exists readiness jsonb;`.
-- File mới: `coach/js/lib/readiness.js` (hàm thuần: tính điểm chuẩn hóa 0–100 từ 4 tiêu chí đảo chiều soreness/stress, xếp loại green/yellow/red, gợi ý điều chỉnh cường độ), `coach/js/lib/prehab.js` (hàm thuần: sinh kế hoạch khởi động chuẩn NASM CEx 4 bước Inhibit → Lengthen → Activate → Integrate 5–8 phút theo OHSA, loại buổi và vùng đau), `tests/coach/readiness.test.mjs` (7 bài), `tests/coach/e2e_readiness.py` (12 bài).
-- Sửa: `coach/js/views/client/log.js` (thẻ "Sẵn sàng chưa?", thẻ tổng kết readiness kèm gợi ý, thẻ "Khởi động & chỉnh tư thế" kèm bấm giờ từng bước và tick hoàn thành, ẩn khi có khối corrective, lưu offline), `coach/js/views/coach/review.js` (hiện điểm readiness, mức, chi tiết, tình trạng khởi động), `coach/js/views/coach/inbox.js` (buổi có readiness red trong 7 ngày có nhãn "Readiness thấp"), `coach/sw.js` (v21).
-- Test: readiness 7/7, e2e_readiness 12/12; toàn bộ: 67 unit + 241 e2e (308/308 PASS).
+## DINO-016 — Tab Công cụ, sơ đồ cơ, bảng PR, âm báo nghỉ — Antigravity viết code + test (28/11/2026, dcoach-v23)
+- Không có migration database.
+- File mới:
+  * `coach/js/lib/tools.js`: hàm thuần đổi pace ⇄ km/h, format m:ss, Riegel dự đoán giải chạy (5K, 10K, HM 21,1K, FM 42,2K), tính 1RM (Epley & Brzycki) kèm bảng % tạ (100% đến 50%), máy tính lắp đĩa tạ (đòn 20kg/15kg, đĩa 25, 20, 15, 10, 5, 2.5, 1.25 kg, báo phần dư), chọn WOD ngẫu nhiên hỗ trợ rng cố định.
+  * `coach/js/lib/wods.js`: kho 51 benchmark WOD kinh điển port từ `CROSSFIT_WOD_DATABASE` (Girls, Heroes, Hyrox & Chippers) kèm phân loại, thời lượng, bài tập và tải chuẩn Rx.
+  * `coach/js/views/shared/tools.js`: màn hình `#/tools` gồm 4 thẻ tương tác (Pace & Dự đoán giải chạy, 1RM & Bảng % tạ, Máy tính lắp đĩa tạ, WOD ngẫu nhiên roulette).
+  * `tests/coach/tools.test.mjs`: 8 unit test kiểm thử các công thức thuần.
+  * `tests/coach/e2e_tools.py`: 23 kiểm thử E2E (cổng 8781).
+- Sửa:
+  * `coach/js/lib/dashboard.js`: hàm `muscleSets` (nhóm chính 1 hiệp, nhóm phụ 0,5 hiệp), `frequencyMatrix14` (ma trận 10 nhóm cơ × 14 ngày), `personalRecords` (top 10 PR sức mạnh & chạy, cờ `isNew` trong 14 ngày).
+  * `coach/js/views/shared/dashboard.js`: sơ đồ nhóm cơ nhiệt SVG (mặt trước & mặt sau, màu loang theo `--h` và mật độ hiệp/tuần, chạm hiện số hiệp), ma trận tần suất 14 ngày dạng bảng chấm sáng, bảng PR top 10 có nhãn "Mới".
+  * `coach/js/views/client/log.js`: đồng hồ nghỉ `startRest` phát tiếng bíp ngắn (Web Audio API) + rung khi hết giờ; nút bật/tắt âm `🔔`/`🔕` lưu `localStorage.dcoach_sound`.
+  * `coach/js/app.js`: đăng ký route `#/tools` (auth).
+  * Điều hướng & liên kết: tab Thư viện coach (`coach/js/views/coach/library.js`, `coach/js/views/coach/home.js`) và Hồ sơ khách (`coach/js/views/client/body.js`, `coach/js/views/client/home.js`) có link "Công cụ hỗ trợ →", thanh tab sáng tương ứng.
+  * `coach/sw.js`: nâng version lên `dcoach-v23`, thêm các file tools vào SHELL.
+- Test: unit tests 76/76 PASS; e2e 23/23 PASS (`e2e_tools.py`); hồi quy toàn bộ e2e cũ đạt 100% (`e2e_readiness.py`, `e2e_packages.py`, `e2e_dash.py`, `e2e_log.py`).
 

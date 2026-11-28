@@ -20,7 +20,21 @@ addEventListener('hashchange', () => { clearInterval(tick); tick = null; documen
 
 function beep() {
   try { navigator.vibrate?.([300, 120, 300]); } catch { /* */ }
-  try { const a = new AudioContext(), o = a.createOscillator(); o.connect(a.destination); o.frequency.value = 880; o.start(); o.stop(a.currentTime + 0.35); } catch { /* */ }
+  if (localStorage.getItem('dcoach_sound') === '0') return;
+  try {
+    const a = new (window.AudioContext || window.webkitAudioContext)();
+    if (a.state === 'suspended') a.resume();
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, a.currentTime);
+    g.gain.setValueAtTime(0.3, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.35);
+    o.connect(g);
+    g.connect(a.destination);
+    o.start(a.currentTime);
+    o.stop(a.currentTime + 0.35);
+  } catch { /* */ }
 }
 
 export async function clientSessionView({ params, profile }) {
@@ -340,10 +354,17 @@ export async function clientSessionView({ params, profile }) {
   function startRest(sec, title = 'Nghỉ') {
     clearInterval(tick); document.getElementById('restbar')?.remove();
     let left = sec;
+    let soundOn = localStorage.getItem('dcoach_sound') !== '0';
     document.body.insertAdjacentHTML('beforeend', `<div id="restbar" class="soft" style="position:fixed;left:50%;transform:translateX(-50%);width:min(528px,calc(100% - 28px));bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:20;border-radius:32px;padding:8px 8px 8px 22px;display:flex;align-items:center;gap:10px;color:var(--text);background:linear-gradient(rgba(16,16,20,.94),rgba(16,16,20,.94)) padding-box,var(--grad) border-box;border:1.5px solid transparent;box-shadow:0 12px 30px rgba(0,0,0,.55),0 0 24px -6px var(--glow);backdrop-filter:blur(20px)">
       <span>${esc(title)}</span><strong id="rleft" style="font-size:24px;font-variant-numeric:tabular-nums">${toClock(left)}</strong><span style="flex:1"></span>
+      <button class="btn small" id="rsound" title="Bật/tắt âm báo" aria-label="Bật/tắt âm báo">${soundOn ? '🔔' : '🔕'}</button>
       <button class="btn small" id="rplus">+15s</button><button class="btn small" id="rskip">Bỏ qua</button></div>`);
     const stop = () => { clearInterval(tick); tick = null; document.getElementById('restbar')?.remove(); };
+    $('#rsound').onclick = () => {
+      soundOn = !soundOn;
+      localStorage.setItem('dcoach_sound', soundOn ? '1' : '0');
+      $('#rsound').textContent = soundOn ? '🔔' : '🔕';
+    };
     $('#rplus').onclick = () => { left += 15; $('#rleft').textContent = toClock(left); };
     $('#rskip').onclick = stop;
     tick = setInterval(() => { left--; const el = document.getElementById('rleft'); if (el) el.textContent = toClock(Math.max(left, 0)); if (left <= 0) { beep(); stop(); } }, 1000);

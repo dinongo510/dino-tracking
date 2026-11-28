@@ -24,6 +24,7 @@ export async function clientProfileView({ profile }) {
     return `<li style="display:block"><div class="small muted">${esc(f.label)}</div><div>${esc(v)}</div></li>`;
   };
   render(`<h1>Hồ sơ của bạn</h1>
+    <a class="btn btn--block btn--ghost" href="#/tools" id="btnTools" style="margin:10px 0 16px;text-align:center">🛠️ Công cụ hỗ trợ (Pace, 1RM, đĩa tạ, WOD) →</a>
     ${themePickerHtml()}
     ${h ? STEPS.map((s, i) => `<div class="row row--between"><h2>${esc(s.title)}</h2><a class="btn btn--ghost small" href="#/client/intake/${i}">Sửa</a></div>
       <div class="card"><ul class="list">${s.fields.filter((f) => f.key && !f.key.startsWith('parq.') && !f.key.startsWith('measure.')).map(show).join('') || '<li class="muted small">—</li>'}</ul></div>`).join('')

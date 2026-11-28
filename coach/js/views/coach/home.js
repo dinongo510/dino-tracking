@@ -15,7 +15,7 @@ const STATUS = { active: ['Đang tập', 'badge--ok'], paused: ['Tạm dừng', 
 
 export const coachTabs = () => tabbar([
   { href: '#/coach', label: 'Khách', icon: 'users', also: ['#/dash', '#/client/session'] },
-  { href: '#/coach/library', label: 'Thư viện', icon: 'book', also: ['#/coach/foods', '#/exercise'] },
+  { href: '#/coach/library', label: 'Thư viện', icon: 'book', also: ['#/coach/foods', '#/exercise', '#/tools'] },
   { href: '#/coach/inbox', label: 'Hộp việc', icon: 'inbox' },
 ]);
 

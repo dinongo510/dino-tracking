@@ -18,7 +18,7 @@ export const clientTabs = () => tabbar([
   { href: '#/client/plan', label: 'Lịch tập', icon: 'plan', also: ['#/client/session'] },
   { href: '#/client/eat', label: 'Ăn', icon: 'eat' },
   { href: '#/client/body', label: 'Cơ thể', icon: 'body', also: ['#/client/dash'] },
-  { href: '#/client/profile', label: 'Hồ sơ', icon: 'user' },
+  { href: '#/client/profile', label: 'Hồ sơ', icon: 'user', also: ['#/tools'] },
 ]);
 
 export async function clientHomeView({ profile }) {
@@ -123,6 +123,8 @@ export async function clientHomeView({ profile }) {
       <span style="width:36px;height:36px;border-radius:50%;background:#1e1e23;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none">${esc(((coach?.full_name || 'Dino').trim().split(/\s+/).pop() || 'D')[0].toUpperCase())}</span>
       <span style="flex:1;min-width:0"><span class="small muted" style="display:block">Coach nhắn</span><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(msgs[0].body)}</span></span>
       <span class="badge badge--hot">${msgs.length}</span></a>` : ''}
+
+    <div class="card" style="margin-top:10px"><a href="#/tools" style="color:var(--text);text-decoration:none" class="row row--between"><span><strong>🛠️ Công cụ hỗ trợ</strong> <span class="small muted">· Pace, 1RM, đĩa tạ, WOD</span></span><span>→</span></a></div>
 
     <div class="card"><p class="small muted" style="margin:0">Mẹo: thêm DINO Coach vào màn hình chính để mở nhanh như một ứng dụng
       (Safari: Chia sẻ → Thêm vào MH chính · Chrome: ⋮ → Cài đặt ứng dụng). Đổi màu giao diện ở tab Hồ sơ.</p></div>`);
