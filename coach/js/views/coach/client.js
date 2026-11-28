@@ -2,6 +2,7 @@
 import { render, $, esc, toast, busy, fmtDate } from '../../ui.js';
 import { sb, viError } from '../../supabaseClient.js';
 import { coachTabs } from './home.js';
+import { renderPackages } from './packages.js';
 import { renderBody } from '../shared/body.js';
 import { renderPhotos } from '../shared/photos.js';
 import { STEPS, getVal, deriveFlag, coachHints, suggestActivityFactor } from '../../lib/intake.js';
@@ -57,6 +58,7 @@ export async function coachClientView({ params, profile }) {
       <a class="btn" href="#/coach/client/${id}/checkins">Check-in tuần</a>
       <a class="btn" href="#/dash/${id}">Tiến độ & biểu đồ</a>
       <a class="btn btn--primary" href="#/coach/client/${id}/nutrition">Dinh dưỡng →</a></div>
+    <h2>Gói tập & hình thức</h2><div id="pkg"></div>
     ${flags.length ? `<div class="card card--flag"><strong style="color:var(--danger)">Cờ đỏ — liên hệ khách trước khi giao bài</strong><ul class="small">${flags.map((f) => `<li>${esc(f)}</li>`).join('')}</ul></div>` : ''}
     ${!h ? '<div class="card"><p class="muted">Khách chưa điền hồ sơ.</p></div>' : !h.updated_at ? '<div class="card"><p class="muted">Khách đang điền hồ sơ dở.</p></div>' : ''}
 
@@ -129,6 +131,7 @@ export async function coachClientView({ params, profile }) {
     });
   });
 
+  await renderPackages($('#pkg'), c).catch((e) => { $('#pkg').innerHTML = `<p class="small muted">Chưa tải được gói tập (${esc(e.message || e)}).</p>`; });
   await renderBody($('#body'), id, profile.id);
   await renderPhotos($('#photos'), id, profile.id);
 }

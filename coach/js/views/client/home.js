@@ -10,6 +10,8 @@ import { adherenceRange } from '../../lib/nutrition.js';
 import { unreadBySession } from '../../lib/logStore.js';
 import { checkinWeekFor, reportOpen } from '../../lib/checkin.js';
 import { listCheckins, getReview } from '../../lib/checkinStore.js';
+import { loadPackages } from '../../lib/packageStore.js';
+import { currentPackage, pkgStatus, pkgLine, autoName, lockState, selfMode, setSelfMode } from '../../lib/packages.js';
 
 export const clientTabs = () => tabbar([
   { href: '#/client', label: 'Hôm nay', icon: 'home' },
@@ -21,7 +23,7 @@ export const clientTabs = () => tabbar([
 
 export async function clientHomeView({ profile }) {
   const intake = await loadIntake(profile.id);
-  if (!intake?.updated_at) return go('#/client/intake'); // chưa hoàn thành hồ sơ → vào wizard
+  if (!intake?.updated_at && profile.role !== 'coach') return go('#/client/intake'); // chưa hoàn thành hồ sơ → vào wizard (coach "Tập của tôi" không bắt buộc)
   clientTabs();
   const db = await sb(), me = profile.id, today = todayISO(), from7 = addDays(today, -6);
   const must = (r) => { if (r.error) throw r.error; return r.data; };
@@ -34,6 +36,10 @@ export async function clientHomeView({ profile }) {
     db.from('meal_checks').select('level, check_date').eq('client_id', me).gte('check_date', from7).lte('check_date', today).then(must).catch(() => []),
     db.from('nutrition_targets').select('kcal').eq('client_id', me).eq('status', 'approved').order('valid_from', { ascending: false }).order('created_at', { ascending: false }).limit(1).maybeSingle().then((r) => r.data).catch(() => null),
   ]);
+  const pk = await loadPackages(me).catch(() => ({ packages: [], usedById: {} }));
+  const curPkg = currentPackage(pk.packages, pk.usedById, today), pkgSt = curPkg ? pkgStatus(curPkg, pk.usedById[curPkg.id] || 0, today) : null;
+  const lk = lockState(pk.packages, today);
+  const self = profile.role === 'coach' && selfMode();
   const [cis, phs] = await Promise.all([listCheckins(me).catch(() => []), db.from('phases').select('id, name, start_date, end_date, status').eq('client_id', me).neq('status', 'draft').then(must).catch(() => [])]);
   const ciWeek = checkinWeekFor(today, new Set(cis.map((c) => c.week_start)));
   const lastReply = cis.find((c) => c.coach_reply && c.replied_at && c.replied_at.slice(0, 10) >= addDays(today, -3));
@@ -72,8 +78,9 @@ export async function clientHomeView({ profile }) {
     <div class="row row--between" style="margin-top:4px">
       <div><div class="muted" style="font-size:14px">${hi}</div><h1 style="margin:0">${esc(profile.full_name || 'bạn')}</h1>
         <div class="small muted">Coach: ${esc(coach?.full_name || 'Dino')}</div></div>
-      <button id="out" class="btn btn--ghost small">Đăng xuất</button>
+      ${self ? '<button id="back" class="btn small">← Về Coach</button>' : '<button id="out" class="btn btn--ghost small">Đăng xuất</button>'}
     </div>
+    ${lk.graceLeft ? `<div class="card card--flag small" style="margin-top:12px">Gói tập đã hết hạn — app sẽ tạm khóa sau <strong>${lk.graceLeft} ngày</strong>. Liên hệ Coach để gia hạn.</div>` : ''}
 
     ${nx.main ? `<div class="card card--hi" style="margin-top:14px;padding:18px">
       <div class="row row--between"><span style="font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--tint)">${LABEL[nx.kind]}</span>
@@ -81,7 +88,7 @@ export async function clientHomeView({ profile }) {
       <div style="font-size:25px;font-weight:800;letter-spacing:-.02em;margin:6px 0 2px">${esc(nx.main.title || 'Buổi tập')}</div>
       ${items.length ? `<div class="small" style="color:#c4c4cc">${esc(items.slice(0, 3).map((i) => exName(i.exercise_id)).filter(Boolean).join(' · '))}${items.length > 3 ? ` · +${items.length - 3} bài` : ''}</div>` : ''}
       <div class="row" style="gap:6px;margin-top:10px;flex-wrap:wrap">
-        <span class="badge">${items.length} bài · ${sets} hiệp</span><span class="badge">${esc(SESSION_TYPE_VI[nx.main.session_type] || '')}</span></div>
+        <span class="badge">${items.length} bài · ${sets} hiệp</span><span class="badge">${esc(SESSION_TYPE_VI[nx.main.session_type] || '')}</span>${nx.main.mode === 'pt' ? '<span class="badge badge--ok">Tập với Coach</span>' : ''}</div>
       <a class="btn btn--primary btn--block" href="#/client/session/${nx.main.id}" style="margin-top:14px;min-height:54px;font-size:16px">${nx.kind === 'upcoming' ? 'Xem trước buổi tập' : 'Bắt đầu tập'} →</a>
       ${nx.kind === 'today' && otherMissed.length ? `<p class="small muted" style="text-align:center;margin:8px 0 0">Lỡ buổi ${dm(otherMissed[0].scheduled_on)}? <a href="#/client/session/${otherMissed[0].id}">Tập bù "${esc(otherMissed[0].title || 'buổi đó')}"</a></p>` : ''}
       ${nx.kind === 'makeup' && nx.todays.length === 0 && nx.doneToday ? '<p class="small muted" style="text-align:center;margin:8px 0 0">Buổi hôm nay đã xong ✓ — đây là buổi lỡ trong tuần.</p>' : ''}
@@ -101,6 +108,8 @@ export async function clientHomeView({ profile }) {
       <div style="height:8px;border-radius:4px;margin-top:10px;background:linear-gradient(90deg,var(--a1),var(--a2) ${Math.round((eatenToday / slots.length) * 100)}%,rgba(255,255,255,.08) ${Math.round((eatenToday / slots.length) * 100)}%)"></div>
       <div class="small" style="margin-top:8px;color:#c4c4cc">Đã check <strong>${eatenToday}/${slots.length}</strong> bữa · ${eatenToday >= slots.length ? 'đủ bữa hôm nay ✓' : 'bấm để check bữa tiếp theo'}</div></a>` : ''}
 
+    ${curPkg && !pkgSt.ended ? `<div class="card row row--between" id="pkgcard" style="gap:10px"><span><span class="small muted" style="display:block">Gói: ${esc(curPkg.name || autoName(curPkg))}</span>
+      <strong>${esc(pkgLine(curPkg, pkgSt))}</strong></span>${pkgSt.warn.length ? `<span class="badge badge--warn">${esc(pkgSt.warn[0])}</span>` : ''}</div>` : ''}
     ${ciWeek ? `<a class="card card--hi" href="#/client/checkin?w=${ciWeek}" style="display:block">
       <div class="row row--between"><span style="font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--tint)">CHECK-IN TUẦN</span><span class="small muted">~1 phút</span></div>
       <div style="font-size:18px;font-weight:700;margin-top:4px">Tuần ${ciWeek.slice(8, 10)}/${ciWeek.slice(5, 7)} của bạn thế nào?</div>
@@ -117,5 +126,6 @@ export async function clientHomeView({ profile }) {
 
     <div class="card"><p class="small muted" style="margin:0">Mẹo: thêm DINO Coach vào màn hình chính để mở nhanh như một ứng dụng
       (Safari: Chia sẻ → Thêm vào MH chính · Chrome: ⋮ → Cài đặt ứng dụng). Đổi màu giao diện ở tab Hồ sơ.</p></div>`);
-  $('#out').onclick = async () => { await signOut(); go('#/login'); };
+  if (self) $('#back').onclick = () => { setSelfMode(false); go('#/coach'); };
+  else $('#out').onclick = async () => { await signOut(); go('#/login'); };
 }

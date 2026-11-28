@@ -3,6 +3,10 @@ import { getSession, getProfile, homeFor } from './auth.js';
 import { render, esc } from './ui.js';
 
 const routes = []; // {pattern: RegExp, keys, view, access: 'public'|'auth'|'coach'|'client'}
+let clientGuard = null; // DINO-014: khóa app khách khi hết gói — trả true nếu đã chặn (tự vẽ màn hình khóa)
+let selfCheck = () => false; // DINO-014: coach đang ở chế độ "Tập của tôi"
+export const setClientGuard = (fn) => { clientGuard = fn; };
+export const setSelfCheck = (fn) => { selfCheck = fn; };
 
 export function route(path, view, access = 'auth') {
   const keys = [];
@@ -25,7 +29,8 @@ export async function resolve() {
       const profile = await getProfile();
       if (!profile) return go('#/login');
       if (r.access === 'coach' && profile.role !== 'coach') return go(homeFor(profile));
-      if (r.access === 'client' && profile.role !== 'client') return go(homeFor(profile));
+      if (r.access === 'client' && profile.role !== 'client' && !(profile.role === 'coach' && selfCheck())) return go(homeFor(profile));
+      if (profile.role === 'client' && clientGuard && await clientGuard(profile, path)) return;
       return await r.view({ params, profile });
     }
     return await r.view({ params });

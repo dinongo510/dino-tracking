@@ -1,5 +1,8 @@
 // DINO Coach — điểm khởi động (DINO-006)
-import { route, start, go } from './router.js';
+import { route, start, go, setClientGuard, setSelfCheck } from './router.js';
+import { selfMode, lockState } from './lib/packages.js';
+import { loadPackages } from './lib/packageStore.js';
+import { todayISO } from './lib/plan.js';
 import { watchOnline, render, esc, toast } from './ui.js';
 import { linkType, linkError, onAuthChange, getSession, getProfile, homeFor } from './auth.js';
 import { loginView, forgotView, setPasswordView } from './views/auth.js';
@@ -27,7 +30,7 @@ import { coachCheckinView, coachCheckinListView } from './views/coach/checkin.js
 import { phaseReportView } from './views/shared/phaseReport.js';
 import { dashView, clientDashView } from './views/shared/dashboard.js';
 
-route('/', async () => { const s = await getSession(); go(s ? homeFor(await getProfile()) : '#/login'); }, 'public');
+route('/', async () => { const s = await getSession(); const p = s ? await getProfile() : null; go(!s ? '#/login' : p?.role === 'coach' && selfMode() ? '#/client' : homeFor(p)); }, 'public');
 route('/login', loginView, 'public');
 route('/forgot', forgotView, 'public');
 route('/set-password', setPasswordView, 'public');
@@ -55,6 +58,26 @@ route('/coach/client/:id/checkins', coachCheckinListView, 'coach');
 route('/phase/:id', phaseReportView, 'auth');
 route('/dash/:id', dashView, 'coach');
 route('/client/dash', clientDashView, 'client');
+
+// DINO-014: khách hết gói quá 3 ngày → màn hình khóa (kiểm tra lại mỗi 60 giây)
+setSelfCheck(selfMode);
+let lockCache = { at: 0, id: null, st: null };
+setClientGuard(async (profile) => {
+  if (Date.now() - lockCache.at > 60000 || lockCache.id !== profile.id) {
+    try { const { packages } = await loadPackages(profile.id); lockCache = { at: Date.now(), id: profile.id, st: lockState(packages, todayISO()) }; }
+    catch { return false; } // lỗi mạng: không khóa
+  }
+  const st = lockCache.st; if (!st?.locked) return false;
+  const { tabbar } = await import('./ui.js'); tabbar(null);
+  const d = st.lastEnd ? `${st.lastEnd.slice(8, 10)}/${st.lastEnd.slice(5, 7)}/${st.lastEnd.slice(0, 4)}` : '';
+  render(`<div class="card card--flag" style="margin-top:40px;text-align:center" id="locked">
+    <div style="font-size:42px">🔒</div><h1>Gói tập đã hết hạn</h1>
+    <p class="muted">${d ? `Gói của bạn hết hạn ngày ${d}. ` : ''}Liên hệ Coach để gia hạn — dữ liệu của bạn vẫn được giữ nguyên.</p>
+    <button class="btn btn--block" id="lout" style="margin-top:12px">Đăng xuất</button></div>`);
+  const { signOut } = await import('./auth.js');
+  document.getElementById('lout').onclick = async () => { await signOut(); go('#/login'); };
+  return true;
+});
 
 watchOnline();
 addEventListener('online', () => flushPending().catch(() => {})); // hiệp ghi lúc mất mạng tự gửi khi có mạng

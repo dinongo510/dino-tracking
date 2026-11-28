@@ -3,10 +3,10 @@
 import { sb } from '../supabaseClient.js';
 import { uid, sessionDate, phaseEnd } from './plan.js';
 
-const SESSION_COLS = ['week_no', 'day_no', 'scheduled_on', 'title', 'session_type', 'coach_note'];
+const SESSION_COLS = ['week_no', 'day_no', 'scheduled_on', 'title', 'session_type', 'coach_note', 'mode'];
 const BLOCK_COLS = ['order_no', 'label', 'block_type', 'rounds', 'work_sec', 'rest_sec', 'time_cap_sec', 'note'];
 const ITEM_COLS = ['exercise_id', 'order_no', 'sets', 'reps_min', 'reps_max', 'load_kg', 'pct_1rm', 'target_rpe', 'tempo', 'rest_sec', 'distance_m', 'duration_sec', 'target_pace', 'hr_zone', 'progression_rule', 'note'];
-const only = (o, cols) => Object.fromEntries(cols.map((k) => [k, o[k] === undefined ? null : o[k]]));
+const only = (o, cols) => { const r = Object.fromEntries(cols.map((k) => [k, o[k] === undefined ? null : o[k]])); if ('mode' in r) r.mode ||= 'self'; return r; };
 const must = ({ data, error }) => { if (error) throw error; return data; };
 
 /** Toàn bộ giáo án của 1 khách, ghép thành cây. publishedOnly: chỉ giai đoạn đã phát hành (phía khách). */
@@ -134,7 +134,7 @@ export async function sessionsOn(clientId, iso) {
 /** Buổi đã phát hành của khách trong khoảng ngày [from, to] (DINO-011b: Buổi kế tiếp, % tập 7 ngày) */
 export async function publishedSessions(clientId, from, to) {
   const db = await sb();
-  const ss = must(await db.from('sessions').select('id, title, session_type, phase_id, scheduled_on, week_no, day_no').eq('client_id', clientId).gte('scheduled_on', from).lte('scheduled_on', to).order('scheduled_on'));
+  const ss = must(await db.from('sessions').select('id, title, session_type, mode, phase_id, scheduled_on, week_no, day_no').eq('client_id', clientId).gte('scheduled_on', from).lte('scheduled_on', to).order('scheduled_on'));
   if (!ss.length) return [];
   const ph = must(await db.from('phases').select('id, status').in('id', [...new Set(ss.map((s) => s.phase_id))]));
   const ok = new Set(ph.filter((p) => p.status !== 'draft').map((p) => p.id));
