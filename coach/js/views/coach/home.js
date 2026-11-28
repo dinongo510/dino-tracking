@@ -3,11 +3,16 @@ import { render, $, esc, toast, busy, tabbar, fmtDate } from '../../ui.js';
 import { sb, viError } from '../../supabaseClient.js';
 import { signOut } from '../../auth.js';
 import { go } from '../../router.js';
+import { groupData } from '../../lib/dashboardStore.js';
+import { groupRow, sortByAttention } from '../../lib/dashboard.js';
+import { todayISO } from '../../lib/plan.js';
+import { fmtNum } from '../../lib/charts.js';
+import { computeAlerts } from './inbox.js';
 
 const STATUS = { active: ['Đang tập', 'badge--ok'], paused: ['Tạm dừng', 'badge--warn'], ended: ['Kết thúc', ''] };
 
 export const coachTabs = () => tabbar([
-  { href: '#/coach', label: 'Khách', icon: 'users' },
+  { href: '#/coach', label: 'Khách', icon: 'users', also: ['#/dash'] },
   { href: '#/coach/library', label: 'Thư viện', icon: 'book', also: ['#/coach/foods', '#/exercise'] },
   { href: '#/coach/inbox', label: 'Hộp việc', icon: 'inbox' },
 ]);
@@ -20,17 +25,33 @@ export async function coachHomeView({ profile }) {
     .eq('role', 'client').eq('coach_id', profile.id).order('status').order('full_name');
   if (error) throw error;
 
+  // Bảng tổng nhóm: tính cảnh báo bỏ buổi / km tăng trước (giống Hộp việc), rồi sắp theo "cần chú ý"
+  const today = todayISO();
+  await computeAlerts(clients.filter((c) => c.status === 'active')).catch((e) => console.warn('computeAlerts', e));
+  const G = await groupData(clients.map((c) => c.id), today).catch((e) => { console.warn('groupData', e); return {}; });
+  const rows = sortByAttention(clients.map((c) => groupRow({ client: c, ...(G[c.id] || {}), today })));
   const active = clients.filter((c) => c.status === 'active').length;
+  const pct = (v) => (v == null ? '—' : `${v}%`);
+  const dm = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : 'chưa');
   render(`
     <div class="row row--between"><div><h1>Chào Coach ${esc(profile.full_name || '')}</h1>
       <p class="muted">${active} khách đang tập · ${clients.length} tổng</p></div>
       <button id="out" class="btn btn--ghost small">Đăng xuất</button></div>
 
-    <div class="card">${clients.length ? `<ul class="list">${clients.map((c) => `
-      <li><div><a href="#/coach/client/${c.id}" style="color:var(--text)"><strong>${esc(c.full_name || '(chưa có tên)')}</strong></a>
-        <div class="small muted">${esc(c.phone || '—')} · từ ${fmtDate(c.created_at)}</div></div>
-        <div class="row"><span class="badge ${STATUS[c.status]?.[1] || ''}">${STATUS[c.status]?.[0] || esc(c.status)}</span>
-        <button class="btn btn--ghost small" data-edit="${c.id}">Sửa</button></div></li>`).join('')}</ul>`
+    <div class="card">${rows.length ? `<p class="small muted" style="margin:0 0 4px">Xếp theo mức cần chú ý: cảnh báo → tuân thủ thấp → lâu chưa check-in.</p>
+      <ul class="list" id="group">${rows.map((r) => `
+      <li data-client="${r.id}" style="align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div class="row" style="gap:8px;flex-wrap:wrap"><a href="#/coach/client/${r.id}" style="color:var(--text)"><strong>${esc(r.name)}</strong></a>
+            ${r.alerts ? `<span class="badge badge--hot">⚠ ${r.alerts}</span>` : ''}
+            ${r.status !== 'active' ? `<span class="badge ${STATUS[r.status]?.[1] || ''}">${STATUS[r.status]?.[0] || esc(r.status)}</span>` : ''}</div>
+          <div class="small muted">${r.phaseName ? `${esc(r.phaseName)} · tuần ${r.week}/${r.weeks}` : 'Chưa có giai đoạn'} · check-in ${dm(r.lastCheckin)}</div>
+          <div class="gstats small"><span>Tập <b>${pct(r.trainPct)}</b></span><span>Ăn <b>${pct(r.eatPct)}</b></span>
+            <span>Cân <b>${r.trend.arrow ? `${r.trend.arrow}${r.trend.diff ? ' ' + fmtNum(Math.abs(r.trend.diff)) : ''}` : '—'}</b></span></div>
+          ${r.status === 'active' && r.reasons.length ? `<div class="small" style="color:var(--warn)">${esc(r.reasons.join(' · '))}</div>` : ''}
+        </div>
+        <div class="row" style="gap:6px;flex-direction:column;align-items:stretch"><a class="btn btn--ghost small" href="#/dash/${r.id}">Tiến độ</a>
+        <button class="btn btn--ghost small" data-edit="${r.id}">Sửa</button></div></li>`).join('')}</ul>`
       : '<p class="muted">Chưa có khách. Xem hướng dẫn mời khách bên dưới.</p>'}</div>
 
     <details class="card"><summary><strong>Cách mời khách mới</strong></summary>

@@ -9,7 +9,7 @@ Nguyên tắc: hiểu hệ thống trước; nghiệp vụ trước sở thích 
 ## Tài liệu (Project "Chuyên môn" + `dino-coach-handoff.zip`)
 - Đặc tả: Claude Doc "DINO Coach Online — Đặc tả quy trình & sản phẩm" (9 mục).
 - Brief: `DINO-006` … `DINO-010`, `DINO-011-013`.
-- Migration (thứ tự chạy): `0001_dino_coach_schema` → `0002_exercise_library_seed` → `0003_dino_core_exercises` → `0004_nutrition_library` → `0005_free_exercise_db` (AG sinh ở 008) → `0006_program_templates` → `0007_alerts` (AG, 010) → `0008_dashboard_views` (AG, 013).
+- Migration (thứ tự chạy): `0001_dino_coach_schema` → `0002_exercise_library_seed` → `0003_dino_core_exercises` → `0004_nutrition_library`  → `0005_exercise_images` → `0006_program_templates` → `0007_alerts` (010) → `0008_checkins_reviews` (012) → `0009_tracked_lifts` (013).
 - Code: `formulas.js` + `formulas.test.mjs` (13 test pass).
 - Nội dung khách: `DINO_Coach_noi_dung_khach.md` (hồ sơ, 7 câu sàng lọc, check-in, tin nhắn mẫu).
 - Kho duyệt: `DINO_Coach_Kho_bai_tap_va_meal_plan.xlsx`; bộ sinh lại SQL: `generator/` (`exercises_data.py`, `foods_data.py`, `programs_data.py`, `build.py`).
@@ -69,7 +69,7 @@ Toàn bộ brief 006–013, migration 0001–0006, `formulas.js`, nội dung kh�
 - Test: nutrition 7/7, e2e_nutrition 24/24; toàn bộ 177/177.
 - Sau UAT: nhãn ✗ ghi rõ lý do lệch khung (`fitReason`: thừa/thiếu % kcal, thiếu đạm).
 
-## DINO-011b — Giao diện "kính tối ánh màu" + Buổi kế tiếp — Claude UAT trên Preview: đạt (28/11/2026); chờ merge (v16)
+## DINO-011b — Giao diện "kính tối ánh màu" + Buổi kế tiếp — DEPLOYED production 28/11/2026 (dcoach-v16, merge be80d61)
 - Bản mẫu Dino chốt: https://claude.ai/artifact/Xt1McUsfGyJnfKH7Pu2odm (4 màn hình, chọn màu bằng chấm + thanh kéo).
 - Nguyên tắc: nền đen nhám, thẻ kính có viền gradient mảnh, vệt màu loang cố định phía sau; KHÔNG khối màu đặc — nút chính / tab đang chọn / ✓ / "Đúng" dùng lớp `.btn--primary` / `.soft` = nền tối + ánh màu nhạt bên trong + viền gradient + chữ sáng cùng tông + quầng sáng mờ. Font Be Vietnam Pro.
 - Màu: mọi màu suy ra từ 1 biến CSS `--h` (sắc độ 0–359): `--a1` nhấn, `--a2` (+38°), `--a3` (−34°, nhạt), `--tint` chữ ánh màu, trạng thái `--ok/--warn/--danger` cùng tông, phân biệt bằng độ đậm + ký hiệu (✓ ≈ ✕, ↑ ↓, ⚠). Người dùng chọn ở Hồ sơ (khách) / trang chủ (coach): 5 màu nhanh + thanh kéo; lưu `localStorage.dcoach_hue` (từng máy), áp trước khi vẽ bằng script nhỏ trong `index.html`.
@@ -78,9 +78,18 @@ Toàn bộ brief 006–013, migration 0001–0006, `formulas.js`, nội dung kh�
 - Test: plan 8/8 (+pickNext), e2e_theme 12/12 (mới); sửa e2e_plan/e2e_log/e2e_nutrition theo trang Hôm nay mới; toàn bộ 42 + 151 = 193/193. `sw.js` v15.
 - Sau UAT: tab Thư viện sáng cả ở Kho món ăn; thẻ Ăn "đủ bữa hôm nay ✓"; `sw.js` v16.
 
-## DINO-012 — Check-in tuần + đề xuất kcal + báo cáo giai đoạn (Claude viết 28/11/2026; chờ chạy 0008 + AG tạo nhánh SAU KHI 011b đã merge + UAT)
+## DINO-012 — Check-in tuần + đề xuất kcal + báo cáo giai đoạn — Claude UAT trên Preview: đạt (28/11/2026, commit 47a8b1a, dcoach-v17); migration 0008 đã chạy
 - Migration `0008_checkins_reviews.sql` (test Postgres 16 local): `weekly_checkins` + `sessions_pct, eat_pct, replied_at, updated_at`; `phase_reviews` + `coach_agreed_at, client_agreed_at, updated_at`. Trigger: khách không ghi `coach_reply`; coach không sửa câu trả lời của khách; mỗi bên chỉ ghi phần mình trong báo cáo; đủ 2 bên đồng ý → `status='agreed'`; coach sửa tóm tắt/quyết định sau khi khách đồng ý → khách đồng ý lại (khách sửa nhận xét KHÔNG làm mất đồng ý của coach).
 - File mới: `lib/checkin.js` (hàm thuần: tuần cần check-in T7/CN tuần này, T2/T3 tuần trước; cân TB từng tuần qua `formulas.weeklyAvg`; % buổi/% ăn tuần; đề xuất kcal qua `formulas.kcalAdjustment` + mục tiêu mới (carb tự tính); `phaseReport` đầu–cuối cân/eo/mông/SMM/PBF/FFM, ảnh chính diện 2 mốc, top 3 tăng 1RM (tuần 1–2 vs 2 tuần cuối), km, buổi xong/đến hạn, ăn TB, nhắc thiếu dữ liệu cuối giai đoạn), `lib/checkinStore.js` (+ `createNextPhase`: chép tuần 1, sinh tuần sau, bản nháp), `views/client/checkin.js`, `views/coach/checkin.js` (+ danh sách check-in của 1 khách), `views/shared/phaseReport.js` (route `/phase/:id` cho cả 2 vai).
 - Sửa: chat dùng chung theo ngữ cảnh (`session` / `checkin` / `phase`); Hôm nay khách có thẻ CHECK-IN TUẦN, "Coach đã trả lời", BÁO CÁO GIAI ĐOẠN; Lịch tập khách + Giáo án coach có nút báo cáo; trang khách của coach có "Check-in tuần"; Hộp việc có "Check-in chờ trả lời" + "Tin khác chưa đọc"; `sw.js` v17.
 - Kịch bản UAT brief đã test: cân đứng 2 tuần + ăn ≥ 80% → −150 kcal (1900 → 1750, C 191); ăn 70% → "Cần trao đổi", không đề xuất.
 - Test: checkin 4/4, e2e_checkin 24/24; toàn bộ 46 + 175 = 221/221.
+
+## DINO-013 — Dashboard + bảng tổng nhóm + xuất CSV — Claude UAT trên Preview: đạt (28/11/2026, commit 13a5b18); migration 0009 đã chạy. DINO-012 DEPLOYED (merge c2d6db0, dcoach-v17)
+- Quyết định: biểu đồ SVG tự vẽ (`lib/charts.js`) thay Chart.js qua CDN — không phụ thuộc mạng/CDN (PWA chạy offline, test chạy offline), màu ăn theo `--h`, nhẹ hơn ~200 KB. Không tạo view/RPC: < 10 khách → tính phía máy từ các bảng có sẵn, RLS áp dụng bình thường (thay mục 5 của brief).
+- Migration `0009_tracked_lifts.sql` (test Postgres 16 local, chạy 2 lần không lỗi): bảng bài "theo dõi" — coach ghi, khách chỉ đọc, khách khác không thấy.
+- File mới: `lib/charts.js` (đường theo ngày + cột theo tuần, cộng dồn/cạnh nhau, đường dọc mốc giai đoạn, điểm mang số liệu thô `data-v`), `lib/dashboard.js` (hàm thuần: bộ lọc Giai đoạn này / 3 tháng / Toàn bộ, cân + TB 7 ngày, eo/mông, SMM/FFM/PBF, 1RM Epley cao nhất mỗi tuần, khối lượng tạ theo nhóm cơ, km + pace easy (vùng tim ≤ 2), % buổi + % ăn theo tuần, dòng bảng tổng nhóm + sắp "cần chú ý", CSV BOM UTF-8, zip không nén), `lib/dashboardStore.js`, `views/shared/dashboard.js` (`#/dash/:id` coach, `#/client/dash` khách).
+- Sửa: trang chủ coach thành bảng tổng nhóm (cảnh báo → tuân thủ < 70% → lâu chưa check-in; tạm dừng/kết thúc xuống cuối; mỗi dòng: giai đoạn + tuần, % tập/ăn 7 ngày, xu hướng cân 2 tuần ▲▼—, lý do cần chú ý, nút Tiến độ); trang khách của coach có "Tiến độ & biểu đồ"; tab Cơ thể của khách có "Xem biểu đồ tiến độ →"; `coach.css` thêm ô số / chip / biểu đồ; `sw.js` v18.
+- Coach: "Chọn bài theo dõi" (tối đa 5, chưa chọn thì tự lấy 3 bài có tạ được ghi nhiều nhất); "Xuất CSV (.zip)" = 23 bảng của 1 khách.
+- Test: dashboard 8/8, e2e_dash 27/27; toàn bộ 54 + 202 = 256/256.
+- Sau UAT (dữ liệu thật Khách A: cân 84/83 → TB 83,5; 1RM goblet squat 12×12 = 16,8; khối lượng 432; xuất 23 bảng; khách bị chặn ở dashboard khách khác + không tự sửa bài theo dõi): đường TB 7 ngày chỉ 1 điểm vẫn hiện chấm; biểu đồ 1RM luôn ghi tên bài kể cả khi chỉ 1 bài; `sw.js` v19.

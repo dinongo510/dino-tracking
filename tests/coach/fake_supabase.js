@@ -16,7 +16,7 @@ function canSee(t,row,me){const prof=DB.profiles.find(p=>p.id===me);
 function reloadDB(){const x=localStorage.getItem('fakedb');if(x){const d=JSON.parse(x);for(const k of Object.keys(d))DB[k]=d[k];}}
 function Q(t){reloadDB();DB[t]||=[];const me=sess()?.user.id;let f=[],ords=[],lim=null,op='select',payload=null,conf=null,ignoreDup=false;
  const rows=()=>{let r=DB[t].filter(x=>canSee(t,x,me)&&f.every(fn=>fn(x)));r.sort((a,b)=>{for(const o of ords){if(a[o.k]===b[o.k])continue;return (a[o.k]>b[o.k]?1:-1)*(o.asc?1:-1)}return 0});if(lim)r=r.slice(0,lim);return r;};
- const COACH_ONLY=['nutrition_targets','meal_slots','meal_options','alerts','exercises','foods','meal_templates','day_plan_templates','programs','phases','sessions','session_blocks','block_items','program_templates'];
+ const COACH_ONLY=['nutrition_targets','meal_slots','meal_options','alerts','exercises','foods','meal_templates','day_plan_templates','programs','phases','sessions','session_blocks','block_items','program_templates','tracked_lifts'];
  const KIDS={meal_slots:['meal_options','slot_id'],programs:['phases','program_id'],phases:['sessions','phase_id'],sessions:['session_blocks','session_id'],session_blocks:['block_items','block_id']};
  const cascade=(tt,ids)=>{const k=KIDS[tt];if(!k||!ids.length)return;DB[k[0]]||=[];const kids=DB[k[0]].filter(x=>ids.includes(x[k[1]]));DB[k[0]]=DB[k[0]].filter(x=>!kids.includes(x));cascade(k[0],kids.map(x=>x.id));};
  const exec=()=>{ if(op!=='select'&&COACH_ONLY.includes(t)&&DB.profiles.find(p=>p.id===me)?.role!=='coach') return {data:null,error:{message:'new row violates row-level security policy'}};

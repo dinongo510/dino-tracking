@@ -15,7 +15,7 @@ export const clientTabs = () => tabbar([
   { href: '#/client', label: 'Hôm nay', icon: 'home' },
   { href: '#/client/plan', label: 'Lịch tập', icon: 'plan', also: ['#/client/session'] },
   { href: '#/client/eat', label: 'Ăn', icon: 'eat' },
-  { href: '#/client/body', label: 'Cơ thể', icon: 'body' },
+  { href: '#/client/body', label: 'Cơ thể', icon: 'body', also: ['#/client/dash'] },
   { href: '#/client/profile', label: 'Hồ sơ', icon: 'user' },
 ]);
 

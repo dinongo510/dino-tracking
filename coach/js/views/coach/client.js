@@ -55,6 +55,7 @@ export async function coachClientView({ params, profile }) {
     <h1>${esc(c.full_name || '(chưa có tên)')}</h1><p class="muted small">${esc(c.phone || '')} · từ ${fmtDate(c.created_at)}</p>
     <div class="row" style="gap:6px;flex-wrap:wrap;margin:4px 0 8px"><a class="btn btn--primary" href="#/coach/client/${id}/plan">Giáo án tập luyện →</a>
       <a class="btn" href="#/coach/client/${id}/checkins">Check-in tuần</a>
+      <a class="btn" href="#/dash/${id}">Tiến độ & biểu đồ</a>
       <a class="btn btn--primary" href="#/coach/client/${id}/nutrition">Dinh dưỡng →</a></div>
     ${flags.length ? `<div class="card card--flag"><strong style="color:var(--danger)">Cờ đỏ — liên hệ khách trước khi giao bài</strong><ul class="small">${flags.map((f) => `<li>${esc(f)}</li>`).join('')}</ul></div>` : ''}
     ${!h ? '<div class="card"><p class="muted">Khách chưa điền hồ sơ.</p></div>' : !h.updated_at ? '<div class="card"><p class="muted">Khách đang điền hồ sơ dở.</p></div>' : ''}
