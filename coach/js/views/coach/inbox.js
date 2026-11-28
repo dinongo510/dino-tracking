@@ -45,7 +45,7 @@ export async function coachInboxView({ profile }) {
   const db = await sb();
   const clients = must(await db.from('profiles').select('id, full_name').eq('role', 'client'));
   await computeAlerts(clients).catch((e) => console.warn('computeAlerts', e));
-  const [cks, unreadCk, unreadPh] = await Promise.all([unrepliedCheckins().catch(() => []), unreadBySession(profile.id, null, 'checkin').catch(() => ({})), unreadBySession(profile.id, null, 'phase').catch(() => ({}))]);
+  const [cks, unreadCk, unreadPh] = await Promise.all([unrepliedCheckins().then((x) => x.filter((c) => c.client_id !== profile.id)).catch(() => []), unreadBySession(profile.id, null, 'checkin').catch(() => ({})), unreadBySession(profile.id, null, 'phase').catch(() => ({}))]);
   const [alerts, unread, fbs] = await Promise.all([openAlerts(), unreadBySession(profile.id),
     db.from('session_feedback').select('session_id, client_id, session_rpe, pain, created_at').eq('completed', true).eq('coach_reviewed', false).order('created_at', { ascending: false }).then(must)]);
   const sids = [...new Set([...Object.keys(unread), ...fbs.map((f) => f.session_id), ...alerts.map((a) => a.ref_id).filter(Boolean)])];

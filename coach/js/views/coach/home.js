@@ -8,11 +8,13 @@ import { groupRow, sortByAttention } from '../../lib/dashboard.js';
 import { todayISO } from '../../lib/plan.js';
 import { fmtNum } from '../../lib/charts.js';
 import { computeAlerts } from './inbox.js';
+import { loadPackages } from '../../lib/packageStore.js';
+import { pkgReasons, MODE_VI, setSelfMode } from '../../lib/packages.js';
 
 const STATUS = { active: ['Đang tập', 'badge--ok'], paused: ['Tạm dừng', 'badge--warn'], ended: ['Kết thúc', ''] };
 
 export const coachTabs = () => tabbar([
-  { href: '#/coach', label: 'Khách', icon: 'users', also: ['#/dash'] },
+  { href: '#/coach', label: 'Khách', icon: 'users', also: ['#/dash', '#/client/session'] },
   { href: '#/coach/library', label: 'Thư viện', icon: 'book', also: ['#/coach/foods', '#/exercise'] },
   { href: '#/coach/inbox', label: 'Hộp việc', icon: 'inbox' },
 ]);
@@ -21,7 +23,7 @@ export async function coachHomeView({ profile }) {
   coachTabs();
   const db = await sb();
   const { data: clients, error } = await db.from('profiles')
-    .select('id, full_name, phone, status, created_at')
+    .select('id, full_name, phone, status, created_at, coach_mode')
     .eq('role', 'client').eq('coach_id', profile.id).order('status').order('full_name');
   if (error) throw error;
 
@@ -29,7 +31,8 @@ export async function coachHomeView({ profile }) {
   const today = todayISO();
   await computeAlerts(clients.filter((c) => c.status === 'active')).catch((e) => console.warn('computeAlerts', e));
   const G = await groupData(clients.map((c) => c.id), today).catch((e) => { console.warn('groupData', e); return {}; });
-  const rows = sortByAttention(clients.map((c) => groupRow({ client: c, ...(G[c.id] || {}), today })));
+  const PK = await loadPackages(clients.map((c) => c.id)).catch(() => ({ packages: [], usedById: {} }));
+  const rows = sortByAttention(clients.map((c) => groupRow({ client: c, ...(G[c.id] || {}), pkg: c.status === 'active' ? pkgReasons(PK.packages.filter((p) => p.client_id === c.id), PK.usedById, today) : [], today })));
   const active = clients.filter((c) => c.status === 'active').length;
   const pct = (v) => (v == null ? '—' : `${v}%`);
   const dm = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : 'chưa');
@@ -44,6 +47,7 @@ export async function coachHomeView({ profile }) {
         <div style="flex:1;min-width:0">
           <div class="row" style="gap:8px;flex-wrap:wrap"><a href="#/coach/client/${r.id}" style="color:var(--text)"><strong>${esc(r.name)}</strong></a>
             ${r.alerts ? `<span class="badge badge--hot">⚠ ${r.alerts}</span>` : ''}
+            <span class="badge">${MODE_VI[r.mode] || 'Online'}</span>
             ${r.status !== 'active' ? `<span class="badge ${STATUS[r.status]?.[1] || ''}">${STATUS[r.status]?.[0] || esc(r.status)}</span>` : ''}</div>
           <div class="small muted">${r.phaseName ? `${esc(r.phaseName)} · tuần ${r.week}/${r.weeks}` : 'Chưa có giai đoạn'} · check-in ${dm(r.lastCheckin)}</div>
           <div class="gstats small"><span>Tập <b>${pct(r.trainPct)}</b></span><span>Ăn <b>${pct(r.eatPct)}</b></span>
@@ -53,6 +57,11 @@ export async function coachHomeView({ profile }) {
         <div class="row" style="gap:6px;flex-direction:column;align-items:stretch"><a class="btn btn--ghost small" href="#/dash/${r.id}">Tiến độ</a>
         <button class="btn btn--ghost small" data-edit="${r.id}">Sửa</button></div></li>`).join('')}</ul>`
       : '<p class="muted">Chưa có khách. Xem hướng dẫn mời khách bên dưới.</p>'}</div>
+
+    <div class="card row row--between" style="flex-wrap:wrap;gap:8px"><div><strong>Tập của tôi</strong>
+      <div class="small muted">Dùng chính app này để ghi buổi tập của bạn — không cần đăng xuất.</div></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn btn--primary small" id="self">Mở chế độ tập →</button>
+        <a class="btn small" href="#/coach/client/${profile.id}/plan">Giáo án của tôi</a><a class="btn btn--ghost small" href="#/dash/${profile.id}">Tiến độ</a></div></div>
 
     <details class="card"><summary><strong>Cách mời khách mới</strong></summary>
       <ol class="small muted">
@@ -75,6 +84,7 @@ export async function coachHomeView({ profile }) {
 
   bindThemePicker();
   $('#out').onclick = async () => { await signOut(); go('#/login'); };
+  $('#self').onclick = () => { setSelfMode(true); go('#/client'); };
 
   const dlg = $('#dlg'), f = $('#f');
   let editing = null;

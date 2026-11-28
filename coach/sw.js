@@ -1,6 +1,6 @@
 // DINO Coach service worker — scope /coach/ (tách hẳn khỏi sw.js của app cá nhân)
 // Chỉ cache vỏ app tĩnh của /coach/. KHÔNG cache request tới Supabase hay CDN dữ liệu.
-const VERSION = 'dcoach-v19';
+const VERSION = 'dcoach-v20';
 const SHELL = [
   '/coach', '/coach/', '/coach/index.html', '/coach/manifest.json', '/coach/css/coach.css',
   '/coach/js/app.js', '/coach/js/config.js', '/coach/js/supabaseClient.js', '/coach/js/auth.js',
@@ -13,6 +13,7 @@ const SHELL = [
   '/coach/js/lib/nutrition.js', '/coach/js/lib/nutritionStore.js', '/coach/js/views/coach/nutrition.js', '/coach/js/views/coach/foods.js', '/coach/js/views/client/eat.js', '/coach/js/lib/theme.js',
   '/coach/js/lib/checkin.js', '/coach/js/lib/checkinStore.js', '/coach/js/views/client/checkin.js', '/coach/js/views/coach/checkin.js', '/coach/js/views/shared/phaseReport.js',
   '/coach/js/lib/charts.js', '/coach/js/lib/dashboard.js', '/coach/js/lib/dashboardStore.js', '/coach/js/views/shared/dashboard.js',
+  '/coach/js/lib/packages.js', '/coach/js/lib/packageStore.js', '/coach/js/lib/ptDeduct.js', '/coach/js/views/coach/packages.js',
   '/coach/icons/icon-192.png', '/coach/icons/icon-512.png',
 ];
 

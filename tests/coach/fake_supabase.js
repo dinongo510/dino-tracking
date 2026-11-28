@@ -16,7 +16,7 @@ function canSee(t,row,me){const prof=DB.profiles.find(p=>p.id===me);
 function reloadDB(){const x=localStorage.getItem('fakedb');if(x){const d=JSON.parse(x);for(const k of Object.keys(d))DB[k]=d[k];}}
 function Q(t){reloadDB();DB[t]||=[];const me=sess()?.user.id;let f=[],ords=[],lim=null,op='select',payload=null,conf=null,ignoreDup=false;
  const rows=()=>{let r=DB[t].filter(x=>canSee(t,x,me)&&f.every(fn=>fn(x)));r.sort((a,b)=>{for(const o of ords){if(a[o.k]===b[o.k])continue;return (a[o.k]>b[o.k]?1:-1)*(o.asc?1:-1)}return 0});if(lim)r=r.slice(0,lim);return r;};
- const COACH_ONLY=['nutrition_targets','meal_slots','meal_options','alerts','exercises','foods','meal_templates','day_plan_templates','programs','phases','sessions','session_blocks','block_items','program_templates','tracked_lifts'];
+ const COACH_ONLY=['nutrition_targets','meal_slots','meal_options','alerts','exercises','foods','meal_templates','day_plan_templates','programs','phases','sessions','session_blocks','block_items','program_templates','tracked_lifts','packages','package_uses'];
  const KIDS={meal_slots:['meal_options','slot_id'],programs:['phases','program_id'],phases:['sessions','phase_id'],sessions:['session_blocks','session_id'],session_blocks:['block_items','block_id']};
  const cascade=(tt,ids)=>{const k=KIDS[tt];if(!k||!ids.length)return;DB[k[0]]||=[];const kids=DB[k[0]].filter(x=>ids.includes(x[k[1]]));DB[k[0]]=DB[k[0]].filter(x=>!kids.includes(x));cascade(k[0],kids.map(x=>x.id));};
  const exec=()=>{ if(op!=='select'&&COACH_ONLY.includes(t)&&DB.profiles.find(p=>p.id===me)?.role!=='coach') return {data:null,error:{message:'new row violates row-level security policy'}};
@@ -49,6 +49,9 @@ function feedbackTrigger(fb){if(!fb.completed)return;DB.alerts||=[];const add=(k
 
 // ---- Giả lập trigger 0008: check-in / báo cáo giai đoạn ----
 function guardRow(t,n,o){const me=sess()?.user.id,coach=DB.profiles.find(p=>p.id===me)?.role==='coach';
+  const self=coach&&n.client_id===me; // DINO-014: coach tự làm khách của mình → không chặn
+  if(t==='weekly_checkins'&&self){ if(o&&n.coach_reply!==o.coach_reply)n.replied_at=new Date().toISOString(); n.updated_at=new Date().toISOString(); return; }
+  if(t==='phase_reviews'&&self){ if(o&&(n.coach_summary!==o.coach_summary||n.next_decisions!==o.next_decisions)&&n.client_agreed_at===o.client_agreed_at)n.client_agreed_at=null; n.status=n.coach_agreed_at&&n.client_agreed_at?'agreed':'open'; return; }
   if(t==='weekly_checkins'){ if(!coach){n.coach_reply=o?o.coach_reply:null;n.replied_at=o?o.replied_at:null;}
     else if(o){for(const k of ['avg_weight_kg','sleep_score','stress_score','energy_score','hardest','client_note','sessions_pct','eat_pct'])n[k]=o[k]; if(n.coach_reply!==o.coach_reply)n.replied_at=new Date().toISOString();}
     n.updated_at=new Date().toISOString();}

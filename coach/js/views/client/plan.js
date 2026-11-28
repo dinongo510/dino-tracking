@@ -55,6 +55,6 @@ export async function clientPlanView({ profile }) {
       <a href="#/client/session/${s.id}" style="flex:1;color:var(--text);text-decoration:none">
         <strong>${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)}${s.scheduled_on === today ? ' · Hôm nay' : ''}</strong>${done.has(s.id) ? ' <span class="badge badge--ok">✓ Đã tập</span>' : ''}${unread[s.id] ? ` <span class="badge badge--hot">${unread[s.id].length} tin mới</span>` : ''}
         <div>${esc(s.title || 'Buổi tập')}</div>
-        <div class="small muted">${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${s.blocks.reduce((n, b) => n + b.items.length, 0)} bài</div></a></li>`).join('')
+        <div class="small muted">${s.mode === 'pt' ? '<b style="color:var(--tint)">Tập với Coach</b> · ' : ''}${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${s.blocks.reduce((n, b) => n + b.items.length, 0)} bài</div></a></li>`).join('')
       || '<li class="small muted">Tuần này không có buổi tập — nghỉ ngơi hồi phục.</li>'}</ul>`);
 }

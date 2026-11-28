@@ -1,6 +1,7 @@
 // DINO-009 — Soạn 1 buổi tập (Coach): khối → bài, tải/RPE/%1RM, quy tắc tăng tải, corrective từ OHSA, HYROX
 import { render, $, esc, toast, busy } from '../../ui.js';
 import { viError } from '../../supabaseClient.js';
+import { SESSION_MODE_VI } from '../../lib/packages.js';
 import { coachTabs } from './home.js';
 import { loadExercises, filterExercises, norm, CATEGORY_VI, vi } from '../../lib/exercises.js';
 import { DAY_VI, SESSION_TYPE_VI, BLOCK_VI, BLOCK_FIELDS, RULE_VI, ruleKey, ruleFromKey, sessionDate, correctiveFromOhsa, interleaveCompromised, itemSummary } from '../../lib/plan.js';
@@ -37,6 +38,7 @@ export async function coachSessionView({ params }) {
       <label class="field"><span>Tên buổi</span><input class="input" id="st" value="${esc(cur.title || '')}"></label>
       <div class="row"><label class="field" style="flex:1"><span>Ngày</span><select id="sd">${DAY_VI.map((d, i) => `<option value="${i + 1}"${i + 1 === cur.day_no ? ' selected' : ''}>${d}</option>`).join('')}</select></label>
         <label class="field" style="flex:1"><span>Loại</span><select id="sy">${Object.entries(SESSION_TYPE_VI).map(([k, l]) => `<option value="${k}"${k === cur.session_type ? ' selected' : ''}>${l}</option>`).join('')}</select></label></div>
+      <label class="field"><span>Ai ghi buổi này?</span><select id="sm">${Object.entries(SESSION_MODE_VI).map(([k, l]) => `<option value="${k}"${k === (cur.mode || 'self') ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field"><span>Lời dặn của coach cho buổi này</span><textarea id="sn" rows="2">${esc(cur.coach_note || '')}</textarea></label>
     </div>
     <div id="blocks"></div>
@@ -58,6 +60,7 @@ export async function coachSessionView({ params }) {
   $('#st').oninput = (e) => { cur.title = e.target.value; mark(); };
   $('#sn').oninput = (e) => { cur.coach_note = e.target.value || null; mark(); };
   $('#sy').onchange = (e) => { cur.session_type = e.target.value; mark(); };
+  $('#sm').onchange = (e) => { cur.mode = e.target.value; mark(); };
   $('#sd').onchange = (e) => { cur.day_no = +e.target.value; cur.scheduled_on = sessionDate(phase.start_date, cur.week_no, cur.day_no); mark(); drawBlocks(); };
   $('#back').onclick = (e) => { if (dirty && !confirm('Buổi chưa được lưu. Bỏ thay đổi?')) e.preventDefault(); };
 

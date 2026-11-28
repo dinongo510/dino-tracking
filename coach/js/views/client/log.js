@@ -6,6 +6,8 @@ import { loadExercises } from '../../lib/exercises.js';
 import { DAY_VI, SESSION_TYPE_VI, itemSummary, blockSummary } from '../../lib/plan.js';
 import { loadSession } from '../../lib/planStore.js';
 import { buildRows, rowKind, toClock, fromClock, pace, timerPlan, PAIN_AREAS, TOTAL_BLOCKS } from '../../lib/sessionLog.js';
+import { deductForSession } from '../../lib/ptDeduct.js';
+import { coachTabs } from '../coach/home.js';
 import { loadLogs, saveLog, flushPending, pendingCount, loadFeedback, saveFeedback } from '../../lib/logStore.js';
 import { renderChat } from '../shared/chat.js';
 
@@ -20,19 +22,23 @@ function beep() {
 }
 
 export async function clientSessionView({ params, profile }) {
-  if (profile.role === 'coach') { location.hash = `#/coach/review/${params.id}`; return; }
-  clientTabs();
   const [{ session: s, phase }, exList] = await Promise.all([loadSession(params.id), loadExercises()]);
+  // Coach chỉ ghi phiếu ở buổi PT tại chỗ hoặc buổi của chính mình ("Tập của tôi"); buổi khác → trang xem kết quả
+  const isCoach = profile.role === 'coach', own = s.client_id === profile.id, coachPT = isCoach && !own && s.mode === 'pt';
+  if (isCoach && !own && !coachPT) { location.hash = `#/coach/review/${params.id}`; return; }
+  if (coachPT) coachTabs(); else clientTabs();
   if (phase.status === 'draft') { render('<div class="card"><p>Buổi tập này chưa được phát hành.</p><a href="#/client/plan">← Lịch tập</a></div>'); return; }
   await flushPending();
   const exById = new Map(exList.map((e) => [e.id, e]));
   const items = s.blocks.flatMap((b) => b.items);
   const [logs, fb] = await Promise.all([loadLogs(items.map((i) => i.id)), loadFeedback(s.id)]);
   const rowsOf = {}; for (const b of s.blocks) for (const it of b.items) rowsOf[it.id] = buildRows(b, it, logs[it.id]);
+  const clientName = coachPT ? ((await (await sb()).from('profiles').select('full_name').eq('id', s.client_id).maybeSingle()).data?.full_name || 'Khách') : '';
   const coachName = profile.coach_id ? ((await (await sb()).from('profiles').select('full_name').eq('id', profile.coach_id).maybeSingle()).data?.full_name || 'Coach') : 'Coach';
 
   render(`<div id="log">
-    <p class="small"><a href="#/client/plan?phase=${phase.id}&w=${s.week_no}">← Lịch tập</a></p>
+    <p class="small">${coachPT ? `<a href="#/coach/client/${s.client_id}/plan?phase=${phase.id}">← Giáo án ${esc(clientName)}</a>` : `<a href="#/client/plan?phase=${phase.id}&w=${s.week_no}">← Lịch tập</a>`}</p>
+    ${s.mode === 'pt' ? `<div class="card card--hi small"><strong style="color:var(--tint)">Buổi PT tại chỗ</strong> — ${coachPT ? `bạn ghi kết quả cho ${esc(clientName)}. Bấm "Hoàn thành" sẽ trừ 1 buổi trong gói của khách.` : 'tập cùng Coach, Coach ghi kết quả.'}</div>` : ''}
     <div class="row row--between"><h1 style="margin:0">${esc(s.title || 'Buổi tập')}</h1><span id="sync" class="badge" style="display:none;color:var(--warn);border-color:var(--warn)"></span></div>
     <p class="muted small">${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)} · tuần ${s.week_no} · ${esc(SESSION_TYPE_VI[s.session_type] || '')}${fb?.completed ? ' · <strong style="color:var(--tint)">Đã hoàn thành ✓</strong>' : ''}</p>
     ${s.coach_note ? `<div class="card"><strong>Coach dặn:</strong> ${esc(s.coach_note).replace(/\n/g, '<br>')}</div>` : ''}
@@ -48,7 +54,7 @@ export async function clientSessionView({ params, profile }) {
           <select data-lvl="${esc(a)}" ${p ? '' : 'hidden'}>${[1, 2, 3, 4, 5].map((n) => `<option${p?.level === n ? ' selected' : ''}>${n}</option>`).join('')}</select></label>`; }).join('')}</div>
         <span class="small muted">Mức đau 1 (nhẹ) – 5 (rất đau). Có đau thì Coach sẽ liên hệ.</span></div>
       <label class="field"><span>Ghi chú cho Coach</span><textarea name="note" rows="2">${esc(fb?.note || '')}</textarea></label>
-      <button class="btn btn--primary">${fb?.completed ? 'Cập nhật' : 'Hoàn thành buổi'}</button>
+      <button class="btn btn--primary">${fb?.completed ? 'Cập nhật' : coachPT ? 'Hoàn thành & trừ 1 buổi' : 'Hoàn thành buổi'}</button>
     </form>
     <div id="chat"></div></div>`);
 
@@ -168,8 +174,12 @@ export async function clientSessionView({ params, profile }) {
       try {
         const left = await flushPending(); sync();
         if (left) return toast(`Còn ${left} hiệp chưa đồng bộ — có mạng rồi bấm lại nhé.`, 'error');
-        await saveFeedback({ client_id: s.client_id, session_id: s.id, completed: true, session_rpe: f.rpe.value ? Number(f.rpe.value) : null, pain: pain.length ? pain : null, note: f.note.value.trim() || null, coach_reviewed: false });
-        toast(pain.length ? 'Đã lưu. Coach sẽ xem phần đau và liên hệ bạn.' : 'Tuyệt vời! Đã hoàn thành buổi tập.');
+        await saveFeedback({ client_id: s.client_id, session_id: s.id, completed: true, session_rpe: f.rpe.value ? Number(f.rpe.value) : null, pain: pain.length ? pain : null, note: f.note.value.trim() || null, coach_reviewed: isCoach });
+        if (coachPT) {
+          const msg = await deductForSession(s);
+          toast(msg); setTimeout(() => (location.hash = `#/coach/review/${s.id}`), 1200); return;
+        }
+        toast(pain.length && !own ? 'Đã lưu. Coach sẽ xem phần đau và liên hệ bạn.' : 'Tuyệt vời! Đã hoàn thành buổi tập.');
         setTimeout(() => (location.hash = '#/client/plan'), 900);
       } catch (err) { toast(viError(err), 'error'); }
     });
@@ -181,5 +191,5 @@ export async function clientSessionView({ params, profile }) {
     return false;
   }
 
-  await renderChat($('#chat'), { clientId: s.client_id, sessionId: s.id, me: profile.id, names: { [profile.id]: 'Bạn', [profile.coach_id]: coachName } });
+  await renderChat($('#chat'), { clientId: s.client_id, sessionId: s.id, me: profile.id, names: coachPT ? { [profile.id]: 'Bạn', [s.client_id]: clientName } : { [profile.id]: 'Bạn', [profile.coach_id]: coachName } });
 }

@@ -70,7 +70,7 @@ export async function coachPlanView({ params, profile }) {
           <span class="small muted">${dm(start)}–${dm(addDays(start, 6))}</span></div>
           <ul class="list">${ss.map((s) => `<li><a href="#/coach/session/${s.id}" style="flex:1;color:var(--text);text-decoration:none">
               <strong>${DAY_VI[s.day_no - 1]} · ${esc(s.title || 'Buổi tập')}</strong>
-              <div class="small muted">${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${s.blocks.length} khối · ${s.blocks.reduce((n, b) => n + b.items.length, 0)} bài</div></a>
+              <div class="small muted">${s.mode === 'pt' ? '<b style="color:var(--tint)">PT</b> · ' : ''}${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${s.blocks.length} khối · ${s.blocks.reduce((n, b) => n + b.items.length, 0)} bài</div></a>
               <span class="small muted">${dm(s.scheduled_on)}</span></li>`).join('') || '<li class="small muted">Chưa có buổi.</li>'}</ul>
           <div class="row" style="gap:6px"><button class="btn btn--ghost small" data-add="${w}">+ Buổi</button>
             ${w > 1 ? `<button class="btn btn--ghost small" data-copy="${w}">Chép tuần ${w - 1} sang</button>` : ''}</div></div>`;

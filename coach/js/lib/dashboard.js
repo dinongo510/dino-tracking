@@ -130,7 +130,7 @@ export function last7({ sessions, doneIds, checks, slotsCount, today }) {
 }
 
 /** 1 dòng bảng tổng nhóm */
-export function groupRow({ client, phases = [], sessions = [], doneIds = new Set(), checks = [], slotsCount = 0, measurements = [], alerts = 0, lastCheckin = null, today }) {
+export function groupRow({ client, phases = [], sessions = [], doneIds = new Set(), checks = [], slotsCount = 0, measurements = [], alerts = 0, lastCheckin = null, pkg = [], today }) {
   const ph = currentPhase(phases, today);
   const week = ph?.start_date ? Math.min(ph.weeks || 99, Math.floor(daysBetween(ph.start_date, today) / 7) + 1) : null;
   const { trainPct, eatPct } = last7({ sessions, doneIds, checks, slotsCount, today });
@@ -138,17 +138,18 @@ export function groupRow({ client, phases = [], sessions = [], doneIds = new Set
   const since = lastCheckin ? daysBetween(lastCheckin, today) : null;
   const reasons = [];
   if (alerts) reasons.push(`${alerts} cảnh báo`);
+  reasons.push(...pkg);                                     // DINO-014: gói sắp hết / hết hạn / còn nợ / đã khóa
   if (trainPct != null && trainPct < 70) reasons.push(`tập ${trainPct}%`);
   if (eatPct != null && eatPct < 70) reasons.push(`ăn ${eatPct}%`);
   if (since == null || since > 8) reasons.push(since == null ? 'chưa check-in' : `${since} ngày chưa check-in`);
   return { id: client.id, name: client.full_name || '(chưa có tên)', status: client.status, phone: client.phone, created_at: client.created_at,
-    phaseName: ph?.name || null, week, weeks: ph?.weeks || null, trainPct, eatPct, trend: tr, alerts, lastCheckin, since, reasons };
+    phaseName: ph?.name || null, week, weeks: ph?.weeks || null, trainPct, eatPct, trend: tr, alerts, lastCheckin, since, reasons, pkgWarn: pkg.length > 0, mode: client.coach_mode || 'online' };
 }
 
-/** Sắp theo "cần chú ý": cảnh báo → tuân thủ thấp (< 70%) → lâu chưa check-in; khách tạm dừng/kết thúc xuống cuối */
+/** Sắp theo "cần chú ý": cảnh báo → gói sắp hết/hết hạn → tuân thủ thấp (< 70%) → lâu chưa check-in; khách tạm dừng/kết thúc xuống cuối */
 export function sortByAttention(rows) {
   const low = (r) => Math.min(r.trainPct ?? 100, r.eatPct ?? 100);
-  const key = (r) => [r.status === 'active' ? 0 : 1, r.alerts > 0 ? 0 : 1, -r.alerts, low(r) < 70 ? 0 : 1, low(r), -(r.since ?? 9999)];
+  const key = (r) => [r.status === 'active' ? 0 : 1, r.alerts > 0 ? 0 : 1, -r.alerts, r.pkgWarn ? 0 : 1, low(r) < 70 ? 0 : 1, low(r), -(r.since ?? 9999)];
   return [...rows].sort((a, b) => { const x = key(a), y = key(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i]; return a.name.localeCompare(b.name, 'vi'); });
 }
 
