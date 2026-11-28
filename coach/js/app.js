@@ -29,6 +29,8 @@ import { clientCheckinView } from './views/client/checkin.js';
 import { coachCheckinView, coachCheckinListView } from './views/coach/checkin.js';
 import { phaseReportView } from './views/shared/phaseReport.js';
 import { dashView, clientDashView } from './views/shared/dashboard.js';
+import { toolsView } from './views/shared/tools.js';
+import { clientAdhocView } from './views/client/adhoc.js';
 
 route('/', async () => { const s = await getSession(); const p = s ? await getProfile() : null; go(!s ? '#/login' : p?.role === 'coach' && selfMode() ? '#/client' : homeFor(p)); }, 'public');
 route('/login', loginView, 'public');
@@ -36,6 +38,8 @@ route('/forgot', forgotView, 'public');
 route('/set-password', setPasswordView, 'public');
 route('/coach', coachHomeView, 'coach');
 route('/client', clientHomeView, 'client');
+route('/client/adhoc/new', clientAdhocView, 'auth');
+route('/client/adhoc/:id/edit', clientAdhocView, 'auth');
 route('/client/intake', intakeView, 'client');
 route('/client/intake/:step', intakeView, 'client');
 route('/client/body', clientBodyView, 'client');
@@ -58,6 +62,7 @@ route('/coach/client/:id/checkins', coachCheckinListView, 'coach');
 route('/phase/:id', phaseReportView, 'auth');
 route('/dash/:id', dashView, 'coach');
 route('/client/dash', clientDashView, 'client');
+route('/tools', toolsView, 'auth');
 
 // DINO-014: khách hết gói quá 3 ngày → màn hình khóa (kiểm tra lại mỗi 60 giây)
 setSelfCheck(selfMode);

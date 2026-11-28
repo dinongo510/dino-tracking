@@ -111,6 +111,178 @@ export function adherenceWeekly({ sessions, doneIds, checks, slotsCount, mondays
   return { sessions: out.map((o) => o.sessionsPct), eat: out.map((o) => o.eatPct) };
 }
 
+// ---------- DINO-016: Sơ đồ cơ, Tần suất 14 ngày & Bảng PR ----------
+/** Số hiệp có tạ theo nhóm cơ (nhóm chính = 1 hiệp, nhóm phụ = 0,5 hiệp) */
+export function muscleSets(rows, exById, from, to) {
+  const sets = {};
+  for (const r of rows) {
+    if (!isLift(r)) continue;
+    if (from && r.day < from) continue;
+    if (to && r.day > to) continue;
+    const ex = exById.get(r.exercise_id);
+    if (!ex) continue;
+    for (const m of (ex.primary_muscles || [])) {
+      sets[m] = (sets[m] || 0) + 1;
+    }
+    for (const m of (ex.secondary_muscles || [])) {
+      sets[m] = (sets[m] || 0) + 0.5;
+    }
+  }
+  return sets;
+}
+
+export const MATRIX_MUSCLES = [
+  { key: 'chest', label: 'Ngực', match: ['chest'] },
+  { key: 'back', label: 'Lưng / Xô', match: ['lats', 'middle back', 'lower back', 'traps'] },
+  { key: 'shoulders', label: 'Vai', match: ['shoulders'] },
+  { key: 'arms', label: 'Tay', match: ['biceps', 'triceps', 'forearms'] },
+  { key: 'quads', label: 'Đùi trước', match: ['quadriceps'] },
+  { key: 'posterior_legs', label: 'Đùi sau / Mông', match: ['hamstrings', 'glutes', 'calves'] },
+  { key: 'core', label: 'Bụng / Lõi', match: ['abdominals'] },
+];
+
+/** Ma trận tần suất nhóm cơ trong 14 ngày gần nhất */
+export function frequencyMatrix14(rows, exById, today = todayISO()) {
+  const days = Array.from({ length: 14 }, (_, i) => addDays(today, -13 + i));
+  const matrix = {};
+  for (const m of MATRIX_MUSCLES) matrix[m.key] = Array(14).fill(false);
+
+  for (const r of rows) {
+    if (!r.day) continue;
+    const di = days.indexOf(r.day);
+    if (di < 0) continue;
+    const ex = exById.get(r.exercise_id);
+    const ms = [...(ex?.primary_muscles || []), ...(ex?.secondary_muscles || [])];
+    if (r.distance_m > 0) ms.push('quadriceps', 'calves', 'hamstrings');
+    for (const m of MATRIX_MUSCLES) {
+      if (m.match.some((k) => ms.includes(k))) {
+        matrix[m.key][di] = true;
+      }
+    }
+  }
+  return { days, muscles: MATRIX_MUSCLES, matrix };
+}
+
+/**
+ * Tổng hợp kỷ lục cá nhân (PR):
+ * - Tạ: 1RM ước tính (Epley) cao nhất, mức tạ nặng nhất
+ * - Chạy: cự ly dài nhất, pace tốt nhất (buổi ≥ 5 km)
+ * - Đánh dấu isNew nếu lập trong vòng 14 ngày
+ */
+export function personalRecords(rows, exById, today = todayISO()) {
+  const prs = [];
+  const liftByEx = {};
+  const runs = [];
+
+  for (const r of rows) {
+    if (isLift(r)) {
+      (liftByEx[r.exercise_id] ||= []).push(r);
+    } else if (r.distance_m > 0) {
+      runs.push(r);
+    }
+  }
+
+  for (const [exId, list] of Object.entries(liftByEx)) {
+    const ex = exById.get(exId);
+    const name = ex?.name_vi || 'Bài tập';
+    let best1rm = null;
+    let maxLoad = null;
+
+    for (const r of list) {
+      const e = e1rm(r.load_kg, r.reps);
+      if (!best1rm || e > best1rm.val) {
+        best1rm = { val: e, load_kg: r.load_kg, reps: r.reps, day: r.day };
+      }
+      if (!maxLoad || r.load_kg > maxLoad.load_kg || (r.load_kg === maxLoad.load_kg && r.reps > maxLoad.reps)) {
+        maxLoad = { load_kg: r.load_kg, reps: r.reps, day: r.day };
+      }
+    }
+
+    if (best1rm) {
+      const isNew = daysBetween(best1rm.day, today) <= 14;
+      prs.push({
+        exercise_id: exId,
+        name_vi: name,
+        type: '1rm',
+        label: '1RM ước tính',
+        value: r1(best1rm.val),
+        unit: 'kg',
+        detail: `${best1rm.load_kg} kg × ${best1rm.reps} rep`,
+        day: best1rm.day,
+        isNew,
+      });
+    }
+
+    if (maxLoad && (maxLoad.load_kg !== best1rm?.load_kg || maxLoad.reps !== best1rm?.reps)) {
+      const isNew = daysBetween(maxLoad.day, today) <= 14;
+      prs.push({
+        exercise_id: exId,
+        name_vi: name,
+        type: 'max_load',
+        label: 'Tạ nặng nhất',
+        value: maxLoad.load_kg,
+        unit: 'kg',
+        detail: `${maxLoad.load_kg} kg × ${maxLoad.reps} rep`,
+        day: maxLoad.day,
+        isNew,
+      });
+    }
+  }
+
+  if (runs.length) {
+    let maxDist = null;
+    let bestPace5k = null;
+
+    for (const r of runs) {
+      if (!maxDist || r.distance_m > maxDist.distance_m) {
+        maxDist = r;
+      }
+      if (r.distance_m >= 5000 && r.duration_sec > 0) {
+        const p = r.duration_sec / (r.distance_m / 1000);
+        if (!bestPace5k || p < bestPace5k.pace) {
+          bestPace5k = { pace: p, r };
+        }
+      }
+    }
+
+    if (maxDist) {
+      const km = r1(maxDist.distance_m / 1000);
+      const isNew = daysBetween(maxDist.day, today) <= 14;
+      prs.push({
+        exercise_id: 'run_dist',
+        name_vi: 'Chạy: Cự ly dài nhất',
+        type: 'run_dist',
+        label: 'Cự ly dài nhất',
+        value: km,
+        unit: 'km',
+        detail: `${km} km`,
+        day: maxDist.day,
+        isNew,
+      });
+    }
+
+    if (bestPace5k) {
+      const km = r1(bestPace5k.r.distance_m / 1000);
+      const isNew = daysBetween(bestPace5k.r.day, today) <= 14;
+      const m = Math.floor(bestPace5k.pace / 60), s = Math.round(bestPace5k.pace % 60);
+      prs.push({
+        exercise_id: 'run_pace',
+        name_vi: 'Chạy: Pace tốt nhất (≥ 5 km)',
+        type: 'run_pace',
+        label: 'Pace tốt nhất (≥ 5 km)',
+        value: Math.round(bestPace5k.pace),
+        unit: 'giây/km',
+        detail: `${m}:${String(s).padStart(2, '0')}/km (${km} km)`,
+        day: bestPace5k.r.day,
+        isNew,
+      });
+    }
+  }
+
+  prs.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0) || b.day.localeCompare(a.day));
+  return prs.slice(0, 10);
+}
+
 // ---------- Ô tóm tắt + bảng tổng nhóm ----------
 /** Cân TB 7 ngày hôm nay và chênh lệch so với 14 ngày trước: ▲ ≥ +0,3 kg · ▼ ≤ −0,3 kg · — đứng */
 export function weightTrend(measurements, today) {
@@ -120,9 +292,9 @@ export function weightTrend(measurements, today) {
   return { now: r1(now), diff: d, arrow: d == null ? null : d >= 0.3 ? '▲' : d <= -0.3 ? '▼' : '—' };
 }
 
-/** % buổi 7 ngày, % ăn 7 ngày (giống trang Hôm nay của khách) */
+/** % buổi 7 ngày, % ăn 7 ngày (giống trang Hôm nay của khách; DINO-017: bỏ buổi adhoc) */
 export function last7({ sessions, doneIds, checks, slotsCount, today }) {
-  const from = addDays(today, -6), ss = sessions.filter((s) => s.scheduled_on >= from && s.scheduled_on <= today);
+  const from = addDays(today, -6), ss = sessions.filter((s) => !s.adhoc && s.scheduled_on >= from && s.scheduled_on <= today);
   return {
     trainPct: ss.length ? Math.round((ss.filter((s) => doneIds.has(s.id)).length / ss.length) * 100) : null,
     eatPct: adherenceRange(checks.filter((c) => c.check_date >= from && c.check_date <= today), slotsCount, 7),

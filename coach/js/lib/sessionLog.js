@@ -92,10 +92,11 @@ export function queuePut(store, row) { const q = queueRead(store); q[keyOf(row)]
 export function queueDrop(store, rows) { const q = queueRead(store); for (const r of rows) delete q[keyOf(r)]; store.setItem(PENDING_KEY, JSON.stringify(q)); }
 
 // ---------- Cảnh báo tính phía coach ----------
-/** sessions: [{id, scheduled_on}] của tuần trước (đã phát hành); doneIds: Set id buổi đã hoàn thành */
+/** sessions: [{id, scheduled_on, adhoc}] của tuần trước (đã phát hành); doneIds: Set id buổi đã hoàn thành; DINO-017: bỏ qua adhoc */
 export function missedLastWeek(sessions, doneIds) {
-  const missed = sessions.filter((s) => !doneIds.has(s.id)).length;
-  return missed >= 2 ? { kind: 'missed', message: `Bỏ ${missed}/${sessions.length} buổi tuần trước` } : null;
+  const scheduled = sessions.filter((s) => !s.adhoc);
+  const missed = scheduled.filter((s) => !doneIds.has(s.id)).length;
+  return missed >= 2 ? { kind: 'missed', message: `Bỏ ${missed}/${scheduled.length} buổi tuần trước` } : null;
 }
 /** km theo tuần: logs [{distance_m, day}] + danh sách 5 thứ Hai (cũ → mới) */
 export function weeklyKm(logs, mondays) {

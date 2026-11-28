@@ -39,6 +39,19 @@ export function mondayOf(iso) {
 }
 export const todayISO = (now = new Date()) => new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 
+/** Thứ trong tuần từ ngày ISO: 1 (Thứ Hai) đến 7 (Chủ Nhật) */
+export function dayNoFromDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = CN
+  return wd === 0 ? 7 : wd;
+}
+
+/** Tên mặc định cho buổi ngoài lịch: "Buổi tự do dd/mm" */
+export function defaultAdhocTitle(iso) {
+  const [y, m, d] = (iso || todayISO()).split('-');
+  return `Buổi tự do ${d}/${m}`;
+}
+
 // ---------- Quy tắc tăng tải ↔ lựa chọn trên form ----------
 export function ruleKey(rule, dayNo) {
   if (!rule || rule.type === 'none') return 'none';

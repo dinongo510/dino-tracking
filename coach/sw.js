@@ -1,6 +1,6 @@
-// DINO Coach service worker — scope /coach/ (tách hẳn khỏi sw.js của app cá nhân)
+// DINOMET service worker — scope /coach/ (tách hẳn khỏi sw.js của app cá nhân)
 // Chỉ cache vỏ app tĩnh của /coach/. KHÔNG cache request tới Supabase hay CDN dữ liệu.
-const VERSION = 'dcoach-v22';
+const VERSION = 'dcoach-v26';
 const SHELL = [
   '/coach', '/coach/', '/coach/index.html', '/coach/manifest.json', '/coach/css/coach.css',
   '/coach/js/app.js', '/coach/js/config.js', '/coach/js/supabaseClient.js', '/coach/js/auth.js',
@@ -8,14 +8,17 @@ const SHELL = [
   '/coach/js/views/auth.js', '/coach/js/views/coach/home.js', '/coach/js/views/client/home.js',
   '/coach/js/views/coach/client.js', '/coach/js/views/client/intake.js', '/coach/js/views/client/body.js',
   '/coach/js/views/shared/body.js', '/coach/js/views/shared/photos.js', '/coach/js/lib/image.js', '/coach/js/lib/files.js', '/coach/js/lib/exercises.js', '/coach/js/views/coach/library.js', '/coach/js/views/shared/exercise.js', '/coach/js/lib/intake.js', '/coach/js/lib/formulas.js',
-  '/coach/js/lib/plan.js', '/coach/js/lib/planStore.js', '/coach/js/views/coach/plan.js', '/coach/js/views/coach/session.js', '/coach/js/views/client/plan.js',
+  '/coach/js/lib/plan.js', '/coach/js/lib/planStore.js', '/coach/js/views/coach/plan.js', '/coach/js/views/coach/session.js', '/coach/js/views/client/plan.js', '/coach/js/views/client/adhoc.js',
   '/coach/js/lib/sessionLog.js', '/coach/js/lib/logStore.js', '/coach/js/views/client/log.js', '/coach/js/views/coach/review.js', '/coach/js/views/coach/inbox.js', '/coach/js/views/shared/chat.js',
   '/coach/js/lib/nutrition.js', '/coach/js/lib/nutritionStore.js', '/coach/js/views/coach/nutrition.js', '/coach/js/views/coach/foods.js', '/coach/js/views/client/eat.js', '/coach/js/lib/theme.js',
   '/coach/js/lib/checkin.js', '/coach/js/lib/checkinStore.js', '/coach/js/views/client/checkin.js', '/coach/js/views/coach/checkin.js', '/coach/js/views/shared/phaseReport.js',
   '/coach/js/lib/charts.js', '/coach/js/lib/dashboard.js', '/coach/js/lib/dashboardStore.js', '/coach/js/views/shared/dashboard.js',
   '/coach/js/lib/packages.js', '/coach/js/lib/packageStore.js', '/coach/js/lib/ptDeduct.js', '/coach/js/views/coach/packages.js',
   '/coach/js/lib/readiness.js', '/coach/js/lib/prehab.js',
+  '/coach/js/lib/tools.js', '/coach/js/lib/wods.js', '/coach/js/views/shared/tools.js', '/coach/js/lib/bodymap.js',
   '/coach/icons/icon-192.png', '/coach/icons/icon-512.png',
+  '/coach/icons/icon-maskable-512.png', '/coach/icons/apple-touch-icon.png', '/coach/icons/favicon-32.png',
+  '/coach/icons/logo-mark.png', '/coach/icons/logo-wordmark.png', '/coach/icons/logo-full.png',
 ];
 
 self.addEventListener('install', (e) => {

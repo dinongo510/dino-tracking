@@ -7,7 +7,7 @@ export async function loginView() {
   tabbar(null);
   if (await getSession()) return go(homeFor(await getProfile()));
   render(`
-    <div class="center" style="padding-bottom:16px"><h1>DINO Coach</h1><p class="muted">Đăng nhập để xem kế hoạch của bạn</p></div>
+    <div class="center" style="padding-bottom:16px"><img src="/coach/icons/logo-full.png" alt="DINOMET" style="width:180px;height:auto;display:block;margin:0 auto 10px"><p class="muted">Đăng nhập để xem kế hoạch của bạn</p></div>
     <form id="f" class="card" novalidate>
       <label class="field"><span>Email</span><input class="input" name="email" type="email" autocomplete="email" required></label>
       <label class="field"><span>Mật khẩu</span><input class="input" name="password" type="password" autocomplete="current-password" required></label>
@@ -28,7 +28,7 @@ export async function loginView() {
 export async function forgotView() {
   tabbar(null);
   render(`
-    <h1>Quên mật khẩu</h1><p class="muted">Nhập email, Coach sẽ gửi link đặt lại mật khẩu.</p>
+    <div class="center" style="padding-bottom:16px"><img src="/coach/icons/logo-full.png" alt="DINOMET" style="width:180px;height:auto;display:block;margin:0 auto 10px"><p class="muted">Nhập email, Coach sẽ gửi link đặt lại mật khẩu.</p></div>
     <form id="f" class="card">
       <label class="field"><span>Email</span><input class="input" name="email" type="email" autocomplete="email" required></label>
       <button class="btn btn--primary btn--block">Gửi link</button>
@@ -52,7 +52,7 @@ export async function setPasswordView() {
     return;
   }
   render(`
-    <h1>Tạo mật khẩu</h1><p class="muted">Dùng mật khẩu này cho những lần đăng nhập sau.</p>
+    <div class="center" style="padding-bottom:16px"><img src="/coach/icons/logo-full.png" alt="DINOMET" style="width:180px;height:auto;display:block;margin:0 auto 10px"><p class="muted">Dùng mật khẩu này cho những lần đăng nhập sau.</p></div>
     <form id="f" class="card">
       <label class="field"><span>Mật khẩu mới (ít nhất 8 ký tự)</span><input class="input" name="p1" type="password" minlength="8" autocomplete="new-password" required></label>
       <label class="field"><span>Nhập lại</span><input class="input" name="p2" type="password" minlength="8" autocomplete="new-password" required></label>

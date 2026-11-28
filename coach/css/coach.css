@@ -1,10 +1,10 @@
 [hidden] { display: none !important; } /* thuộc tính hidden luôn thắng class (.badge, .card…) */
 /* =====================================================================
-   DINO Coach — giao diện "kính tối ánh màu" (DINO-011b)
-   Mọi màu suy ra từ 1 số: --h (sắc độ 0–359), người dùng chọn trong Hồ sơ.
+   DINOMET — giao diện "kính tối ánh màu" (DINO-011b, DINO-018)
+   Mọi màu suy ra từ 1 số: --h (sắc độ 0–359), mặc định 355 (đỏ DINOMET).
    ===================================================================== */
 :root {
-  --h: 25;
+  --h: 355;
   --a1: hsl(var(--h) 92% 62%);                    /* màu nhấn */
   --a2: hsl(calc(var(--h) + 38) 92% 62%);         /* màu anh em 1 */
   --a3: hsl(calc(var(--h) - 34) 70% 74%);         /* màu anh em 2 (nhạt) */
@@ -69,7 +69,10 @@ a.card { color: var(--text); text-decoration: none; }
 .field { display: block; margin-bottom: 14px; }
 .field > span { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
 .input, select, textarea { width: 100%; min-height: var(--tap); padding: 10px 14px; border-radius: var(--r-sm);
-  border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.35); color: var(--text); font: 16px var(--font); }
+  border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.35); color: var(--text); font: 16px var(--font); box-sizing: border-box; }
+.input.small { min-height: 38px; padding: 4px 8px; font-size: 14px; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
 select option { background: var(--solid); }
 .input:focus, select:focus, textarea:focus { outline: 2px solid var(--a1); outline-offset: 1px; }
 input[type=checkbox], input[type=radio] { accent-color: var(--a1); }

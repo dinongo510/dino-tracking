@@ -94,17 +94,83 @@ Toàn bộ brief 006–013, migration 0001–0006, `formulas.js`, nội dung kh�
 - Test: dashboard 8/8, e2e_dash 27/27; toàn bộ 54 + 202 = 256/256.
 - Sau UAT (dữ liệu thật Khách A: cân 84/83 → TB 83,5; 1RM goblet squat 12×12 = 16,8; khối lượng 432; xuất 23 bảng; khách bị chặn ở dashboard khách khác + không tự sửa bài theo dõi): đường TB 7 ngày chỉ 1 điểm vẫn hiện chấm; biểu đồ 1RM luôn ghi tên bài kể cả khi chỉ 1 bài; `sw.js` v19.
 
-## DINO-014 — Gói tập (buổi / thời hạn), buổi PT tại chỗ, khóa app khi hết hạn, "Tập của tôi" (Claude viết 28/11/2026; chờ chạy 0010 + AG tạo nhánh + UAT)
-- Quyết định của Dino (28/11): hủy muộn không xử lý (tự giải quyết); gói thường không thời hạn (có lựa chọn "Không thời hạn"); gói hết hạn → khóa app khách sau 3 ngày; lưu giá + đã trả; chưa cần đặt giờ hẹn; khách riêng của Dino (không theo chính sách BFS).
-- Migration `0010_packages.sql` (test Postgres 16 local, chạy 2 lần không lỗi): `profiles.coach_mode` (online/offline/hybrid, khách không tự đổi), `sessions.mode` ('self' khách tự tập · 'pt' tại chỗ), bảng `packages` (số buổi NULL = không giới hạn, end_date NULL = không thời hạn, price_vnd, paid_vnd, status active/ended), `package_uses` (1 buổi PT chỉ trừ 1 lần — unique session_id). RLS: coach ghi, khách chỉ đọc. Sửa trigger check-in / báo cáo: coach tự làm khách của mình thì không bị chặn; luật cũ với khách giữ nguyên.
-- Khóa app: khách CÓ gói và mọi gói có hạn đều quá hạn > 3 ngày (hoặc coach kết thúc gói cuối) → màn hình khóa ở mọi trang khách (dữ liệu giữ nguyên). Gói không thời hạn đang hoạt động hoặc khách chưa có gói → không khóa. Khóa ở giao diện (khách gọi thẳng API vẫn đọc được dữ liệu của mình — chấp nhận).
-- File mới: `lib/packages.js` (hàm thuần: cộng tháng, đọc/ghi tiền "3tr/500k/3.000.000", trạng thái gói, chọn gói để trừ buổi PT, khóa + ân hạn, lý do cần chú ý, chế độ "Tập của tôi"), `lib/packageStore.js`, `lib/ptDeduct.js`, `views/coach/packages.js` (khối Gói tập & hình thức trên trang khách: thêm/sửa gói, trừ tay 1 buổi, hoàn buổi, kết thúc/mở lại, báo khóa/ân hạn).
-- Sửa: soạn buổi có "Ai ghi buổi này?" (Khách tự tập / PT tại chỗ); coach mở được phiếu buổi PT để ghi thay khách, "Hoàn thành & trừ 1 buổi"; trang kết quả buổi PT báo đã/chưa trừ gói; nhãn PT ở giáo án + "Tập với Coach" ở lịch/Hôm nay của khách; Hôm nay khách có thẻ gói + báo sắp khóa; bảng tổng nhóm có nhãn hình thức + lý do gói (sắp hết buổi/hạn, còn nợ, đã khóa) xếp ngay sau cảnh báo; trang chủ coach có "Tập của tôi" (dùng app như khách cho chính mình, không cần đăng xuất; mở lại app vẫn nhớ chế độ); Hộp việc ẩn check-in của chính coach; `sw.js` v20.
-- Test: packages 6/6, e2e_packages 27/27; toàn bộ 60 + 229 = 289/289.
+## DINO-014 + DINO-015 — Gói tập + Readiness & Khởi động — DEPLOYED production 28/11/2026 (dcoach-v22, merge ef6bbc5; Claude UAT trên Preview đạt; migration 0010 + 0011 đã chạy)
+- DINO-014: Gói tập (buổi / thời hạn), trừ buổi PT tại chỗ, khóa app sau 3 ngày hết hạn, chế độ "Tập của tôi" cho coach.
+- DINO-015: Readiness trước buổi tập (score 0–100, green/yellow/red, gợi ý điều chỉnh), Khởi động chỉnh tư thế NASM CEx 4 bước (Inhibit, Lengthen, Activate, Integrate) theo OHSA và vùng đau, bấm giờ từng bước, nhãn "Readiness thấp" trong Hộp việc.
+- Sửa sau UAT: "Tập của tôi" không bị bắt điền hồ sơ khách; lưu readiness giữ nguyên trạng thái đã xem; khoảng trắng nhãn inbox; `sw.js` v22.
 
-## DINO-015 — Readiness trước buổi tập + Khởi động chỉnh tư thế (Prehab NASM) — Antigravity viết code + test (28/11/2026, dcoach-v21)
-- Migration `0011_readiness.sql` (chưa chạy, Claude duyệt rồi chạy): `alter table public.session_feedback add column if not exists readiness jsonb;`.
-- File mới: `coach/js/lib/readiness.js` (hàm thuần: tính điểm chuẩn hóa 0–100 từ 4 tiêu chí đảo chiều soreness/stress, xếp loại green/yellow/red, gợi ý điều chỉnh cường độ), `coach/js/lib/prehab.js` (hàm thuần: sinh kế hoạch khởi động chuẩn NASM CEx 4 bước Inhibit → Lengthen → Activate → Integrate 5–8 phút theo OHSA, loại buổi và vùng đau), `tests/coach/readiness.test.mjs` (7 bài), `tests/coach/e2e_readiness.py` (12 bài).
-- Sửa: `coach/js/views/client/log.js` (thẻ "Sẵn sàng chưa?", thẻ tổng kết readiness kèm gợi ý, thẻ "Khởi động & chỉnh tư thế" kèm bấm giờ từng bước và tick hoàn thành, ẩn khi có khối corrective, lưu offline), `coach/js/views/coach/review.js` (hiện điểm readiness, mức, chi tiết, tình trạng khởi động), `coach/js/views/coach/inbox.js` (buổi có readiness red trong 7 ngày có nhãn "Readiness thấp"), `coach/sw.js` (v21).
-- Test: readiness 7/7, e2e_readiness 12/12; toàn bộ: 67 unit + 241 e2e (308/308 PASS).
+## DINO-016 — Tab Công cụ, sơ đồ cơ, bảng PR, âm báo nghỉ — Antigravity viết code + test (28/11/2026, dcoach-v23)
+- Không có migration database.
+- File mới:
+  * `coach/js/lib/tools.js`: hàm thuần đổi pace ⇄ km/h, format m:ss, Riegel dự đoán giải chạy (5K, 10K, HM 21,1K, FM 42,2K), tính 1RM (Epley & Brzycki) kèm bảng % tạ (100% đến 50%), máy tính lắp đĩa tạ (đòn 20kg/15kg, đĩa 25, 20, 15, 10, 5, 2.5, 1.25 kg, báo phần dư), chọn WOD ngẫu nhiên hỗ trợ rng cố định.
+  * `coach/js/lib/wods.js`: kho 51 benchmark WOD kinh điển port từ `CROSSFIT_WOD_DATABASE` (Girls, Heroes, Hyrox & Chippers) kèm phân loại, thời lượng, bài tập và tải chuẩn Rx.
+  * `coach/js/views/shared/tools.js`: màn hình `#/tools` gồm 4 thẻ tương tác (Pace & Dự đoán giải chạy, 1RM & Bảng % tạ, Máy tính lắp đĩa tạ, WOD ngẫu nhiên roulette).
+  * `tests/coach/tools.test.mjs`: 8 unit test kiểm thử các công thức thuần.
+  * `tests/coach/e2e_tools.py`: 23 kiểm thử E2E (cổng 8781).
+- Sửa:
+  * `coach/js/lib/dashboard.js`: hàm `muscleSets` (nhóm chính 1 hiệp, nhóm phụ 0,5 hiệp), `frequencyMatrix14` (ma trận 10 nhóm cơ × 14 ngày), `personalRecords` (top 10 PR sức mạnh & chạy, cờ `isNew` trong 14 ngày).
+  * `coach/js/views/shared/dashboard.js`: sơ đồ nhóm cơ nhiệt SVG (mặt trước & mặt sau, màu loang theo `--h` và mật độ hiệp/tuần, chạm hiện số hiệp), ma trận tần suất 14 ngày dạng bảng chấm sáng, bảng PR top 10 có nhãn "Mới".
+  * `coach/js/views/client/log.js`: đồng hồ nghỉ `startRest` phát tiếng bíp ngắn (Web Audio API) + rung khi hết giờ; nút bật/tắt âm `🔔`/`🔕` lưu `localStorage.dcoach_sound`.
+  * `coach/js/app.js`: đăng ký route `#/tools` (auth).
+  * Điều hướng & liên kết: tab Thư viện coach (`coach/js/views/coach/library.js`, `coach/js/views/coach/home.js`) và Hồ sơ khách (`coach/js/views/client/body.js`, `coach/js/views/client/home.js`) có link "Công cụ hỗ trợ →", thanh tab sáng tương ứng.
+  * `coach/sw.js`: nâng version lên `dcoach-v23`, thêm các file tools vào SHELL.
+- Test: unit tests 76/76 PASS; e2e 23/23 PASS (`e2e_tools.py`); hồi quy toàn bộ e2e cũ đạt 100% (`e2e_readiness.py`, `e2e_packages.py`, `e2e_dash.py`, `e2e_log.py`).
 
+## DINO-016b — Sửa ô nhập công cụ + sơ đồ cơ giải phẫu mới — Antigravity (28/11/2026, commit 2f66566 nhánh feature/dino-coach-016-tools, dcoach-v24)
+- A1. Sửa ô nhập Công cụ:
+  * Chiều rộng tối thiểu 64px, `text-align: center`, không cắt số ("42,2", "59").
+  * Hiển thị dấu phẩy kiểu Việt Nam ("10,9 km/h", "21,1 km"), ô nhập chấp nhận cả `,` và `.`.
+- A2. Sơ đồ cơ giải phẫu mới:
+  * Port dữ liệu đa giác cơ từ `react-body-highlighter` (MIT License, lưu trong `docs/dino-coach/THIRD_PARTY.md` và `coach/js/lib/bodymap.js`).
+  * SVG dáng người giải phẫu chi tiết (mặt trước + mặt sau), viewBox 0 0 1000 2220.
+  * Thang màu theo `--h` với 5 mức độ (0, 1–5, 6–10, 11–15, >15 hiệp/tuần), glow nhẹ mức cao, chú thích thang màu `#bodymapLegend`.
+  * Chạm bó cơ hiển thị nhãn số hiệp/tuần và số buổi, chạm chỗ trống bỏ chọn.
+  * Bảng ánh xạ cơ `MUSCLE_INFO` trong `bodymap.js`.
+- Service worker: nâng lên `dcoach-v24`.
+- Test: `e2e_tools.py` 26/26 PASS (kiểm tra scrollWidth <= clientWidth, dấu phẩy, sơ đồ cơ, thang màu, tương tác chạm).
+
+## DINO-017 — Buổi tập ngoài lịch (khách & coach) — Antigravity (28/11/2026, nhánh feature/dino-coach-017-adhoc, dcoach-v25)
+- Nhánh `feature/dino-coach-017-adhoc` tạo từ nhánh `feature/dino-coach-016-tools`.
+- B2. Migration `supabase/migrations/0012_adhoc_sessions.sql` (PROPOSED, chưa chạy):
+  * `sessions.adhoc boolean not null default false`, `sessions.created_by uuid default auth.uid()`.
+  * `alter column phase_id drop not null`, ràng buộc `check (adhoc = true or phase_id is not null)`.
+  * RLS: khách insert/update/delete buổi `adhoc = true and mode = 'self'` của chính mình; khách ghi `session_blocks` và `block_items` của buổi ngoài lịch mình; chặn khách sửa buổi giáo án, chặn tạo buổi PT, chặn tạo cho khách khác. Kèm khối test SQL cho Claude Auditor.
+- B3. Giao diện khách:
+  * Nút "+ Buổi tự do" trên Hôm nay (luôn hiện, kể cả khi chưa có giáo án) và trên Lịch tập.
+  * Màn tạo nhanh `#/client/adhoc/new` và sửa `#/client/adhoc/:id/edit` (`coach/js/views/client/adhoc.js`): ngày, tên mặc định "Buổi tự do dd/mm", loại buổi tập, tìm bài tập không dấu qua `loadExercises()`, sets/reps/kg hoặc distance/duration, nút "Báo coach thêm bài".
+  * Lưu buổi ngoài lịch chuyển thẳng sang phiếu ghi `#/client/session/:id`.
+  * Cho phép sửa/xóa buổi ngoài lịch khi chưa hoàn thành.
+  * Hôm nay hiện thẻ riêng "BUỔI TỰ DO HÔM NAY". Lịch tập liệt kê mục "Buổi tự do tuần này".
+- B4. Coach được biết:
+  * Hộp việc (`coach/js/views/coach/inbox.js`): mục "Buổi tự tập ngoài lịch (n)" liệt kê các buổi tạo trong 7 ngày có `coach_reviewed = false`, bấm vào mở trang review, có nút "Đã xem" (kể cả chưa bấm hoàn thành).
+  * Trang giáo án khách (`coach/js/views/coach/plan.js`): hiển thị mục "Buổi ngoài lịch" theo tuần, nút "+ Buổi ngoài lịch".
+  * Trang chi tiết khách (`coach/js/views/coach/client.js`): nút "+ Buổi ngoài lịch" mở form tạo buổi PT tại chỗ cho khách. Khi coach ghi kết quả hoàn thành, tự động trừ 1 buổi trong gói qua `ptDeduct.js`.
+  * "Tập của tôi" (coach tự tập): tạo buổi tự do bình thường.
+- B5. Tách biệt số liệu:
+  * `% buổi hoàn thành` (`last7`, `weekStats`, `publishedSessions`) bỏ qua `adhoc = true` — không bị kéo giảm tuân thủ.
+  * Khối lượng tạ, km, pace, 1RM, PR, sơ đồ cơ giải phẫu, ma trận tần suất tính đầy đủ buổi ngoài lịch.
+  * Buổi ngoài lịch không bị đánh "bỏ lỡ" (`missedLastWeek` bỏ qua `adhoc`).
+- Kỹ thuật & Service Worker:
+  * `coach/sw.js` nâng lên `dcoach-v25`, thêm `views/client/adhoc.js` vào SHELL.
+  * `tests/coach/fake_supabase.js`: hỗ trợ RLS insert/update/delete/upsert cho adhoc sessions và blocks/items của client.
+  * `tests/coach/adhoc.test.mjs`: unit test kiểm tra `dayNoFromDate`, `defaultAdhocTitle`, lọc adherence bỏ adhoc, `missedLastWeek` bỏ adhoc (81/81 test pass).
+  * `tests/coach/e2e_adhoc.py` (cổng 8782): 20/20 checks PASS.
+  * Hồi quy toàn bộ test suites: 81 unit tests + 11 test suites E2E đạt 100% PASS.
+
+
+## DINO-018 — Thương hiệu DINOMET (tên app + logo + icon điện thoại + màu đỏ mặc định) — Antigravity (28/11/2026, nhánh feature/dino-coach-017-adhoc, dcoach-v26)
+- Không migration, không đụng app cá nhân.
+- Tài sản thương hiệu trong `coach/icons/`:
+  * `icon-192.png`, `icon-512.png` (cập nhật), `icon-maskable-512.png`, `apple-touch-icon.png` (180px), `favicon-32.png`.
+  * `logo-mark.png` (logo D trắng trong suốt, 24px ở đầu trang khách & coach), `logo-wordmark.png`, `logo-full.png` (dùng ở trang Đăng nhập / Quên MK / Đặt MK).
+- Cấu hình & Giao diện:
+  * `coach/manifest.json`: `name` = "DINOMET", `short_name` = "DINOMET", `background_color` = "#120306", `theme_color` = "#7a0c16", 3 icons (192, 512, maskable 512).
+  * `coach/index.html`: `<title>DINOMET</title>`, favicon, apple-touch-icon, apple-mobile-web-app-title, theme-color `#7a0c16`, inline script áp hue mặc định 355.
+  * `coach/css/coach.css`: `:root { --h: 355; }`.
+  * `coach/js/lib/theme.js`: `DEFAULT_HUE = 355`, `PRESETS` có 'Đỏ DINOMET' đứng đầu (6 swatches).
+  * `coach/js/views/auth.js`: thay chữ "DINO Coach" bằng ảnh `logo-full.png` có `alt="DINOMET"`.
+  * `coach/js/views/client/home.js` & `coach/js/views/coach/home.js`: logo-mark 24px cạnh lời chào, văn bản hướng dẫn đổi thành "thêm DINOMET vào màn hình chính".
+  * `coach/sw.js`: nâng version lên `dcoach-v26`, thêm đầy đủ 8 file icon/logo vào SHELL cache.
+- Kiểm thử:
+  * `tests/coach/theme.test.mjs`: kiểm tra DEFAULT_HUE 355, 6 presets, clampHue, manifest.json và các file icon tồn tại (86/86 unit test pass).
+  * `tests/coach/e2e_theme.py`: kiểm tra logo login, manifest DINOMET, default hue 355, 6 swatches, logo-mark đầu trang (16/16 checks pass).

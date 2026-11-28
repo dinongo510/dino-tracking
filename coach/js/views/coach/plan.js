@@ -4,7 +4,7 @@ import { sb, viError } from '../../supabaseClient.js';
 import { coachTabs } from './home.js';
 import { loadExercises, norm } from '../../lib/exercises.js';
 import { DAY_VI, MODEL_VI, GOAL_VI, SESSION_TYPE_VI, addDays, mondayOf, todayISO, phaseEnd, sessionDate, generateWeeks, templateToTree, treeToTemplate } from '../../lib/plan.js';
-import { loadPlan, createProgram, createPhase, updatePhase, deletePhase, insertSessions, deleteSessions, setPhaseStatus, listTemplates, saveTemplate } from '../../lib/planStore.js';
+import { loadPlan, createProgram, createPhase, updatePhase, deletePhase, insertSessions, deleteSessions, setPhaseStatus, listTemplates, saveTemplate, loadAdhocSessions } from '../../lib/planStore.js';
 
 const opts = (map, cur) => Object.entries(map).map(([k, l]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${esc(l)}</option>`).join('');
 const nextMonday = () => addDays(mondayOf(todayISO()), 7);
@@ -14,8 +14,11 @@ export async function coachPlanView({ params, profile }) {
   coachTabs();
   const clientId = params.id;
   const db = await sb();
-  const [{ data: client, error }, programs, templates] = await Promise.all([
-    db.from('profiles').select('id, full_name').eq('id', clientId).single(), loadPlan(clientId), listTemplates().catch(() => []),
+  const [{ data: client, error }, programs, templates, adhocAll] = await Promise.all([
+    db.from('profiles').select('id, full_name').eq('id', clientId).single(),
+    loadPlan(clientId),
+    listTemplates().catch(() => []),
+    loadAdhocSessions(clientId).catch(() => []),
   ]);
   if (error) throw error;
   const qs = new URLSearchParams(location.hash.split('?')[1] || '');
@@ -28,7 +31,10 @@ export async function coachPlanView({ params, profile }) {
 
   render(`
     <p class="small"><a href="#/coach/client/${clientId}">← ${esc(client.full_name || 'Khách')}</a></p>
-    <h1>Giáo án</h1>
+    <div class="row row--between">
+      <h1 style="margin:0">Giáo án</h1>
+      <a class="btn btn--primary small" href="#/client/adhoc/new?client=${clientId}&mode=pt">+ Buổi ngoài lịch</a>
+    </div>
     ${!program ? `
       <div class="card"><p>Khách chưa có giáo án.</p>
       <form id="np" class="stack">
@@ -66,13 +72,28 @@ export async function coachPlanView({ params, profile }) {
       ${Array.from({ length: phase.weeks }, (_, i) => i + 1).map((w) => {
         const ss = phase.sessions.filter((s) => s.week_no === w).sort((a, b) => a.day_no - b.day_no);
         const start = sessionDate(phase.start_date, w, 1);
+        const end = addDays(start, 6);
+        const adhocWeek = adhocAll.filter((a) => a.scheduled_on >= start && a.scheduled_on <= end);
         return `<div class="card"><div class="row row--between"><strong>Tuần ${w}${w === phase.weeks && phase.weeks > 1 ? ' <span class="small muted">(deload nếu sinh tự động)</span>' : ''}</strong>
-          <span class="small muted">${dm(start)}–${dm(addDays(start, 6))}</span></div>
+          <span class="small muted">${dm(start)}–${dm(end)}</span></div>
           <ul class="list">${ss.map((s) => `<li><a href="#/coach/session/${s.id}" style="flex:1;color:var(--text);text-decoration:none">
               <strong>${DAY_VI[s.day_no - 1]} · ${esc(s.title || 'Buổi tập')}</strong>
               <div class="small muted">${s.mode === 'pt' ? '<b style="color:var(--tint)">PT</b> · ' : ''}${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${s.blocks.length} khối · ${s.blocks.reduce((n, b) => n + b.items.length, 0)} bài</div></a>
-              <span class="small muted">${dm(s.scheduled_on)}</span></li>`).join('') || '<li class="small muted">Chưa có buổi.</li>'}</ul>
-          <div class="row" style="gap:6px"><button class="btn btn--ghost small" data-add="${w}">+ Buổi</button>
+              <span class="small muted">${dm(s.scheduled_on)}</span></li>`).join('') || '<li class="small muted">Chưa có buổi trong giáo án.</li>'}</ul>
+          ${adhocWeek.length ? `
+            <div style="margin-top:8px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.12)">
+              <div class="small muted" style="margin-bottom:4px">Buổi ngoài lịch (${adhocWeek.length}):</div>
+              <ul class="list">${adhocWeek.map((s) => `
+                <li><a href="#/coach/review/${s.id}" style="flex:1;color:var(--text);text-decoration:none">
+                  <strong>${dm(s.scheduled_on)} · ${esc(s.title || 'Buổi tự do')}</strong>
+                  <span class="badge">Ngoài lịch</span>
+                  <div class="small muted">${s.mode === 'pt' ? '<b style="color:var(--tint)">PT</b> · ' : ''}${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${(s.blocks || []).reduce((n, b) => n + (b.items?.length || 0), 0)} bài</div>
+                </a></li>
+              `).join('')}</ul>
+            </div>
+          ` : ''}
+          <div class="row" style="gap:6px;margin-top:8px"><button class="btn btn--ghost small" data-add="${w}">+ Buổi</button>
+            <a class="btn btn--ghost small" href="#/client/adhoc/new?client=${clientId}&date=${start}">+ Buổi ngoài lịch</a>
             ${w > 1 ? `<button class="btn btn--ghost small" data-copy="${w}">Chép tuần ${w - 1} sang</button>` : ''}</div></div>`;
       }).join('')}` : '<div class="card"><p class="muted">Chưa có giai đoạn. Bấm "+ Giai đoạn".</p></div>'}`}
 

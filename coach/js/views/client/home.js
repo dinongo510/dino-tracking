@@ -3,7 +3,7 @@ import { sb } from '../../supabaseClient.js';
 import { signOut } from '../../auth.js';
 import { go } from '../../router.js';
 import { loadIntake } from './intake.js';
-import { publishedSessions, loadSession } from '../../lib/planStore.js';
+import { publishedSessions, loadSession, loadAdhocSessions } from '../../lib/planStore.js';
 import { todayISO, addDays, mondayOf, pickNext, SESSION_TYPE_VI, DAY_VI } from '../../lib/plan.js';
 import { weeklyAvg } from '../../lib/formulas.js';
 import { adherenceRange } from '../../lib/nutrition.js';
@@ -18,7 +18,7 @@ export const clientTabs = () => tabbar([
   { href: '#/client/plan', label: 'Lịch tập', icon: 'plan', also: ['#/client/session'] },
   { href: '#/client/eat', label: 'Ăn', icon: 'eat' },
   { href: '#/client/body', label: 'Cơ thể', icon: 'body', also: ['#/client/dash'] },
-  { href: '#/client/profile', label: 'Hồ sơ', icon: 'user' },
+  { href: '#/client/profile', label: 'Hồ sơ', icon: 'user', also: ['#/tools'] },
 ]);
 
 export async function clientHomeView({ profile }) {
@@ -27,7 +27,7 @@ export async function clientHomeView({ profile }) {
   clientTabs();
   const db = await sb(), me = profile.id, today = todayISO(), from7 = addDays(today, -6);
   const must = (r) => { if (r.error) throw r.error; return r.data; };
-  const [coach, sessions, unread, meas, slots, checks, target] = await Promise.all([
+  const [coach, sessions, unread, meas, slots, checks, target, adhocToday] = await Promise.all([
     profile.coach_id ? db.from('profiles').select('full_name').eq('id', profile.coach_id).maybeSingle().then((r) => r.data) : null,
     publishedSessions(me, addDays(mondayOf(today), -7), addDays(today, 21)).catch(() => []),
     unreadBySession(me).catch(() => ({})),
@@ -35,6 +35,7 @@ export async function clientHomeView({ profile }) {
     db.from('meal_slots').select('id').eq('client_id', me).then(must).catch(() => []),
     db.from('meal_checks').select('level, check_date').eq('client_id', me).gte('check_date', from7).lte('check_date', today).then(must).catch(() => []),
     db.from('nutrition_targets').select('kcal').eq('client_id', me).eq('status', 'approved').order('valid_from', { ascending: false }).order('created_at', { ascending: false }).limit(1).maybeSingle().then((r) => r.data).catch(() => null),
+    loadAdhocSessions(me, today, today).catch(() => []),
   ]);
   const pk = await loadPackages(me).catch(() => ({ packages: [], usedById: {} }));
   const curPkg = currentPackage(pk.packages, pk.usedById, today), pkgSt = curPkg ? pkgStatus(curPkg, pk.usedById[curPkg.id] || 0, today) : null;
@@ -46,7 +47,8 @@ export async function clientHomeView({ profile }) {
   const curPhase = phs.filter((p) => p.start_date && p.start_date <= today && addDays(p.end_date, 14) >= today).sort((a, b) => b.start_date.localeCompare(a.start_date))[0];
   const review = curPhase ? await getReview(curPhase.id).catch(() => null) : null;
   const showReport = curPhase && review?.status !== 'agreed' && reportOpen(curPhase, today, !!review);
-  const fbs = sessions.length ? must(await db.from('session_feedback').select('session_id, completed').in('session_id', sessions.map((s) => s.id))) : [];
+  const allIds = [...new Set([...sessions.map((s) => s.id), ...adhocToday.map((s) => s.id)])];
+  const fbs = allIds.length ? must(await db.from('session_feedback').select('session_id, completed').in('session_id', allIds)) : [];
   const done = new Set(fbs.filter((f) => f.completed).map((f) => f.session_id));
   const nx = pickNext(sessions, done, today);
   const detail = nx.main ? await loadSession(nx.main.id).catch(() => null) : null;
@@ -76,11 +78,29 @@ export async function clientHomeView({ profile }) {
 
   render(`
     <div class="row row--between" style="margin-top:4px">
-      <div><div class="muted" style="font-size:14px">${hi}</div><h1 style="margin:0">${esc(profile.full_name || 'bạn')}</h1>
+      <div><div class="muted" style="font-size:14px"><img src="/coach/icons/logo-mark.png" alt="DINOMET" style="width:24px;height:24px;vertical-align:middle;margin-right:6px">${hi}</div><h1 style="margin:0">${esc(profile.full_name || 'bạn')}</h1>
         <div class="small muted">Coach: ${esc(coach?.full_name || 'Dino')}</div></div>
-      ${self ? '<button id="back" class="btn small">← Về Coach</button>' : '<button id="out" class="btn btn--ghost small">Đăng xuất</button>'}
+      <div class="row" style="gap:6px">
+        <a class="btn btn--ghost small" href="#/client/adhoc/new" id="btnNewAdhoc">+ Buổi tự do</a>
+        ${self ? '<button id="back" class="btn small">← Về Coach</button>' : '<button id="out" class="btn btn--ghost small">Đăng xuất</button>'}
+      </div>
     </div>
     ${lk.graceLeft ? `<div class="card card--flag small" style="margin-top:12px">Gói tập đã hết hạn — app sẽ tạm khóa sau <strong>${lk.graceLeft} ngày</strong>. Liên hệ Coach để gia hạn.</div>` : ''}
+
+    ${adhocToday.length ? adhocToday.map((s) => `
+      <div class="card" style="margin-top:14px;padding:16px;border:1px solid rgba(255,255,255,.14)">
+        <div class="row row--between">
+          <span style="font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--tint)">BUỔI TỰ DO HÔM NAY</span>
+          ${done.has(s.id) ? '<span class="badge badge--ok">✓ Đã tập xong</span>' : s.mode === 'pt' ? '<span class="badge badge--ok">Tập với Coach</span>' : '<span class="badge">Ngoài lịch</span>'}
+        </div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:-.01em;margin:6px 0 2px">${esc(s.title || 'Buổi tự do')}</div>
+        <div class="small muted">${esc(SESSION_TYPE_VI[s.session_type] || '')} · ${(s.blocks || []).reduce((n, b) => n + (b.items?.length || 0), 0)} bài</div>
+        <div class="row" style="gap:8px;margin-top:12px">
+          <a class="btn ${done.has(s.id) ? 'btn--ghost' : 'btn--primary'} small" href="#/client/session/${s.id}">${done.has(s.id) ? 'Xem lại phiếu tập' : 'Vào tập ngay →'}</a>
+          ${!done.has(s.id) ? `<a class="btn btn--ghost small" href="#/client/adhoc/${s.id}/edit">Sửa</a>` : ''}
+        </div>
+      </div>
+    `).join('') : ''}
 
     ${nx.main ? `<div class="card card--hi" style="margin-top:14px;padding:18px">
       <div class="row row--between"><span style="font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--tint)">${LABEL[nx.kind]}</span>
@@ -92,8 +112,9 @@ export async function clientHomeView({ profile }) {
       <a class="btn btn--primary btn--block" href="#/client/session/${nx.main.id}" style="margin-top:14px;min-height:54px;font-size:16px">${nx.kind === 'upcoming' ? 'Xem trước buổi tập' : 'Bắt đầu tập'} →</a>
       ${nx.kind === 'today' && otherMissed.length ? `<p class="small muted" style="text-align:center;margin:8px 0 0">Lỡ buổi ${dm(otherMissed[0].scheduled_on)}? <a href="#/client/session/${otherMissed[0].id}">Tập bù "${esc(otherMissed[0].title || 'buổi đó')}"</a></p>` : ''}
       ${nx.kind === 'makeup' && nx.todays.length === 0 && nx.doneToday ? '<p class="small muted" style="text-align:center;margin:8px 0 0">Buổi hôm nay đã xong ✓ — đây là buổi lỡ trong tuần.</p>' : ''}
-    </div>` : `<div class="card" style="margin-top:14px"><p><strong>${nx.doneToday ? 'Hôm nay đã tập xong ✓' : 'Chưa có buổi tập.'}</strong></p>
-      <p class="muted small">${nx.doneToday ? 'Nghỉ ngơi tốt nhé. ' : ''}Xem cả tuần ở tab <a href="#/client/plan">Lịch tập</a>. Nếu Coach chưa phát hành giáo án, lịch sẽ hiện khi có.</p></div>`}
+    </div>` : `<div class="card" style="margin-top:14px"><p><strong>${nx.doneToday ? 'Hôm nay đã tập xong ✓' : 'Chưa có buổi tập theo lịch.'}</strong></p>
+      <p class="muted small">${nx.doneToday ? 'Nghỉ ngơi tốt nhé hoặc tập thêm buổi tự do. ' : ''}Xem cả tuần ở tab <a href="#/client/plan">Lịch tập</a>. Bạn có thể tự tạo buổi tập bất kỳ lúc nào.</p>
+      <a class="btn btn--primary btn--block" href="#/client/adhoc/new" style="margin-top:12px">+ Buổi tự do</a></div>`}
 
     <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px">
       <div class="card" style="margin:0;padding:12px"><div class="small muted" style="font-size:12px">Tập 7 ngày</div><div style="font-size:23px;font-weight:800">${trainPct ?? '—'}${trainPct != null ? '%' : ''}</div>${bar(trainPct)}</div>
@@ -124,7 +145,9 @@ export async function clientHomeView({ profile }) {
       <span style="flex:1;min-width:0"><span class="small muted" style="display:block">Coach nhắn</span><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(msgs[0].body)}</span></span>
       <span class="badge badge--hot">${msgs.length}</span></a>` : ''}
 
-    <div class="card"><p class="small muted" style="margin:0">Mẹo: thêm DINO Coach vào màn hình chính để mở nhanh như một ứng dụng
+    <div class="card" style="margin-top:10px"><a href="#/tools" style="color:var(--text);text-decoration:none" class="row row--between"><span><strong>🛠️ Công cụ hỗ trợ</strong> <span class="small muted">· Pace, 1RM, đĩa tạ, WOD</span></span><span>→</span></a></div>
+
+    <div class="card"><p class="small muted" style="margin:0">Mẹo: thêm DINOMET vào màn hình chính để mở nhanh như một ứng dụng
       (Safari: Chia sẻ → Thêm vào MH chính · Chrome: ⋮ → Cài đặt ứng dụng). Đổi màu giao diện ở tab Hồ sơ.</p></div>`);
   if (self) $('#back').onclick = () => { setSelfMode(false); go('#/coach'); };
   else $('#out').onclick = async () => { await signOut(); go('#/login'); };

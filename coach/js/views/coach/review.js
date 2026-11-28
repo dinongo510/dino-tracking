@@ -29,9 +29,9 @@ export async function coachReviewView({ params, profile }) {
   const rdIcon = rd?.level === 'green' ? '🟢' : rd?.level === 'yellow' ? '🟡' : '🔴';
 
   render(`<div id="rv">
-    <p class="small"><a href="#/coach/inbox">← Hộp việc</a> · <a href="#/coach/client/${s.client_id}/plan?phase=${phase.id}">Giáo án</a> · <a href="#/coach/session/${s.id}">Sửa buổi này</a></p>
+    <p class="small"><a href="#/coach/inbox">← Hộp việc</a> · ${phase ? `<a href="#/coach/client/${s.client_id}/plan?phase=${phase.id}">Giáo án</a>` : `<a href="#/coach/client/${s.client_id}/plan">Giáo án</a>`} · <a href="#/coach/session/${s.id}">Sửa buổi này</a></p>
     <h1 style="margin-bottom:0">${esc(client?.full_name || 'Khách')} · ${esc(s.title || 'Buổi tập')}</h1>
-    <p class="muted small">${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)} · tuần ${s.week_no} · ${esc(phase.name)}</p>
+    <p class="muted small">${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)}${s.adhoc ? ' · <span class="badge">Ngoài lịch</span>' : ` · tuần ${s.week_no} · ${esc(phase?.name || '')}`}</p>
     ${s.mode === 'pt' ? `<div class="card card--hi row row--between" style="flex-wrap:wrap"><span><strong style="color:var(--tint)">Buổi PT tại chỗ</strong>
       <span class="small muted">· ${use ? `đã trừ gói ngày ${dm(use.used_on)} ✓` : 'chưa trừ gói'}</span></span>
       <a class="btn btn--primary small" href="#/client/session/${s.id}">${fb?.completed ? 'Sửa kết quả' : 'Ghi kết quả buổi PT →'}</a></div>` : ''}
@@ -39,7 +39,8 @@ export async function coachReviewView({ params, profile }) {
     <div class="card ${fb?.pain?.length ? 'card--flag' : ''}">
       ${fb?.completed ? `<div class="row row--between"><strong>Khách đã hoàn thành ✓</strong>
           ${fb.coach_reviewed ? '<span class="badge badge--ok">Đã xem</span>' : '<button class="btn btn--primary small" id="seen">Đã xem</button>'}</div>`
-        : `<p class="muted">${anyLog ? 'Khách đang ghi dở, chưa bấm hoàn thành.' : 'Khách chưa ghi buổi này.'}</p>`}
+        : `<div class="row row--between"><p class="muted" style="margin:0">${anyLog ? 'Khách đang ghi dở, chưa bấm hoàn thành.' : 'Khách chưa ghi buổi này.'}</p>
+          ${fb?.coach_reviewed ? '<span class="badge badge--ok">Đã xem</span>' : '<button class="btn btn--primary small" id="seen">Đã xem</button>'}</div>`}
       ${rd || fb?.completed ? `<ul class="list small" style="margin-top:6px">
         ${rd ? `<li><span class="muted">Readiness</span><span><strong>${rd.score}/100</strong> · ${rdIcon} ${esc(LEVEL_LABEL_VI[rd.level] || rd.level)}</span></li>
           <li><span class="muted">Chi tiết</span><span>Ngủ ${rd.sleep}/5 · Mỏi ${rd.soreness}/5 · Stress ${rd.stress}/5 · Năng lượng ${rd.energy}/5${rd.pain?.length ? ' · <strong style="color:var(--danger)">Đau: ' + esc(rd.pain.join(', ')) + '</strong>' : ''}</span></li>

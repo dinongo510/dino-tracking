@@ -16,9 +16,9 @@ export async function getSession() {
 }
 
 export async function getProfile(force = false) {
-  if (cachedProfile && !force) return cachedProfile;
   const s = await getSession();
-  if (!s) return null;
+  if (!s) { cachedProfile = null; return null; }
+  if (cachedProfile && !force && cachedProfile.id === s.user.id) return cachedProfile;
   const { data, error } = await (await sb()).from('profiles')
     .select('id, role, full_name, phone, coach_id, status').eq('id', s.user.id).single();
   if (error) throw error;
