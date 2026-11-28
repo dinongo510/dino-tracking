@@ -224,7 +224,7 @@ export async function coachPlanView({ params, profile }) {
     const name = ftp.name.value.trim(); if (!name) return;
     const w1 = phase.sessions.filter((s) => s.week_no === 1);
     await busy(e.submitter, async () => {
-      try { await saveTemplate(profile.id, treeToTemplate({ ...phase, name }, program.model, w1, new Map(exList.map((x) => [x.id, x])))); dtp.close(); toast(`Đã lưu mẫu "${name}".`); }
+      try { await saveTemplate(profile.id, treeToTemplate({ ...phase, name }, program.model, w1, new Map(exList.map((x) => [x.id, x])))); dtp.close(); toast(`Đã lưu mẫu "${name}".`); reload(phase.id); }
       catch (err) { toast(viError(err), 'error'); }
     });
   });

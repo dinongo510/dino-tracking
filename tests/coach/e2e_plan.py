@@ -86,9 +86,12 @@ try:
   pg.click('[data-copy="3"]');pg.wait_for_selector('text=Đã chép tuần 2 sang tuần 3');d=D(pg)
   ok('16 chép tuần 2 → 3 (vẫn 8 buổi, ngày tuần 3 đúng)', len(d['sessions'])==8 and all(s['scheduled_on']==(monday+datetime.timedelta(days=14+s['day_no']-1)).isoformat() for s in d['sessions'] if s['week_no']==3))
   # 7. Lưu thành mẫu
-  pg.click('#tplSave');pg.wait_for_selector('#dtp[open]');pg.click('#ftp .btn--primary');pg.wait_for_selector('text=Đã lưu mẫu');d=D(pg)
+  pg.click('#tplSave');pg.wait_for_selector('#dtp[open]');pg.fill('#ftp [name=name]','Mẫu thử Dino');pg.click('#ftp .btn--primary');pg.wait_for_selector('text=Đã lưu mẫu');pg.wait_for_selector('#tplSave');d=D(pg)
   nt=[t for t in d['program_templates'] if t['name']==ph['name'] or t['name']=='Mẫu thử 4 tuần']
-  ok('17 lưu thành mẫu (ghi đè trùng tên, có khối corrective)', len(d['program_templates'])==1 and len([x for x in d['program_templates'][0]['payload']['sessions'] if x['title']=='Lower'][0]['blocks'])==3)
+  pg.click('#addPh');pg.wait_for_selector('#dph[open]')
+  ok('17b mẫu vừa lưu hiện ngay trong "Bắt đầu từ mẫu" (không cần tải lại)', 'Mẫu thử Dino' in pg.inner_text('#fph [name=tpl]'))
+  pg.click('#fph [data-close]')
+  ok('17 lưu thành mẫu mới (có khối corrective)', len(d['program_templates'])==2 and len([x for x in d['program_templates'][1]['payload']['sessions'] if x['title']=='Lower'][0]['blocks'])==3)
   # 8. Phát hành → khách thấy
   pg.click('#pub');pg.wait_for_selector('text=Đã phát hành');d=D(pg)
   ok('18 phát hành: giai đoạn + chương trình published', d['phases'][0]['status']=='published' and d['programs'][0]['status']=='published')
