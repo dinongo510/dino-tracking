@@ -23,9 +23,9 @@ function Q(t){reloadDB();DB[t]||=[];const me=sess()?.user.id;let f=[],ords=[],li
   const arr=Array.isArray(payload)?payload:[payload];
   if(op==='insert'){const out=arr.map(p=>({id:uid(),created_at:new Date().toISOString(),entered_by:me,measured_on:new Date().toISOString().slice(0,10),scanned_on:new Date().toISOString().slice(0,10),...p}));
     for(const r of out){if(DB[t].some(x=>x.id===r.id))return{data:null,error:{message:'duplicate key value violates unique constraint'}};}
-    if(t==='messages')for(const r of out){r.author_id=me;r.read_at=null;}DB[t].push(...out);persist();if(t==='messages')for(const r of out)RT.postMessage({table:t,row:r});return{data:Array.isArray(payload)?out:out[0],error:null};}
-  if(op==='upsert'){const keys=(conf||'id').split(',');const out=[];for(const p of arr){const ex=DB[t].find(x=>keys.every(k=>x[k]===p[k]));if(ex){if(!ignoreDup)Object.assign(ex,p);out.push(ex);}else{const r={id:uid(),created_at:new Date().toISOString(),entered_by:me,...p};DB[t].push(r);out.push(r);}}if(t==='session_feedback')out.forEach(feedbackTrigger);persist();return{data:out,error:null};}
-  if(op==='update'){rows().forEach(x=>Object.assign(x,payload));persist();return{error:null};}
+    if(t==='messages')for(const r of out){r.author_id=me;r.read_at=null;}for(const r of out)guardRow(t,r,null);DB[t].push(...out);persist();if(t==='messages')for(const r of out)RT.postMessage({table:t,row:r});return{data:Array.isArray(payload)?out:out[0],error:null};}
+  if(op==='upsert'){const keys=(conf||'id').split(',');const out=[];for(const p of arr){const ex=DB[t].find(x=>keys.every(k=>x[k]===p[k]));if(ex){if(!ignoreDup){const o={...ex};Object.assign(ex,p);guardRow(t,ex,o);}out.push(ex);}else{const r={id:uid(),created_at:new Date().toISOString(),entered_by:me,...p};guardRow(t,r,null);DB[t].push(r);out.push(r);}}if(t==='session_feedback')out.forEach(feedbackTrigger);persist();return{data:out,error:null};}
+  if(op==='update'){rows().forEach(x=>{const o={...x};Object.assign(x,payload);guardRow(t,x,o);});persist();return{error:null};}
   if(op==='delete'){const del=rows();DB[t]=DB[t].filter(x=>!del.includes(x));cascade(t,del.map(x=>x.id));persist();return{error:null};}
   return{data:structuredClone(rows()),error:null};};
  const api={select(){return api},eq(k,v){f.push(x=>x[k]===v);return api},in(k,arr){f.push(x=>arr.includes(x[k]));return api},gte(k,v){f.push(x=>x[k]>=v);return api},lte(k,v){f.push(x=>x[k]<=v);return api},gt(k,v){f.push(x=>x[k]>v);return api},lt(k,v){f.push(x=>x[k]<v);return api},neq(k,v){f.push(x=>x[k]!==v);return api},is(k,v){f.push(x=>v===null?x[k]==null:x[k]===v);return api},not(k,o,v){f.push(x=>o==='is'&&v===null?x[k]!=null:x[k]!==v);return api},overlaps(k,arr){f.push(x=>(x[k]||[]).some(v=>arr.includes(v)));return api},
@@ -45,6 +45,16 @@ function feedbackTrigger(fb){if(!fb.completed)return;DB.alerts||=[];const add=(k
   if(fb.pain?.length)add('pain','Khách báo đau: '+fb.pain.map(p=>`${p.area} (${p.level}/5)`).join(', '));
   if(fb.session_rpe>=9.5){const day=id=>DB.sessions?.find(s=>s.id===id)?.scheduled_on||'';const prev=(DB.session_feedback||[]).filter(f=>f.client_id===fb.client_id&&f.completed&&f.session_id!==fb.session_id&&day(f.session_id)<=day(fb.session_id)).sort((a,b)=>day(b.session_id).localeCompare(day(a.session_id)))[0];
     if(prev?.session_rpe>=9.5)add('high_rpe','RPE buổi ≥ 9,5 hai buổi liên tiếp');}}
+
+
+// ---- Giả lập trigger 0008: check-in / báo cáo giai đoạn ----
+function guardRow(t,n,o){const me=sess()?.user.id,coach=DB.profiles.find(p=>p.id===me)?.role==='coach';
+  if(t==='weekly_checkins'){ if(!coach){n.coach_reply=o?o.coach_reply:null;n.replied_at=o?o.replied_at:null;}
+    else if(o){for(const k of ['avg_weight_kg','sleep_score','stress_score','energy_score','hardest','client_note','sessions_pct','eat_pct'])n[k]=o[k]; if(n.coach_reply!==o.coach_reply)n.replied_at=new Date().toISOString();}
+    n.updated_at=new Date().toISOString();}
+  if(t==='phase_reviews'){ if(!coach){for(const k of ['coach_summary','next_decisions','coach_agreed_at'])n[k]=o?o[k]:null;} else {for(const k of ['client_feedback','client_agreed_at'])n[k]=o?o[k]:null;}
+    if(o&&(n.coach_summary!==o.coach_summary||n.next_decisions!==o.next_decisions)&&n.client_agreed_at===o.client_agreed_at)n.client_agreed_at=null;
+    n.status=n.coach_agreed_at&&n.client_agreed_at?'agreed':'open';}}
 
 // ---- Storage giả lập: lưu dataURL trong localStorage, áp luật thư mục đầu = client_id ----
 const SKEY='fakestore'; const store=()=>JSON.parse(localStorage.getItem(SKEY)||'{}'); const saveStore=(o)=>localStorage.setItem(SKEY,JSON.stringify(o));

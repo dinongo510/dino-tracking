@@ -58,6 +58,7 @@ export async function coachPlanView({ params, profile }) {
           <button class="btn small" id="edPh">Sửa giai đoạn</button>
           <button class="btn small" id="gen">Sinh tuần 2–${phase.weeks} từ tuần 1</button>
           <button class="btn small ${phase.status === 'draft' ? 'btn--primary' : ''}" id="pub">${phase.status === 'draft' ? 'Phát hành cho khách' : 'Thu hồi về nháp'}</button>
+          <a class="btn small" href="#/phase/${phase.id}">Báo cáo giai đoạn</a>
           <button class="btn btn--ghost small" id="tplSave">Lưu thành mẫu</button>
           ${phase.status === 'draft' ? '<button class="btn btn--ghost small" id="delPh">Xóa giai đoạn</button>' : ''}
         </div>

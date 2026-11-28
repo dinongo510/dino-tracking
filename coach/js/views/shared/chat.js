@@ -9,8 +9,8 @@ addEventListener('hashchange', () => { if (stopWatch) { stopWatch(); stopWatch =
 const hhmm = (iso) => new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 
 /** el: phần tử chứa · names: { [id]: tên } */
-export async function renderChat(el, { clientId, sessionId, me, names }) {
-  el.innerHTML = `<h2>Trao đổi về buổi này</h2>
+export async function renderChat(el, { clientId, sessionId, contextId = sessionId, type = 'session', title = 'Trao đổi về buổi này', me, names }) {
+  el.innerHTML = `<h2>${esc(title)}</h2>
     <div class="card"><div id="msgs" class="stack" style="max-height:360px;overflow:auto"></div>
       <form id="mf" class="row" style="gap:6px;margin-top:8px">
         <textarea name="body" rows="1" placeholder="Nhắn cho ${me === clientId ? 'Coach' : 'khách'}…" style="flex:1;resize:vertical" required></textarea>
@@ -24,12 +24,12 @@ export async function renderChat(el, { clientId, sessionId, me, names }) {
       <div class="small" style="opacity:.8">${esc(names[m.author_id] || (mine ? 'Bạn' : ''))} · ${hhmm(m.created_at)}</div>${esc(m.body).replace(/\n/g, '<br>')}</div>`);
     box.scrollTop = box.scrollHeight;
   };
-  const list = await listMessages(sessionId);
+  const list = await listMessages(contextId, type);
   if (!list.length) box.innerHTML = '<p class="small muted empty">Chưa có tin nào.</p>';
   list.forEach(add);
-  markRead(sessionId, me).catch(() => {});
+  markRead(contextId, me).catch(() => {});
   if (stopWatch) stopWatch();
-  stopWatch = await watchMessages(sessionId, (m) => { add(m); if (m.author_id !== me) markRead(sessionId, me).catch(() => {}); });
+  stopWatch = await watchMessages(contextId, (m) => { add(m); if (m.author_id !== me) markRead(contextId, me).catch(() => {}); });
 
   const f = el.querySelector('#mf');
   const sendBtn = f.querySelector('button'), ta = f.querySelector('textarea');
@@ -38,7 +38,7 @@ export async function renderChat(el, { clientId, sessionId, me, names }) {
     e.preventDefault();
     const body = ta.value.trim(); if (!body) return;
     const btn = e.submitter || sendBtn; btn.disabled = true;
-    try { add(await sendMessage(clientId, sessionId, body)); ta.value = ''; }
+    try { add(await sendMessage(clientId, contextId, body, type)); ta.value = ''; }
     catch (err) { toast(viError(err), 'error'); }
     finally { btn.disabled = false; }
   });

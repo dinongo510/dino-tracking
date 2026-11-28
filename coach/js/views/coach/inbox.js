@@ -6,6 +6,7 @@ import { DAY_VI, addDays, mondayOf, todayISO } from '../../lib/plan.js';
 import { missedLastWeek, weeklyKm } from '../../lib/sessionLog.js';
 import { runningLoadAlert } from '../../lib/formulas.js';
 import { openAlerts, addAlerts, resolveAlert, unreadBySession } from '../../lib/logStore.js';
+import { unrepliedCheckins } from '../../lib/checkinStore.js';
 
 const dm = (iso) => (iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '');
 const must = ({ data, error }) => { if (error) throw error; return data; };
@@ -44,13 +45,15 @@ export async function coachInboxView({ profile }) {
   const db = await sb();
   const clients = must(await db.from('profiles').select('id, full_name').eq('role', 'client'));
   await computeAlerts(clients).catch((e) => console.warn('computeAlerts', e));
+  const [cks, unreadCk, unreadPh] = await Promise.all([unrepliedCheckins().catch(() => []), unreadBySession(profile.id, null, 'checkin').catch(() => ({})), unreadBySession(profile.id, null, 'phase').catch(() => ({}))]);
   const [alerts, unread, fbs] = await Promise.all([openAlerts(), unreadBySession(profile.id),
     db.from('session_feedback').select('session_id, client_id, session_rpe, pain, created_at').eq('completed', true).eq('coach_reviewed', false).order('created_at', { ascending: false }).then(must)]);
   const sids = [...new Set([...Object.keys(unread), ...fbs.map((f) => f.session_id), ...alerts.map((a) => a.ref_id).filter(Boolean)])];
   const sess = sids.length ? must(await db.from('sessions').select('id, title, day_no, scheduled_on').in('id', sids)) : [];
   const S = new Map(sess.map((s) => [s.id, s])), name = (id) => clients.find((c) => c.id === id)?.full_name || 'Khách';
   const sLabel = (id) => { const s = S.get(id); return s ? `${esc(s.title || 'Buổi tập')} · ${DAY_VI[s.day_no - 1]} ${dm(s.scheduled_on)}` : 'Buổi tập'; };
-  const total = alerts.length + Object.keys(unread).length + fbs.length;
+  const other = [...Object.entries(unreadCk).map(([id, ms]) => ({ href: `#/coach/checkin/${id}`, label: 'Check-in tuần', ms })), ...Object.entries(unreadPh).map(([id, ms]) => ({ href: `#/phase/${id}`, label: 'Báo cáo giai đoạn', ms }))];
+  const total = alerts.length + Object.keys(unread).length + fbs.length + cks.length + other.length;
 
   render(`
     <h1>Hộp việc</h1>
@@ -63,6 +66,12 @@ export async function coachInboxView({ profile }) {
     ${Object.keys(unread).length ? `<h2>Tin chưa đọc (${Object.values(unread).reduce((n, a) => n + a.length, 0)})</h2><div class="card"><ul class="list">${Object.entries(unread).map(([sid, ms]) => `<li>
         <a href="#/coach/review/${sid}" style="flex:1;color:var(--text);text-decoration:none"><strong>${esc(name(ms[0].client_id))}</strong> · ${sLabel(sid)}
           <div class="small muted">${esc(ms[ms.length - 1].body.slice(0, 90))}</div></a><span class="badge">${ms.length}</span></li>`).join('')}</ul></div>` : ''}
+    ${other.length ? `<h2>Tin khác chưa đọc (${other.reduce((n, o) => n + o.ms.length, 0)})</h2><div class="card"><ul class="list">${other.map((o) => `<li>
+        <a href="${o.href}" style="flex:1;color:var(--text);text-decoration:none"><strong>${esc(name(o.ms[0].client_id))}</strong> · ${o.label}
+          <div class="small muted">${esc(o.ms[o.ms.length - 1].body.slice(0, 90))}</div></a><span class="badge">${o.ms.length}</span></li>`).join('')}</ul></div>` : ''}
+    ${cks.length ? `<h2>Check-in chờ trả lời (${cks.length})</h2><div class="card"><ul class="list">${cks.map((c) => `<li>
+        <a href="#/coach/checkin/${c.id}" style="flex:1;color:var(--text);text-decoration:none"><strong>${esc(name(c.client_id))}</strong> · tuần ${dm(c.week_start)}
+          <div class="small muted">${c.avg_weight_kg != null ? String(Number(c.avg_weight_kg)).replace('.', ',') + ' kg · ' : ''}buổi ${c.sessions_pct ?? '—'}% · ăn ${c.eat_pct ?? '—'}%</div></a></li>`).join('')}</ul></div>` : ''}
     ${fbs.length ? `<h2>Buổi vừa xong chưa xem (${fbs.length})</h2><div class="card"><ul class="list">${fbs.map((f) => `<li>
         <a href="#/coach/review/${f.session_id}" style="flex:1;color:var(--text);text-decoration:none"><strong>${esc(name(f.client_id))}</strong> · ${sLabel(f.session_id)}
           <div class="small muted">RPE ${f.session_rpe ?? '—'}${f.pain?.length ? ' · <span style="color:var(--danger)">có đau</span>' : ''}</div></a></li>`).join('')}</ul></div>` : ''}`);

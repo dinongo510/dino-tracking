@@ -8,6 +8,8 @@ import { todayISO, addDays, mondayOf, pickNext, SESSION_TYPE_VI, DAY_VI } from '
 import { weeklyAvg } from '../../lib/formulas.js';
 import { adherenceRange } from '../../lib/nutrition.js';
 import { unreadBySession } from '../../lib/logStore.js';
+import { checkinWeekFor, reportOpen } from '../../lib/checkin.js';
+import { listCheckins, getReview } from '../../lib/checkinStore.js';
 
 export const clientTabs = () => tabbar([
   { href: '#/client', label: 'Hôm nay', icon: 'home' },
@@ -32,6 +34,12 @@ export async function clientHomeView({ profile }) {
     db.from('meal_checks').select('level, check_date').eq('client_id', me).gte('check_date', from7).lte('check_date', today).then(must).catch(() => []),
     db.from('nutrition_targets').select('kcal').eq('client_id', me).eq('status', 'approved').order('valid_from', { ascending: false }).order('created_at', { ascending: false }).limit(1).maybeSingle().then((r) => r.data).catch(() => null),
   ]);
+  const [cis, phs] = await Promise.all([listCheckins(me).catch(() => []), db.from('phases').select('id, name, start_date, end_date, status').eq('client_id', me).neq('status', 'draft').then(must).catch(() => [])]);
+  const ciWeek = checkinWeekFor(today, new Set(cis.map((c) => c.week_start)));
+  const lastReply = cis.find((c) => c.coach_reply && c.replied_at && c.replied_at.slice(0, 10) >= addDays(today, -3));
+  const curPhase = phs.filter((p) => p.start_date && p.start_date <= today && addDays(p.end_date, 14) >= today).sort((a, b) => b.start_date.localeCompare(a.start_date))[0];
+  const review = curPhase ? await getReview(curPhase.id).catch(() => null) : null;
+  const showReport = curPhase && review?.status !== 'agreed' && reportOpen(curPhase, today, !!review);
   const fbs = sessions.length ? must(await db.from('session_feedback').select('session_id, completed').in('session_id', sessions.map((s) => s.id))) : [];
   const done = new Set(fbs.filter((f) => f.completed).map((f) => f.session_id));
   const nx = pickNext(sessions, done, today);
@@ -93,6 +101,15 @@ export async function clientHomeView({ profile }) {
       <div style="height:8px;border-radius:4px;margin-top:10px;background:linear-gradient(90deg,var(--a1),var(--a2) ${Math.round((eatenToday / slots.length) * 100)}%,rgba(255,255,255,.08) ${Math.round((eatenToday / slots.length) * 100)}%)"></div>
       <div class="small" style="margin-top:8px;color:#c4c4cc">Đã check <strong>${eatenToday}/${slots.length}</strong> bữa · ${eatenToday >= slots.length ? 'đủ bữa hôm nay ✓' : 'bấm để check bữa tiếp theo'}</div></a>` : ''}
 
+    ${ciWeek ? `<a class="card card--hi" href="#/client/checkin?w=${ciWeek}" style="display:block">
+      <div class="row row--between"><span style="font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--tint)">CHECK-IN TUẦN</span><span class="small muted">~1 phút</span></div>
+      <div style="font-size:18px;font-weight:700;margin-top:4px">Tuần ${ciWeek.slice(8, 10)}/${ciWeek.slice(5, 7)} của bạn thế nào?</div>
+      <div class="small muted">Cân TB, giấc ngủ, stress, năng lượng — Coach dùng để chỉnh kế hoạch.</div></a>` : ''}
+    ${lastReply ? `<a class="card row" href="#/client/checkin?w=${lastReply.week_start}" style="gap:12px"><span class="dot-new"></span>
+      <span style="flex:1;min-width:0"><span class="small muted" style="display:block">Coach đã trả lời check-in</span><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(lastReply.coach_reply)}</span></span></a>` : ''}
+    ${showReport ? `<a class="card" href="#/phase/${curPhase.id}" style="display:block"><span style="font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--tint)">BÁO CÁO GIAI ĐOẠN</span>
+      <div style="font-weight:700;margin-top:4px">${esc(curPhase.name)} sắp kết thúc — xem kết quả &amp; góp ý</div>
+      <div class="small muted">${review?.coach_agreed_at ? 'Coach đã viết tóm tắt, chờ bạn đồng ý.' : 'Nhớ cập nhật cân, số đo và ảnh cuối giai đoạn.'}</div></a>` : ''}
     ${msgs.length ? `<a class="card row" href="#/client/session/${msgs[0].context_id}" style="gap:12px">
       <span style="width:36px;height:36px;border-radius:50%;background:#1e1e23;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none">${esc(((coach?.full_name || 'Dino').trim().split(/\s+/).pop() || 'D')[0].toUpperCase())}</span>
       <span style="flex:1;min-width:0"><span class="small muted" style="display:block">Coach nhắn</span><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(msgs[0].body)}</span></span>
