@@ -12,7 +12,11 @@ import { coachLibraryView } from './views/coach/library.js';
 import { exerciseView } from './views/shared/exercise.js';
 import { coachPlanView } from './views/coach/plan.js';
 import { coachSessionView } from './views/coach/session.js';
-import { clientPlanView, clientSessionView } from './views/client/plan.js';
+import { clientPlanView } from './views/client/plan.js';
+import { clientSessionView } from './views/client/log.js';
+import { coachReviewView } from './views/coach/review.js';
+import { coachInboxView } from './views/coach/inbox.js';
+import { flushPending } from './lib/logStore.js';
 
 route('/', async () => { const s = await getSession(); go(s ? homeFor(await getProfile()) : '#/login'); }, 'public');
 route('/login', loginView, 'public');
@@ -31,8 +35,11 @@ route('/coach/client/:id/plan', coachPlanView, 'coach');
 route('/coach/session/:id', coachSessionView, 'coach');
 route('/client/plan', clientPlanView, 'client');
 route('/client/session/:id', clientSessionView, 'auth');
+route('/coach/review/:id', coachReviewView, 'coach');
+route('/coach/inbox', coachInboxView, 'coach');
 
 watchOnline();
+addEventListener('online', () => flushPending().catch(() => {})); // hiệp ghi lúc mất mạng tự gửi khi có mạng
 if ('serviceWorker' in navigator) {
   // Khi có bản cập nhật, service worker mới chiếm quyền → tải lại trang 1 lần để chạy code mới ngay
   // (không tải lại ở lần cài đầu tiên, khi trước đó chưa có service worker nào).
