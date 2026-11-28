@@ -9,6 +9,7 @@ import { todayISO, SESSION_TYPE_VI } from '../../lib/plan.js';
 export const clientTabs = () => tabbar([
   { href: '#/client', label: 'Hôm nay' },
   { href: '#/client/plan', label: 'Lịch tập' },
+  { href: '#/client/eat', label: 'Ăn' },
   { href: '#/client/body', label: 'Cơ thể' },
   { href: '#/client/profile', label: 'Hồ sơ' },
 ]);

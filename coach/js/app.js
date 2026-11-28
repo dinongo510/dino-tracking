@@ -17,6 +17,9 @@ import { clientSessionView } from './views/client/log.js';
 import { coachReviewView } from './views/coach/review.js';
 import { coachInboxView } from './views/coach/inbox.js';
 import { flushPending } from './lib/logStore.js';
+import { coachNutritionView } from './views/coach/nutrition.js';
+import { coachFoodsView } from './views/coach/foods.js';
+import { clientEatView } from './views/client/eat.js';
 
 route('/', async () => { const s = await getSession(); go(s ? homeFor(await getProfile()) : '#/login'); }, 'public');
 route('/login', loginView, 'public');
@@ -37,6 +40,9 @@ route('/client/plan', clientPlanView, 'client');
 route('/client/session/:id', clientSessionView, 'auth');
 route('/coach/review/:id', coachReviewView, 'coach');
 route('/coach/inbox', coachInboxView, 'coach');
+route('/coach/client/:id/nutrition', coachNutritionView, 'coach');
+route('/coach/foods', coachFoodsView, 'coach');
+route('/client/eat', clientEatView, 'client');
 
 watchOnline();
 addEventListener('online', () => flushPending().catch(() => {})); // hiệp ghi lúc mất mạng tự gửi khi có mạng
