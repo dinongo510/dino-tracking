@@ -128,6 +128,29 @@ dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(4px); }
 .swatch { width: 36px; height: 36px; border-radius: 50%; padding: 0; border: 2px solid transparent; cursor: pointer; }
 .swatch[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 12px var(--glow); }
 
+/* ---------- Dashboard (DINO-013) ---------- */
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+.tile { margin: 0; padding: 12px; } .tile .small { font-size: 12px; }
+.tile-v { font-size: 23px; font-weight: 800; letter-spacing: -.02em; } .tile-v small { font-size: 13px; font-weight: 600; color: var(--muted); }
+.tile-s { font-size: 12px; font-weight: 600; color: var(--tint); margin-top: 2px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 4px; }
+.chip { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font: 600 14px var(--font); cursor: pointer; }
+.chip[aria-pressed="true"] { color: var(--tint); border: 1.5px solid transparent;
+  background: linear-gradient(135deg, hsl(var(--h) 92% 62% / .22), hsl(calc(var(--h) + 38) 92% 62% / .07)) padding-box, linear-gradient(var(--solid), var(--solid)) padding-box, var(--grad) border-box; }
+.chart { margin: 0; } .chart + .chart { margin-top: 16px; }
+.chart figcaption { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.chart figcaption .muted { font-weight: 500; font-size: 12px; white-space: nowrap; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .grid { stroke: rgba(255,255,255,.07); stroke-width: 1; }
+.chart .tick { fill: var(--muted); font: 10px var(--font); }
+.chart .ln { fill: none; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 0 4px var(--glow)); }
+.chart .ln--dash { stroke-dasharray: 4 4; }
+.chart .mark { stroke: rgba(255,255,255,.35); stroke-dasharray: 3 3; } .chart .mark-label { fill: var(--muted); font: 600 9px var(--font); }
+.chart-empty { margin: 4px 0 0; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.gstats { display: flex; gap: 14px; margin-top: 4px; color: var(--muted); } .gstats b { color: var(--text); }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 @media print {
   :root { --bg: #fff; --surface: #fff; --text: #000; --muted: #444; --line: #bbb; --solid: #fff; }

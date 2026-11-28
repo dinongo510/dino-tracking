@@ -9,7 +9,7 @@ import { STEPS, getVal } from '../../lib/intake.js';
 
 export async function clientBodyView({ profile }) {
   clientTabs();
-  render(`<h1>Cơ thể</h1><p class="muted small">Cân vào buổi sáng, sau khi đi vệ sinh, trước khi ăn. Đo vòng eo ngang rốn.</p><div id="body"></div><div id="photos"></div>`);
+  render(`<h1>Cơ thể</h1><a class="btn btn--primary btn--block" href="#/client/dash" style="margin:6px 0 10px">Xem biểu đồ tiến độ →</a><p class="muted small">Cân vào buổi sáng, sau khi đi vệ sinh, trước khi ăn. Đo vòng eo ngang rốn.</p><div id="body"></div><div id="photos"></div>`);
   await renderBody($('#body'), profile.id, profile.id);
   await renderPhotos($('#photos'), profile.id, profile.id);
 }

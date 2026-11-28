@@ -25,6 +25,7 @@ import { clientEatView } from './views/client/eat.js';
 import { clientCheckinView } from './views/client/checkin.js';
 import { coachCheckinView, coachCheckinListView } from './views/coach/checkin.js';
 import { phaseReportView } from './views/shared/phaseReport.js';
+import { dashView, clientDashView } from './views/shared/dashboard.js';
 
 route('/', async () => { const s = await getSession(); go(s ? homeFor(await getProfile()) : '#/login'); }, 'public');
 route('/login', loginView, 'public');
@@ -52,6 +53,8 @@ route('/client/checkin', clientCheckinView, 'client');
 route('/coach/checkin/:id', coachCheckinView, 'coach');
 route('/coach/client/:id/checkins', coachCheckinListView, 'coach');
 route('/phase/:id', phaseReportView, 'auth');
+route('/dash/:id', dashView, 'coach');
+route('/client/dash', clientDashView, 'client');
 
 watchOnline();
 addEventListener('online', () => flushPending().catch(() => {})); // hiệp ghi lúc mất mạng tự gửi khi có mạng
