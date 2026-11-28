@@ -91,7 +91,7 @@ export async function clientHomeView({ profile }) {
       <div class="row row--between"><span style="font-size:11px;letter-spacing:.14em;font-weight:700" class="muted">ĂN HÔM NAY</span>
         <span class="small muted">${target ? `Mục tiêu <strong style="color:var(--text)">${target.kcal}</strong> kcal` : ''}</span></div>
       <div style="height:8px;border-radius:4px;margin-top:10px;background:linear-gradient(90deg,var(--a1),var(--a2) ${Math.round((eatenToday / slots.length) * 100)}%,rgba(255,255,255,.08) ${Math.round((eatenToday / slots.length) * 100)}%)"></div>
-      <div class="small" style="margin-top:8px;color:#c4c4cc">Đã check <strong>${eatenToday}/${slots.length}</strong> bữa · bấm để check bữa tiếp theo</div></a>` : ''}
+      <div class="small" style="margin-top:8px;color:#c4c4cc">Đã check <strong>${eatenToday}/${slots.length}</strong> bữa · ${eatenToday >= slots.length ? 'đủ bữa hôm nay ✓' : 'bấm để check bữa tiếp theo'}</div></a>` : ''}
 
     ${msgs.length ? `<a class="card row" href="#/client/session/${msgs[0].context_id}" style="gap:12px">
       <span style="width:36px;height:36px;border-radius:50%;background:#1e1e23;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none">${esc(((coach?.full_name || 'Dino').trim().split(/\s+/).pop() || 'D')[0].toUpperCase())}</span>

@@ -8,7 +8,7 @@ const STATUS = { active: ['Đang tập', 'badge--ok'], paused: ['Tạm dừng', 
 
 export const coachTabs = () => tabbar([
   { href: '#/coach', label: 'Khách', icon: 'users' },
-  { href: '#/coach/library', label: 'Thư viện', icon: 'book' },
+  { href: '#/coach/library', label: 'Thư viện', icon: 'book', also: ['#/coach/foods', '#/exercise'] },
   { href: '#/coach/inbox', label: 'Hộp việc', icon: 'inbox' },
 ]);
 
